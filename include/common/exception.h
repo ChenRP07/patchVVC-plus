@@ -46,23 +46,27 @@ namespace common {
 	};
 
     enum error_type {
+        ERROR_OCCURED,      /* an error occured */
         WRONG_FILE_FORMAT,  /* error occured when read/write a point cloud from/to a non-PLY file or this PLY file do not follow the ply standard */
         FILE_NOT_EXIST,     /* error occured when open a non-existed file to read data */
         PERMISSION_DENIED,  /* error occured when access a file but do not have permission */
         UNEXPECTED_FILE_ERROR, /* error occured when read/write a file, but is no clearly reasonable */
         FILE_READ_ERROR,    /* error occured when read a file, might be an unexpected EOF */
         FILE_WRITE_ERROR,   /* error occured when write a file with unclear reason */
-        EMPTY_POINT_CLOUD   /* error occured when read a ply file but the point number is zero */
+        EMPTY_POINT_CLOUD,  /* error occured when read a ply file but the point number is zero */
+        EMPTY_RESULT,       /* error occured when get result before processing function */
     };
 
     inline static std::string error_message[100] = {
+        "an error occured",
         "wrong file format",
         "no such file",
         "permission denied",
         "file error occured with unexpected reason",
         "error occured while reading file, might be an unexpected EOF",
         "error occured while writing file, might be something wrong",
-        "there is no point in cloud"
+        "there is no point in cloud",
+        "no processing result, maybe the handler should be called first"
     };
 
 }  // namespace common

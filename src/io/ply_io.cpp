@@ -12,11 +12,11 @@
  *
  */
 
-#include "ply_io.h"
+#include "io/ply_io.h"
 
 using namespace vvc;
 
-void io::LoadColorPlyFile(const std::string& file_name, const pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud) {
+void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud) {
 	try {
 		// file_name must be *.ply format
 		std::regex  name_type{"^.*\\.ply$"};
@@ -117,7 +117,7 @@ void io::LoadColorPlyFile(const std::string& file_name, const pcl::PointCloud<pc
 	}
 	catch (const common::exception& e) {
 		e.log();
-		std::exit(1);
+        throw common::__EXCEPT__(common::ERROR_OCCURED);
 	}
 }
 
@@ -176,7 +176,7 @@ void io::SaveColorPlyFile(const std::string& file_name, const pcl::PointCloud<pc
 	}
 	catch (const common::exception& e) {
 		e.log();
-		std::exit(1);
+		throw common::__EXCEPT__(common::ERROR_OCCURED);
 	}
 }
 
@@ -244,7 +244,7 @@ void io::SaveUniqueColorPlyFile(const std::string& file_name, const pcl::PointCl
 	}
 	catch (const common::exception& e) {
 		e.log();
-		std::exit(1);
+		throw common::__EXCEPT__(common::ERROR_OCCURED);
 	}
 }
 

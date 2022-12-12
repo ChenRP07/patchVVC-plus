@@ -4,6 +4,8 @@ project(vvc
     LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(PCL 1.10 REQUIRED)
 if( NOT PCL_FOUND )
@@ -23,5 +25,6 @@ link_directories(${CMAKE_SOURCE_DIR}/lib/)
 # aux_source_directory(${CMAKE_SOURCE_DIR}/src/ VVC_SRC)
 file(GLOB_RECURSE VVC_SRC ./src/**/*.cpp)
 
-message(${VVC_SRC})
+# message(${VVC_SRC})
 
+add_executable(main ./main.cpp)

@@ -30,10 +30,10 @@ namespace io {
 	/***
 	 * @description: load cololed point cloud from a ply format file
 	 * @param {const string&} file_name
-	 * @param {const pcl::PointCloud<pcl::PointXYZRGB>::Ptr} point_cloud
+	 * @param {pcl::PointCloud<pcl::PointXYZRGB>::Ptr} point_cloud
 	 * @return {}
 	 */
-	extern void LoadColorPlyFile(const std::string& file_name, const pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud);
+	extern void LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud);
 
 	/***
 	 * @description: save point_cloud to file_name, using binary_mode

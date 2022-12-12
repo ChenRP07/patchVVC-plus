@@ -16,33 +16,72 @@
 
 using namespace vvc;
 
-void segment::segment_base::SetSourcePointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _src) {
+void segment::SegmentBase::SetSourcePointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _src) {
 	try {
-        /* empty input point cloud */
+		/* empty input point cloud */
 		if (!_src || _src->size() == 0) {
-			throw common::__EXCEPT__(common::EMPTY_POINT_CLOUD);
+			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
 
 		this->source_cloud_ = _src;
 	}
-	catch (const common::exception& e) {
-		e.log();
-		throw common::__EXCEPT__(common::ERROR_OCCURED);
+	catch (const common::Exception& e) {
+		e.Log();
+		throw __EXCEPT__(ERROR_OCCURED);
 	}
 }
 
-void segment::segment_base::GetResultPointClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _result) {
+void segment::SegmentBase::GetResultPointClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _result) {
 	try {
-        /* no result */
+		/* no result */
 		if (this->results_.empty()) {
-			throw common::__EXCEPT__(common::EMPTY_RESULT);
+			throw __EXCEPT__(EMPTY_RESULT);
 		}
 
-        _result.clear();
-        _result.assign(this->results_.begin(), this->results_.end());
+		_result.clear();
+		_result.assign(this->results_.begin(), this->results_.end());
 	}
-	catch (const common::exception& e) {
-		e.log();
-		throw common::__EXCEPT__(common::ERROR_OCCURED);
+	catch (const common::Exception& e) {
+		e.Log();
+		throw __EXCEPT__(ERROR_OCCURED);
+	}
+}
+
+void segment::SegmentBase::SetParams(std::shared_ptr<common::VVCParam_t> _ptr) {
+	try {
+		if (!_ptr) {
+			throw __EXCEPT__(EMPTY_PARAMS);
+		}
+		else {
+			this->params_ = _ptr;
+		}
+	}
+	catch (const common::Exception& e) {
+		e.Log();
+		throw __EXCEPT__(ERROR_OCCURED);
+	}
+}
+
+void segment::SegmentBase::Log() const {
+	if (this->params_->log_level_ & 0x01) {
+		std::cout << __BLUET__(Excepted patch number:) << this->stat_.expect_.size() << std::endl;
+	}
+	if (this->params_->log_level_ & 0x02) {
+		std::cout << __BLUET__(Average patch size:) << this->source_cloud_->size() / this->stat_.expect_.size() << std::endl;
+		std::cout << __BLUET__(Standard deviation:) << common::Deviation(this->stat_.expect_) << std::endl;
+	}
+	if (this->params_->log_level_ & 0x04) {
+		/* TODO : complete log */
+	}
+
+	if (this->params_->log_level_ & 0x01) {
+		std::cout << __BLUET__(Actual patch number:) << this->stat_.fact_.size() << std::endl;
+	}
+	if (this->params_->log_level_ & 0x02) {
+		std::cout << __BLUET__(Average patch size:) << std::accumulate(this->stat_.fact_.begin(), this->stat_.fact_.end(), 0) / this->stat_.fact_.size() << std::endl;
+		std::cout << __BLUET__(Standard deviation:) << common::Deviation(this->stat_.fact_) << std::endl;
+	}
+	if (this->params_->log_level_ & 0x04) {
+		/* TODO : complete log */
 	}
 }

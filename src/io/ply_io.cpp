@@ -23,16 +23,16 @@ void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::Poi
 		std::smatch matches;
 
 		if (!std::regex_search(file_name, matches, name_type)) {
-			throw common::__EXCEPT__(common::WRONG_FILE_FORMAT);
+			throw __EXCEPT__(WRONG_FILE_FORMAT);
 		}
 
 		FILE* fp = nullptr;
 		fp       = fopen(file_name.c_str(), "r");
 		if (fp == nullptr) {
 			switch (errno) {
-				case ENOENT: throw common::__EXCEPT__(common::FILE_NOT_EXIST); break;
-				case EACCES: throw common::__EXCEPT__(common::PERMISSION_DENIED); break;
-				default: throw common::__EXCEPT__(common::UNEXPECTED_FILE_ERROR); break;
+				case ENOENT: throw __EXCEPT__(FILE_NOT_EXIST); break;
+				case EACCES: throw __EXCEPT__(PERMISSION_DENIED); break;
+				default: throw __EXCEPT__(UNEXPECTED_FILE_ERROR); break;
 			}
 			fclose(fp);
 		}
@@ -51,7 +51,7 @@ void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::Poi
 			file_type = 1;
 		}
 		else {
-			throw common::__EXCEPT__(common::WRONG_FILE_FORMAT);
+			throw __EXCEPT__(WRONG_FILE_FORMAT);
 		}
 
 		// check points number
@@ -64,7 +64,7 @@ void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::Poi
 			// header end
 			if ((end_header = strstr(file_line, "end_header")) != nullptr) {
 				if (point_cloud_size == -1) {
-					throw common::__EXCEPT__(common::EMPTY_POINT_CLOUD);
+					throw __EXCEPT__(EMPTY_POINT_CLOUD);
 				}
 				break;
 			}
@@ -90,7 +90,7 @@ void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::Poi
 				float            x, y, z;
 				int              r, g, b;
 				if (fscanf(fp, "%f %f %f %d %d %d", &x, &y, &z, &r, &g, &b) != 6) {
-					throw common::__EXCEPT__(common::FILE_READ_ERROR);
+					throw __EXCEPT__(FILE_READ_ERROR);
 				}
 				point.x = x, point.y = y, point.z = z, point.r = r, point.g = g, point.b = b;
 				point_cloud->emplace_back(point);
@@ -103,10 +103,10 @@ void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::Poi
                 float xyz[3];
                 uint8_t rgb[3];
 				if (fread(xyz, sizeof(float), 3, fp) != 3) {
-					throw common::__EXCEPT__(common::FILE_READ_ERROR);
+					throw __EXCEPT__(FILE_READ_ERROR);
 				}
                 if (fread(rgb, sizeof(uint8_t), 3, fp) != 3) {
-					throw common::__EXCEPT__(common::FILE_READ_ERROR);
+					throw __EXCEPT__(FILE_READ_ERROR);
 				}
                 point.x = xyz[0], point.y = xyz[1], point.z = xyz[2];
                 point.r = rgb[0], point.g = rgb[1], point.b = rgb[2];
@@ -115,9 +115,9 @@ void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::Poi
 		}
 		fclose(fp);
 	}
-	catch (const common::exception& e) {
-		e.log();
-        throw common::__EXCEPT__(common::ERROR_OCCURED);
+	catch (const common::Exception& e) {
+		e.Log();
+        throw __EXCEPT__(ERROR_OCCURED);
 	}
 }
 
@@ -127,7 +127,7 @@ void io::SaveColorPlyFile(const std::string& file_name, const pcl::PointCloud<pc
 		std::regex  name_type{"^.*\\.ply$"};
 		std::smatch matches;
 		if (!std::regex_search(file_name, matches, name_type)) {
-			throw common::__EXCEPT__(common::WRONG_FILE_FORMAT);
+			throw __EXCEPT__(WRONG_FILE_FORMAT);
 		}
 
 		// open file
@@ -135,9 +135,9 @@ void io::SaveColorPlyFile(const std::string& file_name, const pcl::PointCloud<pc
 		fp       = fopen(file_name.c_str(), "w");
 		if (fp == nullptr) {
 			switch (errno) {
-				case ENOENT: throw common::__EXCEPT__(common::FILE_NOT_EXIST); break;
-				case EACCES: throw common::__EXCEPT__(common::PERMISSION_DENIED); break;
-				default: throw common::__EXCEPT__(common::UNEXPECTED_FILE_ERROR); break;
+				case ENOENT: throw __EXCEPT__(FILE_NOT_EXIST); break;
+				case EACCES: throw __EXCEPT__(PERMISSION_DENIED); break;
+				default: throw __EXCEPT__(UNEXPECTED_FILE_ERROR); break;
 			}
 		}
 
@@ -150,7 +150,7 @@ void io::SaveColorPlyFile(const std::string& file_name, const pcl::PointCloud<pc
 		}
 
 		if (fprintf(fp, "%s", header.c_str()) < 0) {
-			throw common::__EXCEPT__(common::FILE_WRITE_ERROR);
+			throw __EXCEPT__(FILE_WRITE_ERROR);
 		}
 		pcl::PointXYZRGB temp;
 		for (size_t i = 0; i < point_cloud->size(); i++) {
@@ -159,24 +159,24 @@ void io::SaveColorPlyFile(const std::string& file_name, const pcl::PointCloud<pc
 				float   xyz[3] = {temp.x, temp.y, temp.z};
 				uint8_t rgb[3] = {temp.r, temp.g, temp.b};
 				if (fwrite(xyz, sizeof(float), 3, fp) != 3) {
-					throw common::__EXCEPT__(common::FILE_WRITE_ERROR);
+					throw __EXCEPT__(FILE_WRITE_ERROR);
 				}
 
 				if (fwrite(rgb, sizeof(uint8_t), 3, fp) != 3) {
-					throw common::__EXCEPT__(common::FILE_WRITE_ERROR);
+					throw __EXCEPT__(FILE_WRITE_ERROR);
 				}
 			}
 			else {
 				if (fprintf(fp, "%.3f %.3f %.3f %u %u %u\n", temp.x, temp.y, temp.z, temp.r, temp.g, temp.b) < 0) {
-					throw common::__EXCEPT__(common::FILE_WRITE_ERROR);
+					throw __EXCEPT__(FILE_WRITE_ERROR);
 				}
 			}
 		}
 		fclose(fp);
 	}
-	catch (const common::exception& e) {
-		e.log();
-		throw common::__EXCEPT__(common::ERROR_OCCURED);
+	catch (const common::Exception& e) {
+		e.Log();
+		throw __EXCEPT__(ERROR_OCCURED);
 	}
 }
 
@@ -186,7 +186,7 @@ void io::SaveUniqueColorPlyFile(const std::string& file_name, const pcl::PointCl
 		std::regex  name_type{"^.*\\.ply$"};
 		std::smatch matches;
 		if (!std::regex_search(file_name, matches, name_type)) {
-			throw common::__EXCEPT__(common::WRONG_FILE_FORMAT);
+			throw __EXCEPT__(WRONG_FILE_FORMAT);
 		}
 
 		// open file
@@ -194,9 +194,9 @@ void io::SaveUniqueColorPlyFile(const std::string& file_name, const pcl::PointCl
 		fp       = fopen(file_name.c_str(), "w");
 		if (fp == nullptr) {
 			switch (errno) {
-				case ENOENT: throw common::__EXCEPT__(common::FILE_NOT_EXIST); break;
-				case EACCES: throw common::__EXCEPT__(common::PERMISSION_DENIED); break;
-				default: throw common::__EXCEPT__(common::UNEXPECTED_FILE_ERROR); break;
+				case ENOENT: throw __EXCEPT__(FILE_NOT_EXIST); break;
+				case EACCES: throw __EXCEPT__(PERMISSION_DENIED); break;
+				default: throw __EXCEPT__(UNEXPECTED_FILE_ERROR); break;
 			}
 		}
 
@@ -209,7 +209,7 @@ void io::SaveUniqueColorPlyFile(const std::string& file_name, const pcl::PointCl
 		}
 
 		if (fprintf(fp, "%s", header.c_str()) < 0) {
-			throw common::__EXCEPT__(common::FILE_WRITE_ERROR);
+			throw __EXCEPT__(FILE_WRITE_ERROR);
 		}
 
 		uint8_t blue = unique_color & 0x0000ff;
@@ -227,24 +227,24 @@ void io::SaveUniqueColorPlyFile(const std::string& file_name, const pcl::PointCl
 				float   xyz[3] = {temp.x, temp.y, temp.z};
 				uint8_t rgb[3] = {temp.r, temp.g, temp.b};
 				if (fwrite(xyz, sizeof(float), 3, fp) != 3) {
-					throw common::__EXCEPT__(common::FILE_WRITE_ERROR);
+					throw __EXCEPT__(FILE_WRITE_ERROR);
 				}
 
 				if (fwrite(rgb, sizeof(uint8_t), 3, fp) != 3) {
-					throw common::__EXCEPT__(common::FILE_WRITE_ERROR);
+					throw __EXCEPT__(FILE_WRITE_ERROR);
 				}
 			}
 			else {
 				if (fprintf(fp, "%.3f %.3f %.3f %u %u %u\n", temp.x, temp.y, temp.z, temp.r, temp.g, temp.b) < 0) {
-					throw common::__EXCEPT__(common::FILE_WRITE_ERROR);
+					throw __EXCEPT__(FILE_WRITE_ERROR);
 				}
 			}
 		}
 		fclose(fp);
 	}
-	catch (const common::exception& e) {
-		e.log();
-		throw common::__EXCEPT__(common::ERROR_OCCURED);
+	catch (const common::Exception& e) {
+		e.Log();
+		throw __EXCEPT__(ERROR_OCCURED);
 	}
 }
 

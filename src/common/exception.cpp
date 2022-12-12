@@ -17,15 +17,15 @@
 
 using namespace vvc;
 
-common::exception::exception(unsigned int err_line, std::string file_name, std::string func_name, std::string err_message) {
-    this->line = err_line;
-    this->file = file_name;
-    this->func = func_name;
-    this->message = err_message;
+common::Exception::Exception(unsigned int _err_line, std::string _file_name, std::string _func_name, std::string _err_message) {
+    this->line_ = _err_line;
+    this->file_ = _file_name;
+    this->func_ = _func_name;
+    this->message_ = _err_message;
 }
 
-void common::exception::log() const {
-    std::cout << "\033[91m[Error] \033[0min file \033[96m" << this->file << "\033[0m, func \033[96m" << this->func << "\033[0m, line \033[96m" << this->line << "\033[0m, \033[91m" << this->message << "\033[0m." << std::endl;
+void common::Exception::Log() const {
+    std::cout << "\033[91m[Error] \033[0min file \033[96m" << this->file_ << "\033[0m, func \033[96m" << this->func_ << "\033[0m, line \033[96m" << this->line_ << "\033[0m, \033[91m" << this->message_ << "\033[0m." << std::endl;
 }
 
 

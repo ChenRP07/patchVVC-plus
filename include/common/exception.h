@@ -18,56 +18,58 @@
 #include <iostream>
 #include <string>
 
-#define __EXCEPT__(msg) exception(__LINE__, __FILE__, __FUNCTION__, vvc::common::error_message[vvc::msg])
+#define __EXCEPT__(msg) vvc::common::Exception(__LINE__, __FILE__, __FUNCTION__, vvc::common::ErrorMessage[vvc::common::msg])
 
 namespace vvc {
 namespace common {
-	class exception {
+	class Exception {
 	  private:
-		unsigned int line;
-		std::string  file;
-		std::string  func;
-		std::string  message;
+		unsigned int line_;
+		std::string  file_;
+		std::string  func_;
+		std::string  message_;
 
 	  public:
 		/*
-         * @description : constructor
-         * @param {unsigned int err_line} line index where error occured
-         * @param {std::string file_name} file name where error occured 
-         * @param {std::string func_name} function name where error occured 
-         * @param {std::string err_message} error message
-         * */
-        exception(unsigned int err_line, std::string file_name, std::string func_name, std::string err_message);
-        
-        /*
-         * @description : output log of error for debug
-         * */
-        void log() const;
+		 * @description : constructor
+		 * @param {unsigned int err_line} line index where error occured
+		 * @param {std::string file_name} file name where error occured
+		 * @param {std::string func_name} function name where error occured
+		 * @param {std::string err_message} error message
+		 * */
+		Exception(unsigned int _err_line, std::string _file_name, std::string _func_name, std::string _err_message);
+
+		/*
+		 * @description : output log of error for debug
+		 * */
+		void Log() const;
 	};
 
-    enum error_type {
-        ERROR_OCCURED,      /* an error occured */
-        WRONG_FILE_FORMAT,  /* error occured when read/write a point cloud from/to a non-PLY file or this PLY file do not follow the ply standard */
-        FILE_NOT_EXIST,     /* error occured when open a non-existed file to read data */
-        PERMISSION_DENIED,  /* error occured when access a file but do not have permission */
-        UNEXPECTED_FILE_ERROR, /* error occured when read/write a file, but is no clearly reasonable */
-        FILE_READ_ERROR,    /* error occured when read a file, might be an unexpected EOF */
-        FILE_WRITE_ERROR,   /* error occured when write a file with unclear reason */
-        EMPTY_POINT_CLOUD,  /* error occured when read a ply file but the point number is zero */
-        EMPTY_RESULT,       /* error occured when get result before processing function */
-    };
+	enum ErrorType {
+		ERROR_OCCURED,         /* an error occured */
+		WRONG_FILE_FORMAT,     /* error occured when read/write a point cloud from/to a non-PLY file or this PLY file do not follow the ply standard */
+		FILE_NOT_EXIST,        /* error occured when open a non-existed file to read data */
+		PERMISSION_DENIED,     /* error occured when access a file but do not have permission */
+		UNEXPECTED_FILE_ERROR, /* error occured when read/write a file, but is no clearly reasonable */
+		FILE_READ_ERROR,       /* error occured when read a file, might be an unexpected EOF */
+		FILE_WRITE_ERROR,      /* error occured when write a file with unclear reason */
+		EMPTY_POINT_CLOUD,     /* error occured when read a ply file but the point number is zero */
+		EMPTY_RESULT,          /* error occured when get result before processing function */
+		EMPTY_PARAMS,          /* error occured when set vvc_param_t but with no instance */
+		INVALID_PARAM_SEGMENT  /* error occured when then params of segmentation are invalid */
+	};
 
-    inline static std::string error_message[100] = {
-        "an error occured",
-        "wrong file format",
-        "no such file",
-        "permission denied",
-        "file error occured with unexpected reason",
-        "error occured while reading file, might be an unexpected EOF",
-        "error occured while writing file, might be something wrong",
-        "there is no point in cloud",
-        "no processing result, maybe the handler should be called first"
-    };
+	inline static std::string ErrorMessage[100] = {"an error occured",
+	                                                "wrong file format",
+	                                                "no such file",
+	                                                "permission denied",
+	                                                "file error occured with unexpected reason",
+	                                                "error occured while reading file, might be an unexpected EOF",
+	                                                "error occured while writing file, might be something wrong",
+	                                                "there is no point in cloud",
+	                                                "no processing result, maybe the handler should be called first",
+	                                                "empty vvc parameters, might be a null pointer to vvc_param_t",
+	                                                "parameters are invalid of segmentation"};
 
 }  // namespace common
 }  // namespace vvc

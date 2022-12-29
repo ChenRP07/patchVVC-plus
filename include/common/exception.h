@@ -6,9 +6,9 @@
  * Copyright: @ChenRP07, All Right Reserved.
  *
  * Author        : ChenRP07
- * Description   :
+ * Description   : Definition of exception which used to handle the error of VVC.
  * Create Time   : 2022/12/06 19:06
- * Last Modified : 2022/12/08 19:26
+ * Last Modified : 2022/12/27 14:06
  *
  */
 
@@ -24,10 +24,10 @@ namespace vvc {
 namespace common {
 	class Exception {
 	  private:
-		unsigned int line_;
-		std::string  file_;
-		std::string  func_;
-		std::string  message_;
+		unsigned int line_;    /* line index where error occured  */
+		std::string  file_;    /* file name where error occured */
+		std::string  func_;    /* function name where error occured */
+		std::string  message_; /* error message */
 
 	  public:
 		/*
@@ -56,20 +56,24 @@ namespace common {
 		EMPTY_POINT_CLOUD,     /* error occured when read a ply file but the point number is zero */
 		EMPTY_RESULT,          /* error occured when get result before processing function */
 		EMPTY_PARAMS,          /* error occured when set vvc_param_t but with no instance */
-		INVALID_PARAM_SEGMENT  /* error occured when then params of segmentation are invalid */
+		INVALID_PARAM_SEGMENT, /* error occured when then params of segmentation are invalid */
+		INITIALIZER_ERROR,     /* error occured when a object member is used before initialization */
+		BAD_PARAMETERS
 	};
 
 	inline static std::string ErrorMessage[100] = {"an error occured",
-	                                                "wrong file format",
-	                                                "no such file",
-	                                                "permission denied",
-	                                                "file error occured with unexpected reason",
-	                                                "error occured while reading file, might be an unexpected EOF",
-	                                                "error occured while writing file, might be something wrong",
-	                                                "there is no point in cloud",
-	                                                "no processing result, maybe the handler should be called first",
-	                                                "empty vvc parameters, might be a null pointer to vvc_param_t",
-	                                                "parameters are invalid of segmentation"};
+	                                               "wrong file format",
+	                                               "no such file",
+	                                               "permission denied",
+	                                               "file error occured with unexpected reason",
+	                                               "error occured while reading file, might be an unexpected EOF",
+	                                               "error occured while writing file, might be something wrong",
+	                                               "there is no point in cloud",
+	                                               "no processing result, maybe the handler should be called first",
+	                                               "empty vvc parameters, might be a null pointer to vvc_param_t",
+	                                               "parameters are invalid of segmentation",
+	                                               "object initialization error, should be initialized first",
+	                                               "bad parameters"};
 
 }  // namespace common
 }  // namespace vvc

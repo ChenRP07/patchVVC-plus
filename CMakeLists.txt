@@ -24,7 +24,14 @@ link_directories(${CMAKE_SOURCE_DIR}/lib/)
 
 # aux_source_directory(${CMAKE_SOURCE_DIR}/src/ VVC_SRC)
 file(GLOB_RECURSE VVC_SRC ./src/**/*.cpp)
+aux_source_directory(./src/io IO_SRC)
+aux_source_directory(./src/common COMMON_SRC)
+aux_source_directory(./src/segment SEGMENT_SRC)
 
-# message(${VVC_SRC})
+if(NOT EXISTS ${CMAKE_SOURCE_DIR}/test)
+    message("Test unavailable.")
+else()
+    message("Test available.")
+    add_subdirectory(${CMAKE_SOURCE_DIR}/test)
+endif()
 
-add_executable(main ./main.cpp)

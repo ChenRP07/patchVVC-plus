@@ -6,13 +6,13 @@
  * Copyright: @ChenRP07, All Right Reserved.
  *
  * Author        : ChenRP07
- * Description   :
+ * Description   : Implementation of statistics.
  * Create Time   : 2022/12/12 19:30
- * Last Modified : 2022/12/12 19:30
+ * Last Modified : 2022/12/14 17:25
  *
  */
 
-#include "common/stat.h"
+#include "common/statistic.h"
 
 using namespace vvc;
 

@@ -6,9 +6,9 @@
  * Copyright: @ChenRP07, All Right Reserved.
  *
  * Author        : ChenRP07
- * Description   :
+ * Description   : Implementation of dense segmentation.
  * Create Time   : 2022/12/09 16:53
- * Last Modified : 2022/12/12 15:20
+ * Last Modified : 2022/12/14 17:25
  *
  */
 

@@ -6,9 +6,9 @@
  * Copyright: @ChenRP07, All Right Reserved.
  *
  * Author        : ChenRP07
- * Description   :
+ * Description   : Definition of point cloud segmentation.
  * Create Time   : 2022/12/09 11:15
- * Last Modified : 2022/12/12 15:20
+ * Last Modified : 2022/12/14 17:13
  *
  */
 
@@ -16,8 +16,8 @@
 #define _SEGMENT_H_
 
 #include "common/exception.h"
-#include "common/param.h"
-#include "common/stat.h"
+#include "common/parameter.h"
+#include "common/statistic.h"
 #include <float.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -32,8 +32,14 @@ namespace segment {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr              source_cloud_; /* source point cloud to be segmented */
 		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_;      /* segmentation result */
-		std::shared_ptr<common::VVCParam_t>                params_;       /* vvc parameters */
-		common::SegmentStat_t                              stat_;         /* statistics */
+		std::shared_ptr<common::VVCParam_t>                 params_;       /* vvc parameters */
+		common::SegmentStat_t                               stat_;         /* statistics */
+
+		/*
+		 * @description : log statistics
+		 * @return : {}
+		 * */
+		void Log() const;
 
 	  public:
 		/* default constructor */
@@ -64,18 +70,25 @@ namespace segment {
 		void SetParams(std::shared_ptr<common::VVCParam_t> _ptr);
 
 		/*
-		 * @description : log statistics
-		 * @return : {}
-		 * */
-		void Log() const;
-
-		/*
 		 * @description : interface of segment
 		 * */
 		virtual void Segment() = 0;
 	};
 
-	/* centroids are decided by the dense */
+	/*
+	 * Dense clustering, centroids are decided by the dense
+	 *
+	 * Using example :
+	 *
+	 *      DenseSegment exp;
+	 *      exp.SetSourcePointCloud(_cloud_ptr);
+	 *      exp.SetParams(_params);
+	 *      exp.Segment();
+	 *      exp.GetResultPointClouds(_result_ptrs);
+	 *
+	 * It is worth noting that before call Segment, SetSourcePointCloud and SetParams must be called, and
+     * the expected patches number must be set in a VVCParam_t. Otherwise will generate an exception.
+	 * */
 	class DenseSegment : public SegmentBase {
 	  private:
 		/*

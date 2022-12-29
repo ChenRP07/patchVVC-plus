@@ -6,9 +6,9 @@
  * Copyright: @ChenRP07, All Right Reserved.
  * 
  * Author        : ChenRP07
- * Description   : 
+ * Description   : Implementation of exception. 
  * Create Time   : 2022/12/06 19:18
- * Last Modified : 2022/12/06 19:18
+ * Last Modified : 2022/12/14 17:25
  * 
  */ 
 

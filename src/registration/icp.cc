@@ -20,6 +20,7 @@ registration::ICP::ICP() : result_cloud_{new pcl::PointCloud<pcl::PointXYZRGB>},
 
 void registration::ICP::SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
 	try {
+        /* check point cloud is empty */
 		if (!_cloud || _cloud->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
@@ -35,6 +36,7 @@ void registration::ICP::SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _c
 
 void registration::ICP::GetResultCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
 	try {
+        /* check point cloud is empty */
 		if (!this->result_cloud_ || this->result_cloud_->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
@@ -58,6 +60,7 @@ float registration::ICP::GetMSE() const {
 
 void registration::ICP::CentroidAlignment() {
 	try {
+        /* check point cloud is empty */
 		if (!this->source_cloud_ || !this->target_cloud_ || this->source_cloud_->empty() || this->target_cloud_->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
@@ -106,15 +109,18 @@ void registration::ICP::CentroidAlignment() {
 
 float registration::ICP::CloudMSE() {
 	try {
+        /* check point cloud is empty */
 		if (!this->result_cloud_ || !this->target_cloud_ || this->result_cloud_->empty() || this->target_cloud_->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
 
 		float MSE;
 
+        /* nearest neighbor search */
 		pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
 		kdtree.setInputCloud(this->target_cloud_);
 
+        /* calculate mse */
 		for (auto& i : *(this->result_cloud_)) {
 			std::vector<int>   idx(1);
 			std::vector<float> dis(1);
@@ -133,10 +139,12 @@ float registration::ICP::CloudMSE() {
 
 void registration::ICP::Align() {
 	try {
+        /* check point cloud is empty */
 		if (!this->source_cloud_ || !this->target_cloud_ || this->source_cloud_->empty() || this->target_cloud_->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
 
+        /* check param is empty */
 		if (!this->params_) {
 			throw __EXCEPT__(EMPTY_PARAMS);
 		}
@@ -145,10 +153,13 @@ void registration::ICP::Align() {
 			throw __EXCEPT__(INITIALIZER_ERROR);
 		}
 
+        /* do centroid alignment and fill result_cloud_ */
 		this->CentroidAlignment();
 
+        /* icp */
 		pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
 
+        /* check params illegal */
 		if (this->params_->icp_.correspondence_ths_ > 0) {
 			icp.setMaxCorrespondenceDistance(this->params_->icp_.correspondence_ths_);
 		}
@@ -177,13 +188,16 @@ void registration::ICP::Align() {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
 
+        /* set point cloud */
 		icp.setInputSource(this->result_cloud_);
 		icp.setInputTarget(this->target_cloud_);
 
 		pcl::PointCloud<pcl::PointXYZRGB> temp_cloud_;
 
+        /* do alignment */
 		icp.align(temp_cloud_);
 
+        /* converge or not */
 		if (icp.hasConverged()) {
 			this->mse_           = icp.getFitnessScore();
 			this->motion_vector_ = icp.getFinalTransformation() * this->motion_vector_;

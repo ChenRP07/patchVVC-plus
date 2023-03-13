@@ -64,24 +64,24 @@ void segment::SegmentBase::SetParams(std::shared_ptr<common::VVCParam_t> _ptr) {
 
 void segment::SegmentBase::Log() const {
 	if (this->params_->log_level_ & 0x01) {
-		std::cout << __BLUET__(Excepted patch number : ) << this->stat_.expect_.size() << std::endl;
+		std::cout << __BLUET__(Excepted patch number : ) << " " << this->stat_.expect_.size() << std::endl;
 	}
 	if (this->params_->log_level_ & 0x02) {
-		std::cout << __BLUET__(Average patch size : ) << this->source_cloud_->size() / this->stat_.expect_.size() << std::endl;
-        std::cout << __BLUET__(Min/Max patch size : ) << *std::min_element(this->stat_.expect_.begin(), this->stat_.expect_.end()) << " / " << *std::max_element(this->stat_.expect_.begin(), this->stat_.expect_.end()) << std::endl;
-		std::cout << __BLUET__(Standard deviation : ) << common::Deviation(this->stat_.expect_) << std::endl;
+		std::cout << __BLUET__(Average patch size : ) << " " << this->source_cloud_->size() / this->stat_.expect_.size() << std::endl;
+        std::cout << __BLUET__(Min/Max patch size : ) << " " << *std::min_element(this->stat_.expect_.begin(), this->stat_.expect_.end()) << " / " << *std::max_element(this->stat_.expect_.begin(), this->stat_.expect_.end()) << std::endl;
+		std::cout << __BLUET__(Standard deviation : ) << " " << common::Deviation(this->stat_.expect_) << std::endl;
 	}
 	if (this->params_->log_level_ & 0x04) {
 		/* TODO : complete log */
 	}
 
 	if (this->params_->log_level_ & 0x01) {
-		std::cout << __BLUET__(Actual patch number : ) << this->stat_.fact_.size() << std::endl;
+		std::cout << __BLUET__(Actual patch number : ) << " " << this->stat_.fact_.size() << std::endl;
 	}
 	if (this->params_->log_level_ & 0x02) {
-		std::cout << __BLUET__(Average patch size : ) << std::accumulate(this->stat_.fact_.begin(), this->stat_.fact_.end(), 0) / this->stat_.fact_.size() << std::endl;
-        std::cout << __BLUET__(Min/Max patch size : ) << *std::min_element(this->stat_.fact_.begin(), this->stat_.fact_.end()) << " / " << *std::max_element(this->stat_.fact_.begin(), this->stat_.fact_.end()) << std::endl;
-		std::cout << __BLUET__(Standard deviation : ) << common::Deviation(this->stat_.fact_) << std::endl;
+		std::cout << __BLUET__(Average patch size : ) << " " << std::accumulate(this->stat_.fact_.begin(), this->stat_.fact_.end(), 0) / this->stat_.fact_.size() << std::endl;
+        std::cout << __BLUET__(Min/Max patch size : ) << " " << *std::min_element(this->stat_.fact_.begin(), this->stat_.fact_.end()) << " / " << *std::max_element(this->stat_.fact_.begin(), this->stat_.fact_.end()) << std::endl;
+		std::cout << __BLUET__(Standard deviation : )  << " " << common::Deviation(this->stat_.fact_) << std::endl;
 	}
 	if (this->params_->log_level_ & 0x04) {
 		/* TODO : complete log */

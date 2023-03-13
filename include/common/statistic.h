@@ -50,7 +50,13 @@ namespace common {
 		std::vector<size_t> fact_;   /* in fact patches size */
 	};
 
+    struct ParallelICPStat_t {
+        std::vector<uint8_t> converged_;
+        std::vector<float> score_;
+    };
+
 	extern double Deviation(const std::vector<size_t>& _src);
+	extern double Deviation(const std::vector<float>& _src);
     static boost::format color_cmd("\033[%dm%s\033[0m"); 
 }  // namespace common
 }  // namespace vvc

@@ -19,6 +19,7 @@
 #include "common/parameter.h"
 #include "common/statistic.h"
 
+#include <mutex>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/registration/icp.h>
@@ -31,8 +32,8 @@ namespace registration {
 
 	class RegistrationBase {
 	  protected:
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud_;
-		std::shared_ptr<common::VVCParam_t>    params_;
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud_; /* target point cloud which is the registration reference */
+		std::shared_ptr<common::VVCParam_t>    params_;       /* parameters */
 
 	  public:
 		/* default constructor and deconstructor */
@@ -61,12 +62,27 @@ namespace registration {
 		void SetParams(std::shared_ptr<common::VVCParam_t> _param);
 	};
 
+	/*
+	 * Implementation of Iterative Closest Point.
+	 * How to use?
+	 * Example:
+	 * ICP eg;
+	 * eg.SetParams(param_ptr);
+	 * eg.SetSourceCloud(source_cloud_ptr)
+	 * eg.SetTargetCloud(target_cloud_ptr)
+	 * eg.Align()
+	 * eg.GetResultCloud(your_result_cloud_ptr)
+	 * your_mv = eg.GetMotionVector();
+	 * your_mse = eg.GetMSE();
+	 *
+	 * NOTICE:Make sure SetParams, SetSourceCloud and SetTargetCloud are called before Align.
+	 * */
 	class ICP : public RegistrationBase {
 	  private:
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud_;
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud_;
-		Eigen::Matrix4f                        motion_vector_;
-		float                                  mse_;
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud_;  /* source point cloud which will be transformed */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud_;  /* transformation result */
+		Eigen::Matrix4f                        motion_vector_; /* motion vector */
+		float                                  mse_;           /* mean squared error */
 
 		/*
 		 * @description : do centroid alignment for source_cloud_ to target_cloud_.
@@ -75,114 +91,145 @@ namespace registration {
 		 * */
 		void CentroidAlignment();
 
-        /*
-         * @description : calculate mse from source to target.
-         * @param : {}
-         * @return : {}
-         * */
-        float CloudMSE();
+		/*
+		 * @description : calculate mse from source to target.
+		 * @param : {}
+		 * @return : {}
+		 * */
+		float CloudMSE();
 
 	  public:
+		/* constructor and default deconstructor */
+		ICP();
 
-        /* constructor and default deconstructor */
-        ICP();
+		~ICP() = default;
 
-        ~ICP() = default;
+		/*
+		 * @description : set source point cloud which will be transformed.
+		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
+		 * @return : {}
+		 * */
+		void SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
 
-        /*
-         * @description : set source point cloud which will be transformed.
-         * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
-         * @return : {}
-         * */
-        void SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
+		/*
+		 * @description : get result point cloud which is transformed by source_cloud_, should be called after Align().
+		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
+		 * @return : {}
+		 * */
+		void GetResultCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
 
-        /*
-         * @description : get result point cloud which is transformed by source_cloud_, should be called after Align().
-         * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
-         * @return : {}
-         * */
-        void GetResultCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
+		/*
+		 * @description : get motion vector, should be called after Align().
+		 * @param : {}
+		 * @return : {Eigen::Matrix4f} MV
+		 * */
+		Eigen::Matrix4f GetMotionVector() const;
 
-        /* 
-         * @description : get motion vector, should be called after Align().
-         * @param : {}
-         * @return : {Eigen::Matrix4f} MV
-         * */
-        Eigen::Matrix4f GetMotionVector() const;
+		/*
+		 * @description : get mean squared error, should be called after Align().
+		 * @param : {}
+		 * @return : {float} mse
+		 * */
+		float GetMSE() const;
 
-        /*
-         * @description : get mean squared error, should be called after Align().
-         * @param : {}
-         * @return : {float} mse
-         * */
-        float GetMSE() const;
-
-        /*
-         * @description : do iterative closest point.
-         * */
-        void Align();
+		/*
+		 * @description : do iterative closest point.
+		 * */
+		void Align();
 	};
 
-    class ParallelICP : public RegistrationBase {
+    /* 
+     * Parallel implementation of Iterative Closest Point, multi source to single target.
+     * How to use?
+     * Example:
+     * ParallelICP eg;
+     * eg.SetParams(param_ptr);
+     * eg.SetSourceClouds(source_clouds_ptr_vector);
+     * eg.SetTargetCloud(target_cloud_ptr)
+     * eg.Align();
+     * eg.GetResultClouds(your_result_clouds_ptr_vector);
+     * your_mv_vector = eg.GetMotionVectors();
+     * your_mse_vector = eg.GetMSEs();
+     *
+     * NOTICE:Make sure SetParams, SetSourceClouds and SetTargetCloud are called before Align;
+     * */
+	class ParallelICP : public RegistrationBase {
 	  private:
-          std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> source_clouds_;
-          std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> result_clouds_;
-          std::vector<Eigen::Matrix4f> motion_vectors_;
-          std::vector<float> mse_;
+		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> source_clouds_;  /* source point cloud patches which will be transformed */
+		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> result_clouds_;  /* transformed point cloud patches result */
+		std::vector<Eigen::Matrix4f>                        motion_vectors_; /* transformation matrices */
+		std::vector<float>                                  mses_;           /* mean squared errors */
 
+		std::mutex         task_mutex_; /* mutex for atomic procession */
+		std::queue<size_t> task_queue_; /* task queue */
+
+		common::ParallelICPStat_t stat_; /* statistic */
 		/*
-		 * @description : do centroid alignment for source_cloud_ to target_cloud_.
+		 * @description : do centroid alignment for source_clouds_ to target_cloud_.
 		 * @param : {}
 		 * @return : {}
 		 * */
 		void CentroidAlignment();
 
-        /*
-         * @description : calculate mse from source to target.
-         * @param : {}
-         * @return : {}
-         * */
-        float CloudMSE();
-
-	  public:
-
-        /* constructor and default deconstructor */
-        ICP();
-
-        ~ICP() = default;
-
-        /*
-         * @description : set source point cloud which will be transformed.
-         * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
-         * @return : {}
-         * */
-        void SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
-
-        /*
-         * @description : get result point cloud which is transformed by source_cloud_, should be called after Align().
-         * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
-         * @return : {}
-         * */
-        void GetResultCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
+		/*
+		 * @description : calculate mse from source to target.
+		 * @param : {}
+		 * @return : {}
+		 * */
+		void CloudMSE();
 
         /* 
-         * @description : get motion vector, should be called after Align().
+         * @description : task function for each thread.
          * @param : {}
-         * @return : {Eigen::Matrix4f} MV
+         * @return : {}
          * */
-        Eigen::Matrix4f GetMotionVector() const;
+		void Task();
 
         /*
-         * @description : get mean squared error, should be called after Align().
+         * @description : log statistic.
          * @param : {}
-         * @return : {float} mse
+         * @return : {}
          * */
-        float GetMSE() const;
+		void Log();
 
-        /*
-         * @description : do iterative closest point.
-         * */
-        void Align();
+	  public:
+		/* constructor and default deconstructor */
+		ParallelICP() = default;
+
+		~ParallelICP() = default;
+
+		/*
+		 * @description : set source point cloud which will be transformed.
+		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
+		 * @return : {}
+		 * */
+		void SetSourceClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _clouds);
+
+		/*
+		 * @description : get result point cloud which is transformed by source_cloud_, should be called after Align().
+		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
+		 * @return : {}
+		 * */
+		void GetResultClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _clouds);
+
+		/*
+		 * @description : get motion vector, should be called after Align().
+		 * @param : {}
+		 * @return : {std::vector<Eigen::Matrix4f>} MV
+		 * */
+		std::vector<Eigen::Matrix4f> GetMotionVectors() const;
+
+		/*
+		 * @description : get mean squared error, should be called after Align().
+		 * @param : {}
+		 * @return : {std::vector<float>} mse
+		 * */
+		std::vector<float> GetMSEs() const;
+
+		/*
+		 * @description : do iterative closest point.
+		 * */
+		void Align();
 	};
 }  // namespace registration
 }  // namespace vvc

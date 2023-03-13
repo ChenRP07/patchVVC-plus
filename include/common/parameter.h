@@ -27,6 +27,7 @@ namespace common {
 		int   iteration_ths_;
 		float mse_ths_;
 		float transformation_ths_;
+        bool centroid_alignment_;
 	};
 
 	/* vvc parameters */
@@ -42,7 +43,7 @@ namespace common {
 	 * @param : {std::shared_ptr<VVCParam_t> _ptr}
 	 * @return : {}
 	 * */
-	extern void SetDefaultICPParams(std::shared_ptr<ICPParam_t> _ptr);
+	extern void SetDefaultICPParams(ICPParam_t& _param);
 
 	/*
 	 * @description : set default parameters

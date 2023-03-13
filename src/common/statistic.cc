@@ -24,3 +24,12 @@ double common::Deviation(const std::vector<size_t>& _src) {
     variance /= _src.size();
     return std::sqrt(variance);
 }
+
+double common::Deviation(const std::vector<float>& _src) {
+	double sum      = std::accumulate(_src.begin(), _src.end(), 0);
+	double mean     = sum / _src.size();
+	double variance = 0.0;
+	std::for_each(_src.begin(), _src.end(), [&](const float x) { variance += std::pow(x - mean, 2); });
+    variance /= _src.size();
+    return std::sqrt(variance);
+}

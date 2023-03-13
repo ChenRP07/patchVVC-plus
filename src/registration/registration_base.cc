@@ -18,6 +18,7 @@ using namespace vvc;
 
 void registration::RegistrationBase::SetTargetCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
 	try {
+        /* check point cloud is empty */
 		if (!_cloud || _cloud->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
@@ -33,6 +34,7 @@ void registration::RegistrationBase::SetTargetCloud(pcl::PointCloud<pcl::PointXY
 
 void registration::RegistrationBase::GetTargetCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) const {
 	try {
+        /* check point cloud is empty */
 		if (!this->target_cloud_ || this->target_cloud_->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
@@ -48,6 +50,7 @@ void registration::RegistrationBase::GetTargetCloud(pcl::PointCloud<pcl::PointXY
 
 void registration::RegistrationBase::SetParams(std::shared_ptr<common::VVCParam_t> _param) {
 	try {
+        /* check param is empty */
 		if (!_param) {
 			throw __EXCEPT__(EMPTY_PARAMS);
 		}

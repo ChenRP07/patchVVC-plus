@@ -14,6 +14,8 @@ endif()
 
 find_package(Boost COMPONENTS program_options)
 
+find_package(Threads)
+
 include_directories(${PCL_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/include/)
@@ -23,10 +25,11 @@ link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${CMAKE_SOURCE_DIR}/lib/)
 
 # aux_source_directory(${CMAKE_SOURCE_DIR}/src/ VVC_SRC)
-file(GLOB_RECURSE VVC_SRC ./src/**/*.cpp)
+file(GLOB_RECURSE VVC_SRC ./src/**/*.cc)
 aux_source_directory(./src/io IO_SRC)
 aux_source_directory(./src/common COMMON_SRC)
 aux_source_directory(./src/segment SEGMENT_SRC)
+aux_source_directory(./src/registration REGISTRATION_SRC)
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/test)
     message("Test unavailable.")

@@ -16,16 +16,17 @@
 
 using namespace vvc;
 
-void common::SetDefaultICPParams(std::shared_ptr<ICPParam_t> _ptr) {
+void common::SetDefaultICPParams(ICPParam_t& _param) {
     try {
-        if (!_ptr) {
-            throw __EXCEPT__(EMPTY_PARAMS);
-        }
-
-        _ptr->correspondence_ths_ = 100.0f;
-        _ptr->iteration_ths_ = 100;
-        _ptr->mse_ths_ = 0.01f;
-        _ptr->transformation_ths_ = 1e-6;
+        // if (!_ptr) {
+        //     throw __EXCEPT__(EMPTY_PARAMS);
+        // }
+        
+        _param.centroid_alignment_ = true;
+        _param.correspondence_ths_ = 100.0f;
+        _param.iteration_ths_ = 100;
+        _param.mse_ths_ = 0.01f;
+        _param.transformation_ths_ = 1e-6;
     }
     catch (const common::Exception&e) {
         e.Log();
@@ -44,9 +45,9 @@ void common::SetDefaultParams(std::shared_ptr<VVCParam_t> _ptr) {
 
     _ptr->patch_num_ = 100;
 
-    _ptr->thread_num_ = 100;
+    _ptr->thread_num_ = 30;
 
-    common::SetDefaultICPParams(std::make_shared<ICPParam_t>(_ptr->icp_));
+    common::SetDefaultICPParams(_ptr->icp_);
     
     } catch (const common::Exception& e) {
         e.Log();

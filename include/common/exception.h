@@ -12,8 +12,8 @@
  *
  */
 
-#ifndef _EXCEPTION_H_
-#define _EXCEPTION_H_
+#ifndef _PVVC_EXCEPTION_H_
+#define _PVVC_EXCEPTION_H_
 
 #include <iostream>
 #include <string>

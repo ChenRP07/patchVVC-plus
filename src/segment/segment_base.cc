@@ -47,7 +47,7 @@ void segment::SegmentBase::GetResultPointClouds(std::vector<pcl::PointCloud<pcl:
 	}
 }
 
-void segment::SegmentBase::SetParams(std::shared_ptr<common::VVCParam_t> _ptr) {
+void segment::SegmentBase::SetParams(std::shared_ptr<common::PVVCParam_t> _ptr) {
 	try {
 		if (!_ptr) {
 			throw __EXCEPT__(EMPTY_PARAMS);

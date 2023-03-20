@@ -12,8 +12,8 @@
  *
  */
 
-#ifndef _REGISTRATION_H_
-#define _REGISTRATION_H_
+#ifndef _PVVC_REGISTRATION_H_
+#define _PVVC_REGISTRATION_H_
 
 #include "common/exception.h"
 #include "common/parameter.h"
@@ -33,7 +33,7 @@ namespace registration {
 	class RegistrationBase {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud_; /* target point cloud which is the registration reference */
-		std::shared_ptr<common::VVCParam_t>    params_;       /* parameters */
+		std::shared_ptr<common::PVVCParam_t>    params_;       /* parameters */
 
 	  public:
 		/* default constructor and deconstructor */
@@ -59,7 +59,7 @@ namespace registration {
 		 * @param : {std::shared_ptr<common::VVCParam_t>}
 		 * @return : {}
 		 * */
-		void SetParams(std::shared_ptr<common::VVCParam_t> _param);
+		void SetParams(std::shared_ptr<common::PVVCParam_t> _param);
 	};
 
 	/*

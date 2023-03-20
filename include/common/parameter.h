@@ -12,8 +12,8 @@
  *
  */
 
-#ifndef _PARAM_H_
-#define _PARAM_H_
+#ifndef _PVVC_PARAMETER_H_
+#define _PVVC_PARAMETER_H_
 
 #include "common/exception.h"
 #include <memory>
@@ -31,7 +31,7 @@ namespace common {
 	};
 
 	/* vvc parameters */
-	struct VVCParam_t {
+	struct PVVCParam_t {
 		uint8_t    log_level_; /* quiet brief normal complete */
 		int        patch_num_; /* expected patches number */
 		int        thread_num_;
@@ -50,7 +50,7 @@ namespace common {
 	 * @param : {std::shared_ptr<VVCParam_t> _ptr}
 	 * @return : {}
 	 * */
-	extern void SetDefaultParams(std::shared_ptr<VVCParam_t> _ptr);
+	extern void SetDefaultParams(std::shared_ptr<PVVCParam_t> _ptr);
 }  // namespace common
 }  // namespace vvc
 

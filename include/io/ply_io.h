@@ -12,8 +12,8 @@
  *
  */
 
-#ifndef _PLY_IO_H_
-#define _PLY_IO_H_
+#ifndef _PVVC_PLY_IO_H_
+#define _PVVC_PLY_IO_H_
 
 // NOTE: This I/O module had been tested, and there is no bug until !--Last Modified--! .
 

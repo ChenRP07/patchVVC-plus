@@ -12,8 +12,8 @@
  *
  */
 
-#ifndef _SEGMENT_H_
-#define _SEGMENT_H_
+#ifndef _PVVC_SEGMENT_H_
+#define _PVVC_SEGMENT_H_
 
 #include "common/exception.h"
 #include "common/parameter.h"
@@ -32,7 +32,7 @@ namespace segment {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr              source_cloud_; /* source point cloud to be segmented */
 		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_;      /* segmentation result */
-		std::shared_ptr<common::VVCParam_t>                 params_;       /* vvc parameters */
+		std::shared_ptr<common::PVVCParam_t>                params_;       /* vvc parameters */
 		common::SegmentStat_t                               stat_;         /* statistics */
 
 		/*
@@ -67,7 +67,7 @@ namespace segment {
 		 * @param : {std::shared_ptr<common::vvc_param_t> _ptr}
 		 * @return : {}
 		 * */
-		void SetParams(std::shared_ptr<common::VVCParam_t> _ptr);
+		void SetParams(std::shared_ptr<common::PVVCParam_t> _ptr);
 
 		/*
 		 * @description : interface of segment
@@ -87,7 +87,7 @@ namespace segment {
 	 *      exp.GetResultPointClouds(_result_ptrs);
 	 *
 	 * It is worth noting that before call Segment, SetSourcePointCloud and SetParams must be called, and
-     * the expected patches number must be set in a VVCParam_t. Otherwise will generate an exception.
+	 * the expected patches number must be set in a VVCParam_t. Otherwise will generate an exception.
 	 * */
 	class DenseSegment : public SegmentBase {
 	  private:

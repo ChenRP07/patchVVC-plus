@@ -34,7 +34,7 @@ void common::SetDefaultICPParams(ICPParam_t& _param) {
     }
 }
 
-void common::SetDefaultParams(std::shared_ptr<VVCParam_t> _ptr) {
+void common::SetDefaultParams(std::shared_ptr<PVVCParam_t> _ptr) {
     try {
     if (!_ptr) {
         throw __EXCEPT__(EMPTY_PARAMS);

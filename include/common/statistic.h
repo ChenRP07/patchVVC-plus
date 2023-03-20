@@ -12,8 +12,8 @@
  *
  */
 
-#ifndef _STAT_H_
-#define _STAT_H_
+#ifndef _PVVC_STATISTIC_H_
+#define _PVVC_STATISTIC_H_
 
 #include <algorithm>
 #include <math.h>

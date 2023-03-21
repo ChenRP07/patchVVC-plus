@@ -29,7 +29,5 @@ namespace common {
             this->v = _p.r * 0.5f - _p.g * 0.418688f - _p.b * 0.081312f + 128;
         }
     };
-
-
 }
 }

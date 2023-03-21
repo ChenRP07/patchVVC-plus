@@ -21,36 +21,30 @@
 
 namespace vvc {
 namespace common {
-
-	struct ICPParam_t {
-		float correspondence_ths_;
-		int   iteration_ths_;
-		float mse_ths_;
-		float transformation_ths_;
-        bool centroid_alignment_;
-	};
-
-	/* vvc parameters */
 	struct PVVCParam_t {
-		uint8_t    log_level_; /* quiet brief normal complete */
-		int        patch_num_; /* expected patches number */
-		int        thread_num_;
-		ICPParam_t icp_;
-	};
+		uint8_t log_level; /* quiet brief normal complete */
+		int     patch_num; /* expected patches number */
+		int     thread_num;
+		struct {
+			float correspondence_ths;
+			int   iteration_ths;
+			float mse_ths;
+			float transformation_ths;
+			bool  centroid_alignment;
+		} icp;
+		struct {
+			float resolution;
+		} octree;
 
-	/*
-	 * @description : set default icp parameters
-	 * @param : {std::shared_ptr<VVCParam_t> _ptr}
-	 * @return : {}
-	 * */
-	extern void SetDefaultICPParams(ICPParam_t& _param);
+		using Ptr = std::shared_ptr<PVVCParam_t>;
+	};
 
 	/*
 	 * @description : set default parameters
 	 * @param : {std::shared_ptr<VVCParam_t> _ptr}
 	 * @return : {}
 	 * */
-	extern void SetDefaultParams(std::shared_ptr<PVVCParam_t> _ptr);
+	extern void SetDefaultParams(PVVCParam_t::Ptr _ptr);
 }  // namespace common
 }  // namespace vvc
 

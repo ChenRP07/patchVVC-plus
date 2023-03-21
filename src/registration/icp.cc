@@ -160,29 +160,29 @@ void registration::ICP::Align() {
 		pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
 
         /* check params illegal */
-		if (this->params_->icp_.correspondence_ths_ > 0) {
-			icp.setMaxCorrespondenceDistance(this->params_->icp_.correspondence_ths_);
+		if (this->params_->icp.correspondence_ths > 0) {
+			icp.setMaxCorrespondenceDistance(this->params_->icp.correspondence_ths);
 		}
 		else {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
 
-		if (this->params_->icp_.iteration_ths_ > 1) {
-			icp.setMaximumIterations(this->params_->icp_.iteration_ths_);
+		if (this->params_->icp.iteration_ths > 1) {
+			icp.setMaximumIterations(this->params_->icp.iteration_ths);
 		}
 		else {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
 
-		if (this->params_->icp_.mse_ths_ > 0) {
-			icp.setEuclideanFitnessEpsilon(this->params_->icp_.mse_ths_);
+		if (this->params_->icp.mse_ths > 0) {
+			icp.setEuclideanFitnessEpsilon(this->params_->icp.mse_ths);
 		}
 		else {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
 
-		if (this->params_->icp_.transformation_ths_ > 0) {
-			icp.setTransformationEpsilon(this->params_->icp_.transformation_ths_);
+		if (this->params_->icp.transformation_ths > 0) {
+			icp.setTransformationEpsilon(this->params_->icp.transformation_ths);
 		}
 		else {
 			throw __EXCEPT__(BAD_PARAMETERS);

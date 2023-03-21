@@ -48,7 +48,7 @@ void registration::RegistrationBase::GetTargetCloud(pcl::PointCloud<pcl::PointXY
 	}
 }
 
-void registration::RegistrationBase::SetParams(std::shared_ptr<common::PVVCParam_t> _param) {
+void registration::RegistrationBase::SetParams(common::PVVCParam_t::Ptr _param) {
 	try {
         /* check param is empty */
 		if (!_param) {

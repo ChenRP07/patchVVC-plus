@@ -16,10 +16,13 @@
 
 using namespace vvc;
 
-octree::OctreeBase::OctreeBase() : tree_nodes_{}, tree_range_{0.0f}, tree_height_{0}, params_{nullptr} {}
+octree::OctreeBase::OctreeBase() : tree_nodes_{}, tree_range_{0.0f}, tree_height_{0}, params_{nullptr}, tree_center_{} {}
 
+octree::OctreeBase::~OctreeBase() {
+    this->params_.reset();
+}
 
-void octree::OctreeBase::SetParams(std::shared_ptr<common::PVVCParam_t> _param) {
+void octree::OctreeBase::SetParams(common::PVVCParam_t::Ptr _param) {
     try {
         if (!_param) {
             throw __EXCEPT__(EMPTY_PARAMS);
@@ -27,6 +30,7 @@ void octree::OctreeBase::SetParams(std::shared_ptr<common::PVVCParam_t> _param) 
         this->params_ = _param;
     }
     catch(const common::Exception& e) {
+        e.Log();
         throw __EXCEPT__(ERROR_OCCURED);
     }
 }

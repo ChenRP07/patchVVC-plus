@@ -32,7 +32,7 @@ namespace segment {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr              source_cloud_; /* source point cloud to be segmented */
 		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_;      /* segmentation result */
-		std::shared_ptr<common::PVVCParam_t>                params_;       /* vvc parameters */
+		common::PVVCParam_t::Ptr                            params_;       /* vvc parameters */
 		common::SegmentStat_t                               stat_;         /* statistics */
 
 		/*
@@ -67,7 +67,7 @@ namespace segment {
 		 * @param : {std::shared_ptr<common::vvc_param_t> _ptr}
 		 * @return : {}
 		 * */
-		void SetParams(std::shared_ptr<common::PVVCParam_t> _ptr);
+		void SetParams(common::PVVCParam_t::Ptr _ptr);
 
 		/*
 		 * @description : interface of segment

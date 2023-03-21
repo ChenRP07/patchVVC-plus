@@ -183,10 +183,10 @@ void registration::ParallelICP::Task() {
 
         /* icp */
         pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
-        icp.setMaximumIterations(this->params_->icp_.iteration_ths_);
-        icp.setMaxCorrespondenceDistance(this->params_->icp_.correspondence_ths_);
-        icp.setEuclideanFitnessEpsilon(this->params_->icp_.mse_ths_);
-        icp.setTransformationEpsilon(this->params_->icp_.transformation_ths_);
+        icp.setMaximumIterations(this->params_->icp.iteration_ths);
+        icp.setMaxCorrespondenceDistance(this->params_->icp.correspondence_ths);
+        icp.setEuclideanFitnessEpsilon(this->params_->icp.mse_ths);
+        icp.setTransformationEpsilon(this->params_->icp.transformation_ths);
 
         icp.setInputSource(this->result_clouds_[task_idx]);
         icp.setInputTarget(this->target_cloud_);
@@ -236,30 +236,30 @@ void registration::ParallelICP::Align() {
 		}
 
         /* check params is illegal */
-		if (this->params_->icp_.correspondence_ths_ <= 0) {
+		if (this->params_->icp.correspondence_ths <= 0) {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
-        if (this->params_->icp_.iteration_ths_ <= 1) {
+        if (this->params_->icp.iteration_ths <= 1) {
 			throw __EXCEPT__(BAD_PARAMETERS);
         }
-        if (this->params_->icp_.mse_ths_ <= 0) {
+        if (this->params_->icp.mse_ths <= 0) {
 			throw __EXCEPT__(BAD_PARAMETERS);
         }
-        if (this->params_->icp_.transformation_ths_ <= 0) {
+        if (this->params_->icp.transformation_ths <= 0) {
 			throw __EXCEPT__(BAD_PARAMETERS);
         }
-        if (this->params_->thread_num_ < 1) {
+        if (this->params_->thread_num < 1) {
 			throw __EXCEPT__(BAD_PARAMETERS);
         }
 
         /* need to centroid alignment */
-		if (this->params_->icp_.centroid_alignment_) {
+		if (this->params_->icp.centroid_alignment) {
             std::cout << __GREENT__(Process centroid alignment.) << std::endl;
 			this->CentroidAlignment();
 		}
         
         /* if no centroid alignemnt, fill the result_clouds_ */
-        if (!this->params_->icp_.centroid_alignment_) {
+        if (!this->params_->icp.centroid_alignment) {
             for (size_t i = 0; i < this->result_clouds_.size(); i++) {
                 pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp(new pcl::PointCloud<pcl::PointXYZRGB>());
                 *temp += *(this->source_clouds_[i]);
@@ -273,7 +273,7 @@ void registration::ParallelICP::Align() {
 
         std::cout << __GREENT__(Create multi-threads.) << std::endl;
         /* create threads and arrange task */
-        std::vector<std::thread> thread_pool(this->params_->thread_num_);
+        std::vector<std::thread> thread_pool(this->params_->thread_num);
         for (auto& i : thread_pool) {
             i = std::thread(&registration::ParallelICP::Task, this);
         }
@@ -300,18 +300,18 @@ void registration::ParallelICP::Log() {
             converged += 1;
         }
     }
-    if (this->params_->log_level_ & 0x01) {
-        std::cout << __BLUET__(Launch threads : ) << this->params_->thread_num_ << std::endl;
+    if (this->params_->log_level & 0x01) {
+        std::cout << __BLUET__(Launch threads : ) << this->params_->thread_num << std::endl;
         std::cout << __BLUET__(Converged/Not patches : ) << converged << " / " << this->stat_.converged_.size() - converged << std::endl;
     }
 
-    if (this->params_->log_level_ & 0x02) {
+    if (this->params_->log_level & 0x02) {
         std::cout << __BLUET__(Average MSE : ) << std::accumulate(this->stat_.score_.begin(), this->stat_.score_.end(), 0) / this->stat_.score_.size() << std::endl;
         std::cout << __BLUET__(Min/Max MSE : ) << *std::min_element(this->stat_.score_.begin(), this->stat_.score_.end()) << " / " << *std::max_element(this->stat_.score_.begin(), this->stat_.score_.end()) << std::endl;
         std::cout << __BLUET__(Standard deviation : ) << common::Deviation(this->stat_.score_) << std::endl;
     }
 
-    if (this->params_->log_level_ & 0x04) {
+    if (this->params_->log_level & 0x04) {
         for (size_t i = 0; i < this->stat_.converged_.size(); i++) {
             std::cout <<__BLUET__(Patch #) << i << " : " ;
             if (this->stat_.converged_[i] == 0) {

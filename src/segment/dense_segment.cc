@@ -90,13 +90,13 @@ void segment::DenseSegment::Segment() {
             throw __EXCEPT__(EMPTY_PARAMS);
         }
 
-        if (this->params_->patch_num_ < 2) {
+        if (this->params_->patch_num < 2) {
             throw __EXCEPT__(INVALID_PARAM_SEGMENT);
         }
 
         std::cout << __GREENT__(Start dense segmentation.) << std::endl;
 		/* patch number and point per patch */
-		const int kPatch         = this->params_->patch_num_;
+		const int kPatch         = this->params_->patch_num;
 		const int kPointPerPatch = std::floor(this->source_cloud_->size() / kPatch);
 
 		/* heap compare lambda function */

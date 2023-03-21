@@ -63,6 +63,7 @@ void segment::SegmentBase::SetParams(common::PVVCParam_t::Ptr _ptr) {
 }
 
 void segment::SegmentBase::Log() const {
+    std::cout << __AZURET__(===================================================) << std::endl;
 	if (this->params_->log_level & 0x01) {
 		std::cout << __BLUET__(Excepted patch number : ) << " " << this->stat_.expect_.size() << std::endl;
 	}
@@ -75,6 +76,7 @@ void segment::SegmentBase::Log() const {
 		/* TODO : complete log */
 	}
 
+    std::cout << __AZURET__(===================================================) << std::endl;
 	if (this->params_->log_level & 0x01) {
 		std::cout << __BLUET__(Actual patch number : ) << " " << this->stat_.fact_.size() << std::endl;
 	}
@@ -86,4 +88,5 @@ void segment::SegmentBase::Log() const {
 	if (this->params_->log_level & 0x04) {
 		/* TODO : complete log */
 	}
+    std::cout << __AZURET__(===================================================) << std::endl;
 }

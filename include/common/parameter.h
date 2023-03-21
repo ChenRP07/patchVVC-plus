@@ -21,9 +21,18 @@
 
 namespace vvc {
 namespace common {
+    enum {
+        DENSE_SEGMENT
+    };
 	struct PVVCParam_t {
 		uint8_t log_level; /* quiet brief normal complete */
-		int     patch_num; /* expected patches number */
+        struct {
+            int num;
+            int type;
+            int iter;
+            int nn;
+            float block_num;
+        } segment;
 		int     thread_num;
 		struct {
 			float correspondence_ths;

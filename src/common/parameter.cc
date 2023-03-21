@@ -25,7 +25,11 @@ void common::SetDefaultParams(common::PVVCParam_t::Ptr _ptr) {
 		/* 0Bxxxxxxx1 brief 0Bxxxxxx1x normal 0Bxxxxx1xx complete */
 		_ptr->log_level = 0x03;
 
-		_ptr->patch_num = 100;
+        _ptr->segment.type = common::DENSE_SEGMENT;
+        _ptr->segment.num = 2048;
+        _ptr->segment.iter = 100;
+        _ptr->segment.nn = 10;
+        _ptr->segment.block_num = 8.0f;
 
 		_ptr->thread_num = 30;
 

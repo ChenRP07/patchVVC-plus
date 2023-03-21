@@ -4,7 +4,6 @@ project(vvc
     LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(PCL 1.10 REQUIRED)
@@ -35,6 +34,7 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/test)
     message("Test unavailable.")
 else()
     message("Test available.")
+    message(${CMAKE_BUILD_TYPE})
     add_subdirectory(${CMAKE_SOURCE_DIR}/test)
 endif()
 

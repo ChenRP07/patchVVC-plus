@@ -98,7 +98,7 @@ namespace segment {
 		 * @param : {std::vector<size_t>& _new_block_b} subblock B
 		 * @return : {}
 		 * */
-		void BlockSegment(std::vector<size_t>& _old_block, std::vector<size_t>& _new_block_a, std::vector<size_t>& _new_block_b);
+		void BlockSegment(std::vector<int>& _old_block, std::vector<int>& _new_block_a, std::vector<int>& _new_block_b);
 
 	  public:
 		/* default constructor */

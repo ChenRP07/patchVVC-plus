@@ -15,6 +15,7 @@
 #ifndef _PVVC_REGISTRATION_H_
 #define _PVVC_REGISTRATION_H_
 
+#include "common/common.h"
 #include "common/exception.h"
 #include "common/parameter.h"
 #include "common/statistic.h"
@@ -33,7 +34,7 @@ namespace registration {
 	class RegistrationBase {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud_; /* target point cloud which is the registration reference */
-        common::PVVCParam_t::Ptr    params_;       /* parameters */
+		common::PVVCParam_t::Ptr               params_;       /* parameters */
 
 	  public:
 		/* default constructor and deconstructor */
@@ -138,27 +139,26 @@ namespace registration {
 		void Align();
 	};
 
-    /* 
-     * Parallel implementation of Iterative Closest Point, multi source to single target.
-     * How to use?
-     * Example:
-     * ParallelICP eg;
-     * eg.SetParams(param_ptr);
-     * eg.SetSourceClouds(source_clouds_ptr_vector);
-     * eg.SetTargetCloud(target_cloud_ptr)
-     * eg.Align();
-     * eg.GetResultClouds(your_result_clouds_ptr_vector);
-     * your_mv_vector = eg.GetMotionVectors();
-     * your_mse_vector = eg.GetMSEs();
-     *
-     * NOTICE:Make sure SetParams, SetSourceClouds and SetTargetCloud are called before Align;
-     * */
+	/*
+	 * Parallel implementation of Iterative Closest Point, multi source to single target.
+	 * How to use?
+	 * Example:
+	 * ParallelICP eg;
+	 * eg.SetParams(param_ptr);
+	 * eg.SetSourceClouds(source_clouds_ptr_vector);
+	 * eg.SetTargetCloud(target_cloud_ptr)
+	 * eg.Align();
+	 * eg.GetResultClouds(your_result_clouds_ptr_vector);
+	 * your_mv_vector = eg.GetMotionVectors();
+	 * your_mse_vector = eg.GetMSEs();
+	 *
+	 * NOTICE:Make sure SetParams, SetSourceClouds and SetTargetCloud are called before Align;
+	 * */
 	class ParallelICP : public RegistrationBase {
-	  private:
-		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> source_clouds_;  /* source point cloud patches which will be transformed */
-		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> result_clouds_;  /* transformed point cloud patches result */
-		std::vector<Eigen::Matrix4f>                        motion_vectors_; /* transformation matrices */
-		std::vector<float>                                  mses_;           /* mean squared errors */
+	  protected:
+		std::vector<common::Patch> source_clouds_; /* source point cloud patches which will be transformed */
+		std::vector<common::Patch> result_clouds_; /* transformed point cloud patches result */
+		std::vector<float>         mses_;          /* mean squared errors */
 
 		std::mutex         task_mutex_; /* mutex for atomic procession */
 		std::queue<size_t> task_queue_; /* task queue */
@@ -178,18 +178,18 @@ namespace registration {
 		 * */
 		void CloudMSE();
 
-        /* 
-         * @description : task function for each thread.
-         * @param : {}
-         * @return : {}
-         * */
+		/*
+		 * @description : task function for each thread.
+		 * @param : {}
+		 * @return : {}
+		 * */
 		void Task();
 
-        /*
-         * @description : log statistic.
-         * @param : {}
-         * @return : {}
-         * */
+		/*
+		 * @description : log statistic.
+		 * @param : {}
+		 * @return : {}
+		 * */
 		void Log();
 
 	  public:
@@ -203,21 +203,14 @@ namespace registration {
 		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
 		 * @return : {}
 		 * */
-		void SetSourceClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _clouds);
+		void SetSourceClouds(std::vector<common::Patch>& _clouds);
 
 		/*
 		 * @description : get result point cloud which is transformed by source_cloud_, should be called after Align().
 		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
 		 * @return : {}
 		 * */
-		void GetResultClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _clouds);
-
-		/*
-		 * @description : get motion vector, should be called after Align().
-		 * @param : {}
-		 * @return : {std::vector<Eigen::Matrix4f>} MV
-		 * */
-		std::vector<Eigen::Matrix4f> GetMotionVectors() const;
+		void GetResultClouds(std::vector<common::Patch>& _clouds);
 
 		/*
 		 * @description : get mean squared error, should be called after Align().
@@ -229,7 +222,7 @@ namespace registration {
 		/*
 		 * @description : do iterative closest point.
 		 * */
-		void Align();
+		virtual void Align();
 	};
 }  // namespace registration
 }  // namespace vvc

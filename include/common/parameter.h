@@ -40,6 +40,7 @@ namespace common {
 			float mse_ths;
 			float transformation_ths;
 			bool  centroid_alignment;
+            float patch_err_ths;
 		} icp;
 		struct {
 			float resolution;

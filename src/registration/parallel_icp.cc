@@ -16,7 +16,7 @@
 
 using namespace vvc;
 
-void registration::ParallelICP::SetSourceClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _clouds) {
+void registration::ParallelICP::SetSourceClouds(std::vector<common::Patch>& _clouds) {
 	try {
 		/* check point cloud is empty */
 		if (_clouds.empty()) {
@@ -24,21 +24,26 @@ void registration::ParallelICP::SetSourceClouds(std::vector<pcl::PointCloud<pcl:
 		}
 
 		for (auto i : _clouds) {
-			if (!i || i->empty()) {
+			if (!i || i.empty()) {
 				throw __EXCEPT__(EMPTY_POINT_CLOUD);
 			}
 		}
 
 		/* copy to source_clouds_ */
+		this->source_clouds_.clear();
 		this->source_clouds_.assign(_clouds.begin(), _clouds.end());
 
 		/* init result_clouds_ */
-		while (this->result_clouds_.size() < this->source_clouds_.size()) {
-			this->result_clouds_.emplace_back(new pcl::PointCloud<pcl::PointXYZRGB>());
+		this->result_clouds_.clear();
+		this->result_clouds_.resize(this->source_clouds_.size(), common::Patch());
+		for (int i = 0; i < this->source_clouds_.size(); ++i) {
+			pcl::PointCloud<pcl::PointXYZRGB>::Ptr p(new pcl::PointCloud<pcl::PointXYZRGB>());
+			this->result_clouds_[i].cloud     = p;
+			this->result_clouds_[i].index     = this->source_clouds_[i].index;
+			this->result_clouds_[i].timestamp = this->source_clouds_[i].timestamp + 1;
 		}
 
 		/* init */
-		this->motion_vectors_.resize(this->source_clouds_.size(), Eigen::Matrix4f::Identity());
 		this->mses_.resize(this->source_clouds_.size(), 0.0f);
 		this->stat_.converged_.resize(this->source_clouds_.size(), 1);
 		this->stat_.score_.resize(this->source_clouds_.size(), 0.0f);
@@ -49,7 +54,7 @@ void registration::ParallelICP::SetSourceClouds(std::vector<pcl::PointCloud<pcl:
 	}
 }
 
-void registration::ParallelICP::GetResultClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _clouds) {
+void registration::ParallelICP::GetResultClouds(std::vector<common::Patch>& _clouds) {
 	try {
 		/* check point cloud is empty */
 		if (this->result_clouds_.empty()) {
@@ -57,7 +62,7 @@ void registration::ParallelICP::GetResultClouds(std::vector<pcl::PointCloud<pcl:
 		}
 
 		for (auto i : this->result_clouds_) {
-			if (!i || i->empty()) {
+			if (!i || i.empty()) {
 				throw __EXCEPT__(EMPTY_POINT_CLOUD);
 			}
 		}
@@ -71,10 +76,6 @@ void registration::ParallelICP::GetResultClouds(std::vector<pcl::PointCloud<pcl:
 	}
 }
 
-std::vector<Eigen::Matrix4f> registration::ParallelICP::GetMotionVectors() const {
-	return this->motion_vectors_;
-}
-
 std::vector<float> registration::ParallelICP::GetMSEs() const {
 	return this->mses_;
 }
@@ -85,7 +86,7 @@ void registration::ParallelICP::CentroidAlignment() {
 	pcl::PointXYZ source_global_centroid(0.0f, 0.0f, 0.0f), target_global_centroid(0.0f, 0.0f, 0.0f);
 	size_t        source_size = 0;
 	for (auto& i : this->source_clouds_) {
-		for (auto& j : *i) {
+		for (auto& j : *i.cloud) {
 			source_global_centroid.x += j.x;
 			source_global_centroid.y += j.y;
 			source_global_centroid.z += j.z;
@@ -109,38 +110,13 @@ void registration::ParallelICP::CentroidAlignment() {
 
 	/* move point and fill the result_clouds_ */
 	for (size_t i = 0; i < this->result_clouds_.size(); i++) {
-		this->result_clouds_[i]->clear();
-		for (auto& j : *(this->source_clouds_.at(i))) {
+		this->result_clouds_[i].cloud->clear();
+		for (auto& j : *(this->source_clouds_.at(i).cloud)) {
 			pcl::PointXYZRGB temp = j;
 			temp.x += target_global_centroid.x - source_global_centroid.x;
 			temp.y += target_global_centroid.y - source_global_centroid.y;
 			temp.z += target_global_centroid.z - source_global_centroid.z;
-			this->result_clouds_[i]->emplace_back(temp);
-		}
-	}
-
-	/* for each patch do nearest neighbor search and movement */
-	pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
-	kdtree.setInputCloud(this->target_cloud_);
-
-	for (auto& i : this->result_clouds_) {
-		pcl::PointXYZ local(0.0f, 0.0f, 0.0f);
-		for (auto& j : *i) {
-			std::vector<int>   idx(1);
-			std::vector<float> dis(1);
-			kdtree.nearestKSearch(j, 1, idx, dis);
-			local.x += this->target_cloud_->at(idx[0]).x - j.x;
-			local.y += this->target_cloud_->at(idx[0]).y - j.y;
-			local.z += this->target_cloud_->at(idx[0]).z - j.z;
-		}
-		local.x /= i->size();
-		local.y /= i->size();
-		local.z /= i->size();
-
-		for (auto& j : *i) {
-			j.x += local.x;
-			j.y += local.y;
-			j.z += local.z;
+			this->result_clouds_[i].cloud->emplace_back(temp);
 		}
 	}
 }
@@ -152,13 +128,13 @@ void registration::ParallelICP::CloudMSE() {
 	this->mses_.clear();
 	for (auto& i : this->result_clouds_) {
 		float temp = 0.0f;
-		for (auto& j : *i) {
+		for (auto& j : *i.cloud) {
 			std::vector<int>   idx(1);
 			std::vector<float> dis(1);
 			kdtree.nearestKSearch(j, 1, idx, dis);
 			temp += dis[0];
 		}
-		temp /= i->size();
+		temp /= i.size();
 		this->mses_.emplace_back(temp);
 	}
 }
@@ -180,7 +156,28 @@ void registration::ParallelICP::Task() {
 		if (is_end) {
 			break;
 		}
+		/* for each patch do nearest neighbor search and movement */
+		pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
+		kdtree.setInputCloud(this->target_cloud_);
 
+		pcl::PointXYZ local(0.0f, 0.0f, 0.0f);
+		for (auto& i : *(this->result_clouds_[task_idx].cloud)) {
+			std::vector<int>   idx(1);
+			std::vector<float> dis(1);
+			kdtree.nearestKSearch(i, 1, idx, dis);
+			local.x += this->target_cloud_->at(idx[0]).x - i.x;
+			local.y += this->target_cloud_->at(idx[0]).y - i.y;
+			local.z += this->target_cloud_->at(idx[0]).z - i.z;
+		}
+		local.x /= this->result_clouds_[task_idx].size();
+		local.y /= this->result_clouds_[task_idx].size();
+		local.z /= this->result_clouds_[task_idx].size();
+
+		for (auto& i : *(this->result_clouds_[task_idx].cloud)) {
+			i.x += local.x;
+			i.y += local.y;
+			i.z += local.z;
+		}
 		/* icp */
 		pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
 		icp.setMaximumIterations(this->params_->icp.iteration_ths);
@@ -188,7 +185,7 @@ void registration::ParallelICP::Task() {
 		icp.setEuclideanFitnessEpsilon(this->params_->icp.mse_ths);
 		icp.setTransformationEpsilon(this->params_->icp.transformation_ths);
 
-		icp.setInputSource(this->result_clouds_[task_idx]);
+		icp.setInputSource(this->result_clouds_[task_idx].cloud);
 		icp.setInputTarget(this->target_cloud_);
 
 		pcl::PointCloud<pcl::PointXYZRGB> temp_cloud;
@@ -197,9 +194,8 @@ void registration::ParallelICP::Task() {
 		/* converge or not */
 		if (icp.hasConverged()) {
 			this->mses_[task_idx] = this->stat_.score_[task_idx] = icp.getFitnessScore();
-			this->motion_vectors_[task_idx]                      = icp.getFinalTransformation();
-			this->result_clouds_[task_idx]->swap(temp_cloud);
-			this->stat_.converged_[task_idx] = 1;
+			this->result_clouds_[task_idx].cloud->swap(temp_cloud);
+			this->stat_.converged_[task_idx]  = 1;
 		}
 		else {
 			this->stat_.score_[task_idx]     = this->mses_[task_idx];
@@ -218,7 +214,7 @@ void registration::ParallelICP::Align() {
 		}
 
 		for (auto i : this->source_clouds_) {
-			if (!i || i->empty()) {
+			if (!i || i.empty()) {
 				throw __EXCEPT__(EMPTY_POINT_CLOUD);
 			}
 		}
@@ -235,7 +231,7 @@ void registration::ParallelICP::Align() {
 			throw __EXCEPT__(EMPTY_PARAMS);
 		}
 
-		/* check params is illegal */
+		/* Check params is illegal */
 		if (this->params_->icp.correspondence_ths <= 0) {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
@@ -262,7 +258,7 @@ void registration::ParallelICP::Align() {
 		if (!this->params_->icp.centroid_alignment) {
 			for (size_t i = 0; i < this->result_clouds_.size(); i++) {
 				pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp(new pcl::PointCloud<pcl::PointXYZRGB>());
-				*temp += *(this->source_clouds_[i]);
+				*temp += *(this->source_clouds_[i].cloud);
 			}
 		}
 
@@ -271,7 +267,7 @@ void registration::ParallelICP::Align() {
 			this->task_queue_.push(i);
 		}
 
-		std::cout << __GREENT__(Create multi-threads.) << std::endl;
+		std::cout << __GREENT__(Create multi - threads.) << std::endl;
 		/* create threads and arrange task */
 		std::vector<std::thread> thread_pool(this->params_->thread_num);
 		for (auto& i : thread_pool) {
@@ -284,6 +280,33 @@ void registration::ParallelICP::Align() {
 		}
 
 		std::cout << __GREENT__(Registration completed.) << std::endl;
+
+        /* Segment target_cloud_ according to the result_clouds_ */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr search_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
+		std::vector<int>                       source_index;
+
+		for (int i = 0; i < this->result_clouds_.size(); ++i) {
+			for (auto j : *(this->result_clouds_[i].cloud)) {
+				search_cloud->emplace_back(j);
+				source_index.emplace_back(i);
+			}
+		}
+
+		pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
+		kdtree.setInputCloud(search_cloud);
+    
+        std::vector<pcl::PointCloud<pcl::PointXYZRGB>> temp_clouds(this->result_clouds_.size(), pcl::PointCloud<pcl::PointXYZRGB>());
+        for (auto i : *(this->target_cloud_)) {
+            std::vector<int> idx(1);
+            std::vector<float> dis(1);
+            kdtree.nearestKSearch(i, 1, idx, dis);
+            temp_clouds[source_index[idx[0]]].emplace_back(i);
+        }
+
+        for (int i = 0; i < this->result_clouds_.size(); ++i) {
+            this->result_clouds_[i].cloud->swap(temp_clouds[i]);
+        }
+
 		/* log statistic */
 		this->Log();
 	}
@@ -301,17 +324,17 @@ void registration::ParallelICP::Log() {
 		}
 	}
 	if (this->params_->log_level & 0x01) {
-		std::cout << __BLUET__(Launch threads : ) << this->params_->thread_num << std::endl;
-		std::cout << __BLUET__(Converged / Not patches : ) << converged << " / " << this->stat_.converged_.size() - converged << std::endl;
-		std::cout << __AZURET__(===================================================) << std::endl;
+		std::cout << __BLUET__(Launch threads:) << this->params_->thread_num << std::endl;
+		std::cout << __BLUET__(Converged / Not patches:) << converged << " / " << this->stat_.converged_.size() - converged << std::endl;
+		std::cout << __AZURET__(== == == == == == == == == == == == == == == == == == == == == == == == == =) << std::endl;
 	}
 
 	if (this->params_->log_level & 0x02) {
-		std::cout << __BLUET__(Average MSE : ) << std::accumulate(this->stat_.score_.begin(), this->stat_.score_.end(), 0) / this->stat_.score_.size() << std::endl;
-		std::cout << __BLUET__(Min / Max MSE : ) << *std::min_element(this->stat_.score_.begin(), this->stat_.score_.end()) << " / "
+		std::cout << __BLUET__(Average MSE:) << std::accumulate(this->stat_.score_.begin(), this->stat_.score_.end(), 0) / this->stat_.score_.size() << std::endl;
+		std::cout << __BLUET__(Min / Max MSE:) << *std::min_element(this->stat_.score_.begin(), this->stat_.score_.end()) << " / "
 		          << *std::max_element(this->stat_.score_.begin(), this->stat_.score_.end()) << std::endl;
-		std::cout << __BLUET__(Standard deviation : ) << common::Deviation(this->stat_.score_) << std::endl;
-		std::cout << __AZURET__(===================================================) << std::endl;
+		std::cout << __BLUET__(Standard deviation:) << common::Deviation(this->stat_.score_) << std::endl;
+		std::cout << __AZURET__(== == == == == == == == == == == == == == == == == == == == == == == == == =) << std::endl;
 	}
 
 	if (this->params_->log_level & 0x04) {
@@ -325,6 +348,6 @@ void registration::ParallelICP::Log() {
 			}
 			std::cout << __BLUET__(~~MSE is) << " " << this->stat_.score_[i] << std::endl;
 		}
-		std::cout << __AZURET__(===================================================) << std::endl;
+		std::cout << __AZURET__(== == == == == == == == == == == == == == == == == == == == == == == == == =) << std::endl;
 	}
 }

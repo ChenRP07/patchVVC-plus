@@ -17,6 +17,7 @@
 
 #include <Eigen/Dense>
 
+#include <sys/time.h>
 namespace vvc {
 namespace common {
 
@@ -41,27 +42,44 @@ namespace common {
 
 		Patch() : cloud{nullptr}, timestamp{-1}, index{-1}, mv{Eigen::Matrix4f::Identity()} {}
 
-        Patch(const Patch& _p) : cloud{_p.cloud}, timestamp{_p.timestamp}, index{_p.index}, mv{_p.mv} {}
+		Patch(const Patch& _p) : cloud{_p.cloud}, timestamp{_p.timestamp}, index{_p.index}, mv{_p.mv} {}
 
-        Patch& operator=(const Patch& _p) {
-            this->cloud = _p.cloud;
-            this->timestamp = _p.timestamp;
-            this->index = _p.index;
-            this->mv = _p.mv;
-            return *this;
-        }
+		Patch& operator=(const Patch& _p) {
+			this->cloud     = _p.cloud;
+			this->timestamp = _p.timestamp;
+			this->index     = _p.index;
+			this->mv        = _p.mv;
+			return *this;
+		}
 
 		bool operator!() {
 			return this->cloud == nullptr;
 		}
 
-        bool empty() const {
-            return this->cloud->empty();
-        }
+		bool empty() const {
+			return this->cloud->empty();
+		}
 
-        size_t size() const {
-            return this->cloud->size();
-        }
+		size_t size() const {
+			return this->cloud->size();
+		}
+	};
+
+	struct PVVCTime_t {
+		timeval time[2];
+		void    SetTimeBegin() {
+            gettimeofday(&(this->time[0]), nullptr);
+		}
+		void SetTimeEnd() {
+			gettimeofday(&(this->time[1]), nullptr);
+		}
+		inline float GetTimeS() {
+			return static_cast<float>(this->time[1].tv_sec - this->time[0].tv_sec) + static_cast<float>(this->time[1].tv_usec - this->time[0].tv_usec) / 1000000.0f;
+		}
+
+		inline float GetTimeMs() {
+			return (static_cast<float>(this->time[1].tv_sec - this->time[0].tv_sec) + static_cast<float>(this->time[1].tv_usec - this->time[0].tv_usec) / 1000000.0f) * 1000.0f;
+		}
 	};
 }  // namespace common
 }  // namespace vvc

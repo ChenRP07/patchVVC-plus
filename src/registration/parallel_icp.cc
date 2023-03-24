@@ -195,7 +195,7 @@ void registration::ParallelICP::Task() {
 		if (icp.hasConverged()) {
 			this->mses_[task_idx] = this->stat_.score_[task_idx] = icp.getFitnessScore();
 			this->result_clouds_[task_idx].cloud->swap(temp_cloud);
-			this->stat_.converged_[task_idx]  = 1;
+			this->stat_.converged_[task_idx] = 1;
 		}
 		else {
 			this->stat_.score_[task_idx]     = this->mses_[task_idx];
@@ -267,7 +267,9 @@ void registration::ParallelICP::Align() {
 			this->task_queue_.push(i);
 		}
 
-		std::cout << __GREENT__(Create multi - threads.) << std::endl;
+		// clang-format off
+		std::cout << __GREENT__(Launch multi-threads.) << std::endl;
+        //clang-format on
 		/* create threads and arrange task */
 		std::vector<std::thread> thread_pool(this->params_->thread_num);
 		for (auto& i : thread_pool) {
@@ -281,7 +283,7 @@ void registration::ParallelICP::Align() {
 
 		std::cout << __GREENT__(Registration completed.) << std::endl;
 
-        /* Segment target_cloud_ according to the result_clouds_ */
+		/* Segment target_cloud_ according to the result_clouds_ */
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr search_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
 		std::vector<int>                       source_index;
 
@@ -294,18 +296,18 @@ void registration::ParallelICP::Align() {
 
 		pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
 		kdtree.setInputCloud(search_cloud);
-    
-        std::vector<pcl::PointCloud<pcl::PointXYZRGB>> temp_clouds(this->result_clouds_.size(), pcl::PointCloud<pcl::PointXYZRGB>());
-        for (auto i : *(this->target_cloud_)) {
-            std::vector<int> idx(1);
-            std::vector<float> dis(1);
-            kdtree.nearestKSearch(i, 1, idx, dis);
-            temp_clouds[source_index[idx[0]]].emplace_back(i);
-        }
 
-        for (int i = 0; i < this->result_clouds_.size(); ++i) {
-            this->result_clouds_[i].cloud->swap(temp_clouds[i]);
-        }
+		std::vector<pcl::PointCloud<pcl::PointXYZRGB>> temp_clouds(this->result_clouds_.size(), pcl::PointCloud<pcl::PointXYZRGB>());
+		for (auto i : *(this->target_cloud_)) {
+			std::vector<int>   idx(1);
+			std::vector<float> dis(1);
+			kdtree.nearestKSearch(i, 1, idx, dis);
+			temp_clouds[source_index[idx[0]]].emplace_back(i);
+		}
+
+		for (int i = 0; i < this->result_clouds_.size(); ++i) {
+			this->result_clouds_[i].cloud->swap(temp_clouds[i]);
+		}
 
 		/* log statistic */
 		this->Log();
@@ -315,7 +317,7 @@ void registration::ParallelICP::Align() {
 		throw __EXCEPT__(ERROR_OCCURED);
 	}
 }
-
+// clang-format off
 void registration::ParallelICP::Log() {
 	size_t converged = 0;
 	for (auto i : this->stat_.converged_) {
@@ -324,23 +326,23 @@ void registration::ParallelICP::Log() {
 		}
 	}
 	if (this->params_->log_level & 0x01) {
-		std::cout << __BLUET__(Launch threads:) << this->params_->thread_num << std::endl;
-		std::cout << __BLUET__(Converged / Not patches:) << converged << " / " << this->stat_.converged_.size() - converged << std::endl;
-		std::cout << __AZURET__(== == == == == == == == == == == == == == == == == == == == == == == == == =) << std::endl;
+		std::cout << __BLUET__(Launch threads : ) << this->params_->thread_num << std::endl;
+		std::cout << __BLUET__(Converged / Not patches : ) << converged << " / " << this->stat_.converged_.size() - converged << std::endl;
+		std::cout << __AZURET__(===================================================) << std::endl;
 	}
 
 	if (this->params_->log_level & 0x02) {
-		std::cout << __BLUET__(Average MSE:) << std::accumulate(this->stat_.score_.begin(), this->stat_.score_.end(), 0) / this->stat_.score_.size() << std::endl;
-		std::cout << __BLUET__(Min / Max MSE:) << *std::min_element(this->stat_.score_.begin(), this->stat_.score_.end()) << " / "
+		std::cout << __BLUET__(Average MSE : ) << std::accumulate(this->stat_.score_.begin(), this->stat_.score_.end(), 0) / this->stat_.score_.size() << std::endl;
+		std::cout << __BLUET__(Min / Max MSE : ) << *std::min_element(this->stat_.score_.begin(), this->stat_.score_.end()) << " / "
 		          << *std::max_element(this->stat_.score_.begin(), this->stat_.score_.end()) << std::endl;
-		std::cout << __BLUET__(Standard deviation:) << common::Deviation(this->stat_.score_) << std::endl;
-		std::cout << __AZURET__(== == == == == == == == == == == == == == == == == == == == == == == == == =) << std::endl;
+		std::cout << __BLUET__(Standard deviation : ) << common::Deviation(this->stat_.score_) << std::endl;
+		std::cout << __AZURET__(===================================================) << std::endl;
 	}
 
 	if (this->params_->log_level & 0x04) {
 		for (size_t i = 0; i < this->stat_.converged_.size(); i++) {
 			std::cout << __BLUET__(Patch #) << i << " : ";
-			if (this->stat_.converged_[i] == 0) {
+			if (this->stat_.converged_[i] ==0) {
 				std::cout << __YELLOWT__(is not converged);
 			}
 			else {
@@ -348,6 +350,6 @@ void registration::ParallelICP::Log() {
 			}
 			std::cout << __BLUET__(~~MSE is) << " " << this->stat_.score_[i] << std::endl;
 		}
-		std::cout << __AZURET__(== == == == == == == == == == == == == == == == == == == == == == == == == =) << std::endl;
+		std::cout << __AZURET__(===================================================) << std::endl;
 	}
 }

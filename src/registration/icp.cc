@@ -16,11 +16,43 @@
 
 using namespace vvc;
 
-registration::ICP::ICP() : result_cloud_{new pcl::PointCloud<pcl::PointXYZRGB>}, motion_vector_{Eigen::Matrix4f::Identity()}, mse_{0.0f} {}
+registration::ICP::ICP() : result_cloud_{new pcl::PointCloud<pcl::PointXYZRGB>}, motion_vector_{Eigen::Matrix4f::Identity()}, mse_{0.0f}, icp_{nullptr} {}
+
+void registration::ICP::SetParams(common::PVVCParam_t::Ptr _param) {
+	try {
+		/* check param is empty */
+		if (!_param) {
+			throw __EXCEPT__(EMPTY_PARAMS);
+		}
+		else {
+			this->params_ = _param;
+		}
+
+        if (this->params_->icp.type == common::SIMPLE_ICP){
+            this->icp_ = pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB>::Ptr(new pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB>());
+        }
+        else if (this->params_->icp.type == common::LM_ICP) {
+            this->icp_ = pcl::IterativeClosestPointNonLinear<pcl::PointXYZRGB, pcl::PointXYZRGB>::Ptr(new pcl::IterativeClosestPointNonLinear<pcl::PointXYZRGB, pcl::PointXYZRGB>());
+        }
+        else if (this->params_->icp.type == common::NORMAL_ICP) {
+            this->icp_ = pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGB, pcl::PointXYZRGB>::Ptr(new pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGB, pcl::PointXYZRGB>());
+        }
+        else if (this->params_->icp.type == common::GENERAL_ICP) {
+            this->icp_ = pcl::GeneralizedIterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB>::Ptr(new pcl::GeneralizedIterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB>());
+        }
+        else {
+            throw __EXCEPT__(BAD_PARAMETERS);
+        }
+	}
+	catch (const common::Exception& e) {
+		e.Log();
+		throw __EXCEPT__(ERROR_OCCURED);
+	}
+}
 
 void registration::ICP::SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
 	try {
-        /* check point cloud is empty */
+		/* check point cloud is empty */
 		if (!_cloud || _cloud->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
@@ -34,9 +66,39 @@ void registration::ICP::SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _c
 	}
 }
 
+void registration::ICP::SetSourceNormals(pcl::PointCloud<pcl::Normal>::Ptr _normals) {
+    try{
+        if (!_normals || _normals->empty()) {
+            throw __EXCEPT__(EMPTY_POINT_CLOUD);
+        }
+        else {
+            this->source_normal_ = _normals;
+        }
+    }
+    catch (const common::Exception&e) {
+        e.Log();
+        throw  __EXCEPT__(ERROR_OCCURED);
+    }
+}
+
+void registration::ICP::SetTargetNormals(pcl::PointCloud<pcl::Normal>::Ptr _normals) {
+    try{
+        if (!_normals || _normals->empty()) {
+            throw __EXCEPT__(EMPTY_POINT_CLOUD);
+        }
+        else {
+            this->target_normal_ = _normals;
+        }
+    }
+    catch (const common::Exception&e) {
+        e.Log();
+        throw  __EXCEPT__(ERROR_OCCURED);
+    }
+}
+
 void registration::ICP::GetResultCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
 	try {
-        /* check point cloud is empty */
+		/* check point cloud is empty */
 		if (!this->result_cloud_ || this->result_cloud_->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
@@ -58,69 +120,20 @@ float registration::ICP::GetMSE() const {
 	return this->mse_;
 }
 
-void registration::ICP::CentroidAlignment() {
-	try {
-        /* check point cloud is empty */
-		if (!this->source_cloud_ || !this->target_cloud_ || this->source_cloud_->empty() || this->target_cloud_->empty()) {
-			throw __EXCEPT__(EMPTY_POINT_CLOUD);
-		}
-
-		/* calculate centroids */
-		pcl::PointXYZ source_centroid(0.0f, 0.0f, 0.0f);
-		pcl::PointXYZ target_centroid(0.0f, 0.0f, 0.0f);
-
-		for (auto& i : *(this->source_cloud_)) {
-			source_centroid.x += i.x, source_centroid.y += i.y, source_centroid.z += i.z;
-		}
-
-		for (auto& i : *(this->target_cloud_)) {
-			target_centroid.x += i.x, target_centroid.y += i.y, target_centroid.z += i.z;
-		}
-
-		source_centroid.x /= this->source_cloud_->size();
-		source_centroid.y /= this->source_cloud_->size();
-		source_centroid.z /= this->source_cloud_->size();
-
-		target_centroid.x /= this->target_cloud_->size();
-		target_centroid.y /= this->target_cloud_->size();
-		target_centroid.z /= this->target_cloud_->size();
-
-		/* translate source point to result point */
-		this->result_cloud_->clear();
-
-		for (auto& i : *(this->source_cloud_)) {
-			pcl::PointXYZRGB temp = i;
-			temp.x += target_centroid.x - source_centroid.x;
-			temp.y += target_centroid.y - source_centroid.y;
-			temp.z += target_centroid.z - source_centroid.z;
-			this->result_cloud_->emplace_back(temp);
-		}
-
-		/* record translation vector */
-		this->motion_vector_(0, 3) += target_centroid.x - source_centroid.x;
-		this->motion_vector_(1, 3) += target_centroid.y - source_centroid.y;
-		this->motion_vector_(2, 3) += target_centroid.z - source_centroid.z;
-	}
-	catch (const common::Exception& e) {
-		e.Log();
-		throw __EXCEPT__(ERROR_OCCURED);
-	}
-}
-
 float registration::ICP::CloudMSE() {
 	try {
-        /* check point cloud is empty */
+		/* check point cloud is empty */
 		if (!this->result_cloud_ || !this->target_cloud_ || this->result_cloud_->empty() || this->target_cloud_->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
 
 		float MSE;
 
-        /* nearest neighbor search */
+		/* nearest neighbor search */
 		pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
 		kdtree.setInputCloud(this->target_cloud_);
 
-        /* calculate mse */
+		/* calculate mse */
 		for (auto& i : *(this->result_cloud_)) {
 			std::vector<int>   idx(1);
 			std::vector<float> dis(1);
@@ -139,12 +152,12 @@ float registration::ICP::CloudMSE() {
 
 void registration::ICP::Align() {
 	try {
-        /* check point cloud is empty */
+		/* check point cloud is empty */
 		if (!this->source_cloud_ || !this->target_cloud_ || this->source_cloud_->empty() || this->target_cloud_->empty()) {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
 
-        /* check param is empty */
+		/* check param is empty */
 		if (!this->params_) {
 			throw __EXCEPT__(EMPTY_PARAMS);
 		}
@@ -153,63 +166,57 @@ void registration::ICP::Align() {
 			throw __EXCEPT__(INITIALIZER_ERROR);
 		}
 
-        /* do centroid alignment and fill result_cloud_ */
-		this->CentroidAlignment();
+        this->result_cloud_->clear();
+        *(this->result_cloud_) += *(this->source_cloud_);
 
-        /* icp */
-		pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
 
-        /* check params illegal */
+		/* check params illegal */
 		if (this->params_->icp.correspondence_ths > 0) {
-			icp.setMaxCorrespondenceDistance(this->params_->icp.correspondence_ths);
+			this->icp_->setMaxCorrespondenceDistance(this->params_->icp.correspondence_ths);
 		}
 		else {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
 
 		if (this->params_->icp.iteration_ths > 1) {
-			icp.setMaximumIterations(this->params_->icp.iteration_ths);
+			this->icp_->setMaximumIterations(this->params_->icp.iteration_ths);
 		}
 		else {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
 
 		if (this->params_->icp.mse_ths > 0) {
-			icp.setEuclideanFitnessEpsilon(this->params_->icp.mse_ths);
+			this->icp_->setEuclideanFitnessEpsilon(this->params_->icp.mse_ths);
 		}
 		else {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
 
 		if (this->params_->icp.transformation_ths > 0) {
-			icp.setTransformationEpsilon(this->params_->icp.transformation_ths);
+			this->icp_->setTransformationEpsilon(this->params_->icp.transformation_ths);
 		}
 		else {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
 
-        /* set point cloud */
-		icp.setInputSource(this->result_cloud_);
-		icp.setInputTarget(this->target_cloud_);
+		/* set point cloud */
+		this->icp_->setInputSource(this->result_cloud_);
+		this->icp_->setInputTarget(this->target_cloud_);
 
 		pcl::PointCloud<pcl::PointXYZRGB> temp_cloud_;
 
-        /* do alignment */
-		icp.align(temp_cloud_);
+		/* do alignment */
+		this->icp_->align(temp_cloud_);
 
-        /* converge or not */
-		if (icp.hasConverged()) {
-			this->mse_           = icp.getFitnessScore();
-			this->motion_vector_ = icp.getFinalTransformation() * this->motion_vector_;
+		/* converge or not */
+		if (this->icp_->hasConverged()) {
+			this->mse_           = this->icp_->getFitnessScore();
+			this->motion_vector_ = this->icp_->getFinalTransformation() * this->motion_vector_;
 			this->result_cloud_->swap(temp_cloud_);
-			std::cout << __GREENT__(ICP alignment completed.);
 		}
 		else {
 			this->mse_ = this->CloudMSE();
-			std::cout << __YELLOWT__(Warning : ICP alignment failed !) << std::endl;
 		}
-		std::cout << "Source/Target size : " << this->source_cloud_->size() << " / " << this->target_cloud_->size() << std::endl;
-		std::cout << "Mse : " << this->mse_ << std::endl;
 	}
 	catch (const common::Exception& e) {
 		e.Log();

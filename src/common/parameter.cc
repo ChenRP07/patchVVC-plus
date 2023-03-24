@@ -25,11 +25,11 @@ void common::SetDefaultParams(common::PVVCParam_t::Ptr _ptr) {
 		/* 0Bxxxxxxx1 brief 0Bxxxxxx1x normal 0Bxxxxx1xx complete */
 		_ptr->log_level = 0x03;
 
-        _ptr->segment.type = common::DENSE_SEGMENT;
-        _ptr->segment.num = 2048;
-        _ptr->segment.iter = 100;
-        _ptr->segment.nn = 10;
-        _ptr->segment.block_num = 8.0f;
+		_ptr->segment.type      = common::DENSE_SEGMENT;
+		_ptr->segment.num       = 2048;
+		_ptr->segment.iter      = 100;
+		_ptr->segment.nn        = 10;
+		_ptr->segment.block_num = 8.0f;
 
 		_ptr->thread_num = 30;
 
@@ -38,6 +38,8 @@ void common::SetDefaultParams(common::PVVCParam_t::Ptr _ptr) {
 		_ptr->icp.iteration_ths      = 100;
 		_ptr->icp.mse_ths            = 0.01f;
 		_ptr->icp.transformation_ths = 1e-6;
+		_ptr->icp.radius_search_ths  = 10.0f;
+		_ptr->icp.type               = common::SIMPLE_ICP;
 	}
 	catch (const common::Exception& e) {
 		e.Log();

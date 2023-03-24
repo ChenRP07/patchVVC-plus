@@ -21,26 +21,27 @@
 
 namespace vvc {
 namespace common {
-    enum {
-        DENSE_SEGMENT
-    };
+	enum { DENSE_SEGMENT };
+	enum { SIMPLE_ICP, LM_ICP, NORMAL_ICP, GENERAL_ICP };
 	struct PVVCParam_t {
 		uint8_t log_level; /* quiet brief normal complete */
-        struct {
-            int num;
-            int type;
-            int iter;
-            int nn;
-            float block_num;
-        } segment;
-		int     thread_num;
+		struct {
+			int   num;
+			int   type;
+			int   iter;
+			int   nn;
+			float block_num;
+		} segment;
+		int thread_num;
 		struct {
 			float correspondence_ths;
 			int   iteration_ths;
 			float mse_ths;
 			float transformation_ths;
 			bool  centroid_alignment;
-            float patch_err_ths;
+			float patch_err_ths;
+			int   type;
+            float radius_search_ths;
 		} icp;
 		struct {
 			float resolution;

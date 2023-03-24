@@ -23,7 +23,10 @@
 #include <mutex>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/registration/gicp.h>
+#include <pcl/registration/gicp6d.h>
 #include <pcl/registration/icp.h>
+#include <pcl/registration/icp_nl.h>
 #include <pcl/search/kdtree.h>
 #include <queue>
 #include <thread>
@@ -35,6 +38,7 @@ namespace registration {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud_; /* target point cloud which is the registration reference */
 		common::PVVCParam_t::Ptr               params_;       /* parameters */
+		common::PVVCTime_t                     time_;
 
 	  public:
 		/* default constructor and deconstructor */
@@ -60,7 +64,7 @@ namespace registration {
 		 * @param : {std::shared_ptr<common::VVCParam_t>}
 		 * @return : {}
 		 * */
-		void SetParams(common::PVVCParam_t::Ptr _param);
+		virtual void SetParams(common::PVVCParam_t::Ptr _param);
 	};
 
 	/*
@@ -80,17 +84,14 @@ namespace registration {
 	 * */
 	class ICP : public RegistrationBase {
 	  private:
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud_;  /* source point cloud which will be transformed */
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud_;  /* transformation result */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud_; /* source point cloud which will be transformed */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud_; /* transformation result */
+		pcl::PointCloud<pcl::Normal>::Ptr      source_normal_;
+		pcl::PointCloud<pcl::Normal>::Ptr      target_normal_;
 		Eigen::Matrix4f                        motion_vector_; /* motion vector */
 		float                                  mse_;           /* mean squared error */
 
-		/*
-		 * @description : do centroid alignment for source_cloud_ to target_cloud_.
-		 * @param : {}
-		 * @return : {}
-		 * */
-		void CentroidAlignment();
+		pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB>::Ptr icp_;
 
 		/*
 		 * @description : calculate mse from source to target.
@@ -106,11 +107,32 @@ namespace registration {
 		~ICP() = default;
 
 		/*
+		 * @description : set registration parameters and create an icp instance according to param.icp.type.
+		 * @param : {std::shared_ptr<common::VVCParam_t>}
+		 * @return : {}
+		 * */
+		virtual void SetParams(common::PVVCParam_t::Ptr _param);
+
+		/*
 		 * @description : set source point cloud which will be transformed.
 		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
 		 * @return : {}
 		 * */
 		void SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
+
+		/*
+		 * @description : set source point cloud which will be transformed.
+		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
+		 * @return : {}
+		 * */
+		void SetSourceNormals(pcl::PointCloud<pcl::Normal>::Ptr _normals);
+
+		/*
+		 * @description : set source point cloud which will be transformed.
+		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
+		 * @return : {}
+		 * */
+		void SetTargetNormals(pcl::PointCloud<pcl::Normal>::Ptr _normals);
 
 		/*
 		 * @description : get result point cloud which is transformed by source_cloud_, should be called after Align().

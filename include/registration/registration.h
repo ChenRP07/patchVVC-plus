@@ -6,9 +6,12 @@
  * Copyright: @ChenRP07, All Right Reserved.
  *
  * Author        : ChenRP07
- * Description   :
+ * Description   : Defination of module registration
+ *                 RegistrationBase->ParallelICP
+ *                                 ->ICPBase->ICP
+ *                                          ->NICP
  * Create Time   : 2022/12/26 09:37
- * Last Modified : 2022/12/26 09:37
+ * Last Modified : 2023/03/27 11:43
  *
  */
 
@@ -34,16 +37,18 @@
 namespace vvc {
 namespace registration {
 
+	/* Base class of all registration class, an abstract class */
 	class RegistrationBase {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud_; /* target point cloud which is the registration reference */
 		common::PVVCParam_t::Ptr               params_;       /* parameters */
-		common::PVVCTime_t                     time_;
+		common::PVVCTime_t                     time_;         /* Clock */
 
 	  public:
 		/* default constructor and deconstructor */
-		RegistrationBase()  = default;
-		~RegistrationBase() = default;
+		RegistrationBase();
+
+		virtual ~RegistrationBase() = default;
 
 		/*
 		 * @description : set target point cloud which is the registration reference.
@@ -54,64 +59,47 @@ namespace registration {
 
 		/*
 		 * @description : get target point cloud which is the registration reference.
-		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
-		 * @return : {}
+		 * @param : {}
+		 * @return : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
 		 * */
-		void GetTargetCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) const;
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr GetTargetCloud() const;
 
 		/*
 		 * @description : set registration parameters.
 		 * @param : {std::shared_ptr<common::VVCParam_t>}
 		 * @return : {}
 		 * */
-		virtual void SetParams(common::PVVCParam_t::Ptr _param);
+		void SetParams(common::PVVCParam_t::Ptr _param);
+
+		/*
+		 * @description : interface, instantiate registration algorithm
+		 * */
+		virtual void Align() = 0;
 	};
 
-	/*
-	 * Implementation of Iterative Closest Point.
-	 * How to use?
-	 * Example:
-	 * ICP eg;
-	 * eg.SetParams(param_ptr);
-	 * eg.SetSourceCloud(source_cloud_ptr)
-	 * eg.SetTargetCloud(target_cloud_ptr)
-	 * eg.Align()
-	 * eg.GetResultCloud(your_result_cloud_ptr)
-	 * your_mv = eg.GetMotionVector();
-	 * your_mse = eg.GetMSE();
-	 *
-	 * NOTICE:Make sure SetParams, SetSourceCloud and SetTargetCloud are called before Align.
-	 * */
-	class ICP : public RegistrationBase {
-	  private:
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud_; /* source point cloud which will be transformed */
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud_; /* transformation result */
-		pcl::PointCloud<pcl::Normal>::Ptr      source_normal_;
-		pcl::PointCloud<pcl::Normal>::Ptr      target_normal_;
-		Eigen::Matrix4f                        motion_vector_; /* motion vector */
-		float                                  mse_;           /* mean squared error */
-
-		pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB>::Ptr icp_;
+	/* Base class of single-single icp, an abstract class */
+	class ICPBase : public RegistrationBase {
+	  protected:
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud_;  /* Point cloud which will be transformed */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud_;  /* Transformed point cloud */
+		Eigen::Matrix4f                        motion_vector_; /* Transformation matrix */
+		float                                  mse_;           /* Mean squared error */
+		bool                                   converged_;     /* Algorithm converged ? */
 
 		/*
-		 * @description : calculate mse from source to target.
+		 * @description : Calculate mse between result_cloud_ and target_cloud_
 		 * @param : {}
-		 * @return : {}
+		 * @return : {float}
 		 * */
-		float CloudMSE();
+		float CloudMSE() const;
 
 	  public:
-		/* constructor and default deconstructor */
-		ICP();
+		/* Default constructor and deconstructor*/
+		ICPBase();
 
-		~ICP() = default;
+		virtual ~ICPBase() = default;
 
-		/*
-		 * @description : set registration parameters and create an icp instance according to param.icp.type.
-		 * @param : {std::shared_ptr<common::VVCParam_t>}
-		 * @return : {}
-		 * */
-		virtual void SetParams(common::PVVCParam_t::Ptr _param);
+		using Ptr = std::shared_ptr<ICPBase>;
 
 		/*
 		 * @description : set source point cloud which will be transformed.
@@ -121,25 +109,11 @@ namespace registration {
 		void SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
 
 		/*
-		 * @description : set source point cloud which will be transformed.
-		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
-		 * @return : {}
-		 * */
-		void SetSourceNormals(pcl::PointCloud<pcl::Normal>::Ptr _normals);
-
-		/*
-		 * @description : set source point cloud which will be transformed.
-		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
-		 * @return : {}
-		 * */
-		void SetTargetNormals(pcl::PointCloud<pcl::Normal>::Ptr _normals);
-
-		/*
 		 * @description : get result point cloud which is transformed by source_cloud_, should be called after Align().
-		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
-		 * @return : {}
+		 * @param : {}
+		 * @return : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr}
 		 * */
-		void GetResultCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr GetResultCloud() const;
 
 		/*
 		 * @description : get motion vector, should be called after Align().
@@ -156,25 +130,110 @@ namespace registration {
 		float GetMSE() const;
 
 		/*
-		 * @description : do iterative closest point.
+		 * @description : interface, instantiate registration algorithm
 		 * */
-		void Align();
+		virtual void Align() = 0;
 	};
 
 	/*
-	 * Parallel implementation of Iterative Closest Point, multi source to single target.
+	 * Implementation of ICP, LM_ICP, GICP.
 	 * How to use?
 	 * Example:
-	 * ParallelICP eg;
-	 * eg.SetParams(param_ptr);
-	 * eg.SetSourceClouds(source_clouds_ptr_vector);
-	 * eg.SetTargetCloud(target_cloud_ptr)
-	 * eg.Align();
-	 * eg.GetResultClouds(your_result_clouds_ptr_vector);
-	 * your_mv_vector = eg.GetMotionVectors();
-	 * your_mse_vector = eg.GetMSEs();
+	 * ICPBase::Ptr icp(new ICP());
+	 * icp->SetParams(param_ptr);
+	 * icp->SetSourceCloud(source_cloud_ptr);
+	 * icp->SetTargetCloud(target_cloud_ptr);
+	 * icp->Align();
+	 * res_ptr = icp->GetResultCloud();
+	 * res_mv = icp->GetMotionVector();
+	 * res_mse = icp->GetMSE();
 	 *
-	 * NOTICE:Make sure SetParams, SetSourceClouds and SetTargetCloud are called before Align;
+	 * Make sure SetParams, SetSourceCloud and SetTargetCloud are called before Align.
+	 * It is recommended to use a shared_ptr vvc::registration::ICPBase::Ptr to manage.
+	 * */
+	class ICP : public ICPBase {
+	  private:
+		pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB>::Ptr icp_; /* Algorithm instance */
+
+	  public:
+		/* constructor and default deconstructor */
+		ICP();
+
+		virtual ~ICP() = default;
+
+		/*
+		 * @description : Do ICP algorithm
+		 * @param : {}
+		 * @return : {}
+		 * */
+		virtual void Align();
+	};
+
+	/*
+	 * Implementation of NICP.
+	 * How to use?
+	 * Example:
+	 * ICPBase::Ptr icp(new NICP());
+	 * icp->SetParams(param_ptr);
+	 * icp->SetSourceCloud(source_cloud_ptr);
+	 * icp->SetTargetCloud(target_cloud_ptr);
+	 * icp->Align();
+	 * res_ptr = icp->GetResultCloud();
+	 * res_mv = icp->GetMotionVector();
+	 * res_mse = icp->GetMSE();
+	 *
+	 * Make sure SetParams, SetSource(Target)Cloud, and SetSource(Target)Cloud are called before Align.
+	 * It is recommended to use a shared_ptr vvc::registration::ICPBase::Ptr to manage.
+	 * */
+	class NICP : public ICPBase {
+	  private:
+		pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal>::Ptr nicp_; /* Algorithm instance */
+
+		pcl::PointCloud<pcl::PointNormal>::Ptr source_normal_; /* Normals */
+		pcl::PointCloud<pcl::PointNormal>::Ptr target_normal_;
+
+	  public:
+		/* Default constructor and deconstructor */
+		NICP();
+
+		virtual ~NICP() = default;
+
+		/*
+		 * @description : Set normals of source point cloud
+		 * @param : {pcl::PointCloud<pcl::PointNormal>::Ptr _normal}
+		 * @return : {}
+		 * */
+		void SetSourceNormal(pcl::PointCloud<pcl::PointNormal>::Ptr _normal);
+
+		/*
+		 * @description : Set normals of target point cloud
+		 * @param : {pcl::PointCloud<pcl::PointNormal>::Ptr _normal}
+		 * @return : {}
+		 * */
+		void SetTargetNormal(pcl::PointCloud<pcl::PointNormal>::Ptr _normal);
+
+		/*
+		 * @description : Do NICP algorithm
+		 * @param : {}
+		 * @return : {}
+		 * */
+		virtual void Align();
+	};
+
+	/*
+	 * Parallel implementation of icp, multi source to single target.
+	 * How to use?
+	 * Example:
+	 * ParallelICP picp;
+	 * picp.SetParams(param_ptr);
+	 * picp.SetSourceClouds(source_clouds_ptr_vector);
+	 * picp.SetTargetCloud(target_cloud_ptr)
+	 * picp.Align();
+	 * picp.GetResultClouds(your_result_clouds_ptr_vector);
+	 * res_mv = picp.GetMotionVectors();
+	 * res_mse = picp.GetMSEs();
+	 *
+	 * Make sure SetParams, SetSourceClouds and SetTargetCloud are called before Align;
 	 * */
 	class ParallelICP : public RegistrationBase {
 	  protected:
@@ -218,7 +277,7 @@ namespace registration {
 		/* constructor and default deconstructor */
 		ParallelICP() = default;
 
-		~ParallelICP() = default;
+		virtual ~ParallelICP() = default;
 
 		/*
 		 * @description : set source point cloud which will be transformed.

@@ -95,6 +95,7 @@ void segment::DenseSegment::Segment() {
 		}
 
 		std::cout << __GREENT__(Start dense segmentation.) << std::endl;
+        this->clock_.SetTimeBegin();
 
 		/* patch number and point per patch */
 		const int kPointPerPatch = this->params_->segment.num;
@@ -249,7 +250,7 @@ void segment::DenseSegment::Segment() {
 		for (auto& i : this->results_) {
 			this->stat_.fact_.emplace_back(i->size());
 		}
-
+        this->clock_.SetTimeEnd();
 		std::cout << __GREENT__(Dense segmentation done.) << std::endl;
 		this->Log();
 	}

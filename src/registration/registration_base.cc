@@ -16,9 +16,9 @@
 
 using namespace vvc;
 
-vvc::registration::RegistrationBase::RegistrationBase() : time_{}, target_cloud_{nullptr}, params_{nullptr} {}
+vvc::registration::RegistrationBase::RegistrationBase() : clock_{}, target_cloud_{nullptr}, params_{nullptr} {}
 
-inline void vvc::registration::RegistrationBase::SetTargetCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
+void vvc::registration::RegistrationBase::SetTargetCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
 	try {
 		/* Check point cloud is empty */
 		if (!_cloud || _cloud->empty()) {
@@ -34,7 +34,7 @@ inline void vvc::registration::RegistrationBase::SetTargetCloud(pcl::PointCloud<
 	}
 }
 
-inline pcl::PointCloud<pcl::PointXYZRGB>::Ptr vvc::registration::RegistrationBase::GetTargetCloud() const {
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr vvc::registration::RegistrationBase::GetTargetCloud() const {
 	try {
 		/* check point cloud is empty */
 		if (!this->target_cloud_ || this->target_cloud_->empty()) {
@@ -49,7 +49,7 @@ inline pcl::PointCloud<pcl::PointXYZRGB>::Ptr vvc::registration::RegistrationBas
 	}
 }
 
-inline void vvc::registration::RegistrationBase::SetParams(common::PVVCParam_t::Ptr _param) {
+void vvc::registration::RegistrationBase::SetParams(common::PVVCParam_t::Ptr _param) {
 	try {
 		/* check param is empty */
 		if (!_param) {
@@ -68,7 +68,7 @@ inline void vvc::registration::RegistrationBase::SetParams(common::PVVCParam_t::
 vvc::registration::ICPBase::ICPBase()
     : vvc::registration::RegistrationBase{}, source_cloud_{nullptr}, result_cloud_{nullptr}, motion_vector_{Eigen::Matrix4f::Identity()}, mse_{0.0f}, converged_{false} {}
 
-inline void vvc::registration::ICPBase::SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
+void vvc::registration::ICPBase::SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
 	try {
 		/* Check point cloud is empty */
 		if (!_cloud || _cloud->empty()) {
@@ -84,7 +84,7 @@ inline void vvc::registration::ICPBase::SetSourceCloud(pcl::PointCloud<pcl::Poin
 	}
 }
 
-inline pcl::PointCloud<pcl::PointXYZRGB>::Ptr vvc::registration::ICPBase::GetResultCloud() const {
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr vvc::registration::ICPBase::GetResultCloud() const {
 	try {
 		/* check point cloud is empty */
 		if (!this->result_cloud_ || this->result_cloud_->empty()) {
@@ -99,15 +99,15 @@ inline pcl::PointCloud<pcl::PointXYZRGB>::Ptr vvc::registration::ICPBase::GetRes
 	}
 }
 
-inline Eigen::Matrix4f vvc::registration::ICPBase::GetMotionVector() const {
+Eigen::Matrix4f vvc::registration::ICPBase::GetMotionVector() const {
 	return this->motion_vector_;
 }
 
-inline float vvc::registration::ICPBase::GetMSE() const {
+float vvc::registration::ICPBase::GetMSE() const {
 	return this->mse_;
 }
 
-inline bool vvc::registration::ICPBase::Converged() const {
+bool vvc::registration::ICPBase::Converged() const {
 	return this->converged_;
 }
 
@@ -144,7 +144,7 @@ float vvc::registration::ICPBase::CloudMSE() const {
 vvc::common::MSE::MSE()
     : p_{nullptr}, q_{nullptr}, geo_mses_{std::make_pair(0.0f, 0.0f)}, y_mses_{std::make_pair(0.0f, 0.0f)}, u_mses_{std::make_pair(0.0f, 0.0f)}, v_mses_{std::make_pair(0.0f, 0.0f)} {}
 
-inline void vvc::common::MSE::SetClouds(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _x, pcl::PointCloud<pcl::PointXYZRGB>::Ptr _y) {
+void vvc::common::MSE::SetClouds(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _x, pcl::PointCloud<pcl::PointXYZRGB>::Ptr _y) {
 	this->p_ = _x;
 	this->q_ = _y;
 }
@@ -206,18 +206,18 @@ void vvc::common::MSE::Compute() {
 	}
 }
 
-inline std::pair<float, float> vvc::common::MSE::GetGeoMSEs() const {
+std::pair<float, float> vvc::common::MSE::GetGeoMSEs() const {
     return this->geo_mses_;
 }
 
-inline std::pair<float, float> vvc::common::MSE::GetYMSEs() const {
+std::pair<float, float> vvc::common::MSE::GetYMSEs() const {
     return this->y_mses_;
 }
 
-inline std::pair<float, float> vvc::common::MSE::GetUMSEs() const {
+std::pair<float, float> vvc::common::MSE::GetUMSEs() const {
     return this->u_mses_;
 }
 
-inline std::pair<float, float> vvc::common::MSE::GetVMSEs() const {
+std::pair<float, float> vvc::common::MSE::GetVMSEs() const {
     return this->v_mses_;
 }

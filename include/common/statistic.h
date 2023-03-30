@@ -61,7 +61,7 @@ namespace common {
         float avg_score(int type, int idx);
     };
 	extern double Deviation(const std::vector<size_t>& _src);
-	extern double Deviation(const std::vector<float>& _src);
+	extern float Deviation(const std::vector<float>& _src);
     static boost::format color_cmd("\033[%dm%s\033[0m"); 
 }  // namespace common
 }  // namespace vvc

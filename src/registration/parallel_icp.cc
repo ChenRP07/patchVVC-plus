@@ -38,7 +38,7 @@ void registration::ParallelICP::SetSourceClouds(std::vector<common::Patch>& _clo
 		this->result_clouds_.resize(this->source_clouds_.size(), common::Patch());
 		for (int i = 0; i < this->source_clouds_.size(); ++i) {
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr p(new pcl::PointCloud<pcl::PointXYZRGB>());
-            *p += *(this->source_clouds_[i].cloud);
+			*p += *(this->source_clouds_[i].cloud);
 			this->result_clouds_[i].cloud     = p;
 			this->result_clouds_[i].index     = this->source_clouds_[i].index;
 			this->result_clouds_[i].timestamp = this->source_clouds_[i].timestamp + 1;
@@ -46,7 +46,7 @@ void registration::ParallelICP::SetSourceClouds(std::vector<common::Patch>& _clo
 
 		/* init */
 		this->stat_.converged.resize(this->source_clouds_.size(), false);
-		this->stat_.geo_score.resize(this->source_clouds_.size(), std::make_pair(0.0f, 0.0f));
+		this->mse_.resize(this->source_clouds_.size(), -1.0f);
 	}
 	catch (const common::Exception& e) {
 		e.Log();
@@ -63,12 +63,15 @@ void registration::ParallelICP::GetResultClouds(std::vector<common::Patch>& _clo
 
 		_clouds.clear();
 		for (auto i : this->result_clouds_) {
-            if (!i.cloud) {
-                throw __EXCEPT__(EMPTY_POINT_CLOUD);
-            }
-            if (!i.empty()){
-                _clouds.emplace_back(i);
-            }
+			if (!i.cloud) {
+				throw __EXCEPT__(EMPTY_POINT_CLOUD);
+			}
+			if (!i.empty()) {
+				_clouds.emplace_back();
+				_clouds.back().timestamp = i.timestamp;
+				_clouds.back().index     = i.index;
+				_clouds.back().cloud     = i.cloud;
+			}
 		}
 	}
 	catch (const common::Exception& e) {
@@ -119,19 +122,6 @@ void registration::ParallelICP::CentroidAlignment() {
 	}
 }
 
-void registration::ParallelICP::CloudMSE() {
-	/* calculate mse for each patch */
-    this->stat_.geo_score.clear(), this->stat_.y_score.clear(), this->stat_.u_score.clear(), this->stat_.v_score.clear();
-    for (int i = 0; i < this->source_clouds_.size(); ++i) {
-        common::MSE p;
-        p.SetClouds(this->source_clouds_[i].cloud, this->result_clouds_[i].cloud);
-        this->stat_.geo_score.emplace_back(p.GetGeoMSEs());
-        this->stat_.y_score.emplace_back(p.GetYMSEs());
-        this->stat_.u_score.emplace_back(p.GetUMSEs());
-        this->stat_.v_score.emplace_back(p.GetVMSEs());
-    }
-}
-
 void registration::ParallelICP::Task() {
 	while (true) {
 		/* loop until task_queue_ is empty */
@@ -172,26 +162,27 @@ void registration::ParallelICP::Task() {
 			i.z += local.z;
 		}
 
-        vvc::registration::ICPBase::Ptr icp;
-        if (this->params_->icp.type == common::NORMAL_ICP) {
-            icp.reset(new vvc::registration::NICP());
-            icp->SetSourceNormal(this->source_normals_[task_idx]);
-            icp->SetTargetNormal(this->target_normal_);
-        }
-        else {
-            icp.reset(new vvc::registration::ICP());
-        }
+		vvc::registration::ICPBase::Ptr icp;
+		if (this->params_->icp.type == common::NORMAL_ICP) {
+			icp.reset(new vvc::registration::NICP());
+			icp->SetSourceNormal(this->source_normals_[task_idx]);
+			icp->SetTargetNormal(this->target_normal_);
+		}
+		else {
+			icp.reset(new vvc::registration::ICP());
+		}
 
-        icp->SetParams(this->params_);
-        icp->SetTargetCloud(this->target_cloud_);
-        icp->SetSourceCloud(this->result_clouds_[task_idx].cloud);
-        icp->Align();
+		icp->SetParams(this->params_);
+		icp->SetTargetCloud(this->target_cloud_);
+		icp->SetSourceCloud(this->result_clouds_[task_idx].cloud);
+		icp->Align();
 
 		/* converge or not */
 		if (icp->Converged()) {
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp = icp->GetResultCloud();
+			pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp = icp->GetResultCloud();
 			this->result_clouds_[task_idx].cloud->swap(*temp);
 			this->stat_.converged[task_idx] = 1;
+			this->mse_[task_idx]            = icp->GetMSE();
 		}
 		else {
 			this->stat_.converged[task_idx] = 0;
@@ -201,6 +192,7 @@ void registration::ParallelICP::Task() {
 
 void registration::ParallelICP::Align() {
 	try {
+		this->clock_.SetTimeBegin();
 		std::cout << __GREENT__(Start ICP registration.) << std::endl;
 		std::cout << __GREENT__(Check point clouds.) << std::endl;
 		/* check point cloud is empty */
@@ -249,42 +241,42 @@ void registration::ParallelICP::Align() {
 			this->CentroidAlignment();
 		}
 
-        if (this->params_->icp.type == common::NORMAL_ICP) {
-            if (this->params_->icp.radius_search_ths <= 0) {
-                throw __EXCEPT__(BAD_PARAMETERS);
-            }            
+		if (this->params_->icp.type == common::NORMAL_ICP) {
+			if (this->params_->icp.radius_search_ths <= 0) {
+				throw __EXCEPT__(BAD_PARAMETERS);
+			}
 
-            pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> est;
-            pcl::search::KdTree<pcl::PointXYZRGB>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZRGB>());
-            kdtree->setInputCloud(this->target_cloud_);
-            est.setInputCloud(this->target_cloud_);
-            est.setSearchMethod(kdtree);
-            est.setRadiusSearch(this->params_->icp.radius_search_ths);
-            est.compute(*(this->target_normal_));
-            
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_source(new pcl::PointCloud<pcl::PointXYZRGB>());
-            pcl::PointCloud<pcl::Normal> temp_normal;
-            for (auto i : this->result_clouds_) {
-               for (auto j : *(i.cloud)) {
-                    temp_source->emplace_back(j);
-               } 
-            }
-            this->source_normals_.clear();
-            this->source_normals_.resize(this->source_clouds_.size());
-            kdtree->setInputCloud(temp_source);
-            est.setInputCloud(temp_source);
-            est.setSearchMethod(kdtree);
-            est.setRadiusSearch(this->params_->icp.radius_search_ths);
-            est.compute(temp_normal);
+			pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> est;
+			pcl::search::KdTree<pcl::PointXYZRGB>::Ptr           kdtree(new pcl::search::KdTree<pcl::PointXYZRGB>());
+			kdtree->setInputCloud(this->target_cloud_);
+			est.setInputCloud(this->target_cloud_);
+			est.setSearchMethod(kdtree);
+			est.setRadiusSearch(this->params_->icp.radius_search_ths);
+			est.compute(*(this->target_normal_));
 
-            int idx = 0;
-            for (int i = 0; i < this->result_clouds_.size(); ++i) {
-                for (int j = 0; j < this->result_clouds_[i].size(); ++j) {
-                    this->source_normals_[i]->emplace_back(temp_normal[idx]);
-                    idx++;
-                }
-            }
-        }
+			pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_source(new pcl::PointCloud<pcl::PointXYZRGB>());
+			pcl::PointCloud<pcl::Normal>           temp_normal;
+			for (auto i : this->result_clouds_) {
+				for (auto j : *(i.cloud)) {
+					temp_source->emplace_back(j);
+				}
+			}
+			this->source_normals_.clear();
+			this->source_normals_.resize(this->source_clouds_.size());
+			kdtree->setInputCloud(temp_source);
+			est.setInputCloud(temp_source);
+			est.setSearchMethod(kdtree);
+			est.setRadiusSearch(this->params_->icp.radius_search_ths);
+			est.compute(temp_normal);
+
+			int idx = 0;
+			for (int i = 0; i < this->result_clouds_.size(); ++i) {
+				for (int j = 0; j < this->result_clouds_[i].size(); ++j) {
+					this->source_normals_[i]->emplace_back(temp_normal[idx]);
+					idx++;
+				}
+			}
+		}
 		/* fill the task_queue_ */
 		for (size_t i = 0; i < this->result_clouds_.size(); ++i) {
 			this->task_queue_.push(i);
@@ -332,8 +324,7 @@ void registration::ParallelICP::Align() {
 			this->result_clouds_[i].cloud->swap(temp_clouds[i]);
 		}
 
-        /* Calculate MSE */
-        this->CloudMSE();
+        this->clock_.SetTimeEnd();
 		/* log statistic */
 		this->Log();
 	}
@@ -351,20 +342,35 @@ void registration::ParallelICP::Log() {
 		}
 	}
 	if (this->params_->log_level & 0x01) {
-		std::cout << __BLUET__(Launch threads : ) << this->params_->thread_num << std::endl;
-		std::cout << __BLUET__(Converged / Not patches : ) << converged << " / " << this->stat_.converged.size() - converged << std::endl;
+		std::cout << __BLUET__(Launch threads : ) << " " << this->params_->thread_num << std::endl;
+		std::cout << __BLUET__(Converged / Not patches : ) << " " << converged << " / " << this->stat_.converged.size() - converged << std::endl;
+        std::cout << __BLUET__(Time consuming : );
+        printf(" %.3fs / %.3fms\n", this->clock_.GetTimeS(), this->clock_.GetTimeMs());
 		std::cout << __AZURET__(===================================================) << std::endl;
 	}
-
 	if (this->params_->log_level & 0x02) {
+        float mean = 0.0f, Max = 0.0f, Min = FLT_MAX;
+        int cnt = 0;
+        std::for_each(this->mse_.begin(), this->mse_.end(), [&mean, &Max, &Min, &cnt] (float x) {
+                if (x >= 0.0f) {
+                    mean += x, Max = std::max(x, Max), Min = std::min(x, Min);
+                    cnt++;
+                }
+            });
+        if (cnt != 0) {
+            mean /= static_cast<float>(cnt);
+        }
+        else {
+            mean = -1.0f;
+        }
 		std::cout << __BLUET__(Average  MSE : );
-        printf("%.3f / %.3f  %.3f / %.3f  %.3f / %.3f  %.3f / %.3f\n", this->stat_.avg_score(0, 0), this->stat_.avg_score(0, 1), this->stat_.avg_score(1, 0), this->stat_.avg_score(1, 1), this->stat_.avg_score(2, 0), this->stat_.avg_score(2, 1), this->stat_.avg_score(3, 0), this->stat_.avg_score(3, 1));
+        printf(" %.3f\n", mean);
 		std::cout << __BLUET__(Mininum  MSE : );
-        printf("%.3f / %.3f  %.3f / %.3f  %.3f / %.3f  %.3f / %.3f\n", this->stat_.min_score(0, 0), this->stat_.min_score(0, 1), this->stat_.min_score(1, 0), this->stat_.min_score(1, 1), this->stat_.min_score(2, 0), this->stat_.min_score(2, 1), this->stat_.min_score(3, 0), this->stat_.min_score(3, 1));
+        printf(" %.3f\n", Min);
         std::cout << __BLUET__(Maximum  MSE : );
-        printf("%.3f / %.3f  %.3f / %.3f  %.3f / %.3f  %.3f / %.3f\n", this->stat_.max_score(0, 0), this->stat_.max_score(0, 1), this->stat_.max_score(1, 0), this->stat_.max_score(1, 1), this->stat_.max_score(2, 0), this->stat_.max_score(2, 1), this->stat_.max_score(3, 0), this->stat_.max_score(3, 1));
-		std::cout << __BLUET__(Standard Err : );
-        printf("%.3f / %.3f  %.3f / %.3f  %.3f / %.3f  %.3f / %.3f\n", this->stat_.dev_score(0, 0), this->stat_.dev_score(0, 1), this->stat_.dev_score(1, 0), this->stat_.dev_score(1, 1), this->stat_.dev_score(2, 0), this->stat_.dev_score(2, 1), this->stat_.dev_score(3, 0), this->stat_.dev_score(3, 1));
+        printf(" %.3f\n", Max);
+		std::cout << __BLUET__(Standard Err : ); 
+        printf(" %.3f\n", common::Deviation(this->mse_));
 		std::cout << __AZURET__(===================================================) << std::endl;
 	}
 
@@ -377,8 +383,8 @@ void registration::ParallelICP::Log() {
 			else {
 				std::cout << __GREENT__(is converged);
 			}
-			std::cout << __BLUET__(~~ MSE : );
-            printf("%.3f / %.3f  %.3f / %.3f  %.3f / %.3f  %.3f / %.3f\n", this->stat_.geo_score[i].first, this->stat_.geo_score[i].second, this->stat_.y_score[i].first, this->stat_.y_score[i].second, this->stat_.u_score[i].first, this->stat_.u_score[i].second, this->stat_.v_score[i].first, this->stat_.v_score[i].second);
+			std::cout << __BLUET__(~~ MSE : ); 
+            printf(" %.3f\n", this->mse_[i]);
 		}
 		std::cout << __AZURET__(===================================================) << std::endl;
 	}

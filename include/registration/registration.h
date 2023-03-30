@@ -36,24 +36,70 @@
 
 namespace vvc {
 namespace common {
-    class MSE {
-        private:
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr p_, q_;
-        std::pair<float, float> geo_mses_, y_mses_, u_mses_, v_mses_;
-        public:
-            MSE();
+	/*
+	 * Calculate geometry color-yuv MSE between two point clouds.
+	 * How to use?
+	 * MSE m;
+	 * m.SetClouds(cloud_x, cloud_y);
+	 * m.Compute();
+	 * your_mse_pair = m.Get...MSEs();
+	 * your_mse_pair = <x error according to y, y error according to x>, -1 means empty cloud
+	 * */
+	class MSE {
+	  private:
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr p_, q_;                               /* point clouds */
+		std::pair<float, float>                geo_mses_, y_mses_, u_mses_, v_mses_; /* mses */
 
-            ~MSE() = default;
+	  public:
+		/* default constructor and deconstructor */
+		MSE();
+		~MSE() = default;
 
-            void SetClouds(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _x, pcl::PointCloud<pcl::PointXYZRGB>::Ptr _y);
-            void Compute();
+		/*
+		 * @description : Set point clouds
+		 * @params : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr _x}
+		 * @params : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr _y}
+		 * @return : {}
+		 * */
+		void SetClouds(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _x, pcl::PointCloud<pcl::PointXYZRGB>::Ptr _y);
 
-            std::pair<float, float> GetGeoMSEs() const;
-            std::pair<float, float> GetYMSEs() const;
-            std::pair<float, float> GetUMSEs() const;
-            std::pair<float, float> GetVMSEs() const;
-    };
-}
+		/*
+		 * @description : Compute MSEs
+		 * @params : {}
+		 * @return : {}
+		 * */
+		void Compute();
+
+		/*
+		 * @description : Get geometry MSE
+		 * @params : {}
+		 * @return : {std::pair<float, float>}
+		 * */
+		std::pair<float, float> GetGeoMSEs() const;
+
+		/*
+		 * @description : Get color-Y MSE
+		 * @params : {}
+		 * @return : {std::pair<float, float>}
+		 * */
+		std::pair<float, float> GetYMSEs() const;
+
+		/*
+		 * @description : Get color-U MSE
+		 * @params : {}
+		 * @return : {std::pair<float, float>}
+		 * */
+		std::pair<float, float> GetUMSEs() const;
+
+		/*
+		 * @description : Get color-V MSE
+		 * @params : {}
+		 * @return : {std::pair<float, float>}
+		 * */
+		std::pair<float, float> GetVMSEs() const;
+	};
+}  // namespace common
+
 namespace registration {
 
 	/* Base class of all registration class, an abstract class */
@@ -61,7 +107,7 @@ namespace registration {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud_; /* target point cloud which is the registration reference */
 		common::PVVCParam_t::Ptr               params_;       /* parameters */
-		common::PVVCTime_t                     time_;         /* Clock */
+		common::PVVCTime_t                     clock_;         /* Clock */
 
 	  public:
 		/* default constructor and deconstructor */
@@ -279,6 +325,7 @@ namespace registration {
 	  protected:
 		std::vector<common::Patch> source_clouds_; /* source point cloud patches which will be transformed */
 		std::vector<common::Patch> result_clouds_; /* transformed point cloud patches result */
+        std::vector<float> mse_;
 
 		std::vector<pcl::PointCloud<pcl::Normal>::Ptr> source_normals_; /* point cloud normals */
 		pcl::PointCloud<pcl::Normal>::Ptr              target_normal_;
@@ -286,20 +333,15 @@ namespace registration {
 		std::mutex         task_mutex_; /* mutex for atomic procession */
 		std::queue<size_t> task_queue_; /* task queue */
 
-		common::ParallelICPStat_t stat_; /* statistic */
+        /* XXX : stat_ is obsolete */
+		// common::ParallelICPStat_t stat_; [> statistic <]
+        
 		/*
 		 * @description : do centroid alignment for source_clouds_ to target_cloud_.
 		 * @param : {}
 		 * @return : {}
 		 * */
 		void CentroidAlignment();
-
-		/*
-		 * @description : calculate mse from source to target.
-		 * @param : {}
-		 * @return : {}
-		 * */
-		void CloudMSE();
 
 		/*
 		 * @description : task function for each thread.
@@ -335,7 +377,7 @@ namespace registration {
 		 * */
 		void GetResultClouds(std::vector<common::Patch>& _clouds);
 
-        common::ParallelICPStat_t GetScore() const;
+		common::ParallelICPStat_t GetScore() const;
 
 		/*
 		 * @description : do iterative closest point.

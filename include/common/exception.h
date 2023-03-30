@@ -60,6 +60,7 @@ namespace common {
 		INITIALIZER_ERROR,     /* error occured when a object member is used before initialization */
 		BAD_PARAMETERS,        /* error occured when input an illegal parameter */
 		UNMATCHED_CLOUD_SIZE,  /* error occured when try to concate two point cloud with different size */
+		BAD_TIME_STAMP,        /* error occured when set or get a illegal timestamp */
 	};
 
 	inline static std::string ErrorMessage[100] = {"an error occured",
@@ -75,7 +76,8 @@ namespace common {
 	                                               "parameters are invalid of segmentation",
 	                                               "object initialization error, should be initialized first",
 	                                               "bad parameters",
-	                                               "unmatched point cloud size"};
+	                                               "unmatched point cloud size",
+	                                               "set/get an illegal timestamp",};
 
 }  // namespace common
 }  // namespace vvc

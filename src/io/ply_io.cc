@@ -16,6 +16,9 @@
 
 using namespace vvc;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-result"
+
 void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud) {
 	try {
 		// file_name must be *.ply format
@@ -248,3 +251,4 @@ void io::SaveUniqueColorPlyFile(const std::string& file_name, const pcl::PointCl
 	}
 }
 
+#pragma GCC diagnostic pop

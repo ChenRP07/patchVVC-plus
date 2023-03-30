@@ -101,6 +101,8 @@ void vvc::registration::ICP::Align() {
 	}
 }
 
+vvc::registration::NICP::NICP() : vvc::registration::ICPBase{}, nicp_{}, source_normal_{}, target_normal_{} {} 
+
 void vvc::registration::NICP::SetSourceNormal(pcl::PointCloud<pcl::Normal>::Ptr _normal) {
 	try {
         if (!_normal || _normal->empty()) {
@@ -148,6 +150,7 @@ void vvc::registration::NICP::Align() {
             throw __EXCEPT__(BAD_PARAMETERS);
         }
 
+        this->clock_.SetTimeBegin();
         this->nicp_.reset(new pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal>());
 
 		/* Initlize result cloud by source cloud */
@@ -209,6 +212,7 @@ void vvc::registration::NICP::Align() {
             }
 		}
 		this->mse_ = this->CloudMSE();
+        this->clock_.SetTimeEnd();
 	}
 	catch (const common::Exception& e) {
 		e.Log();

@@ -5,6 +5,7 @@ project(vvc
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_BUILD_TYPE Debug)
 
 find_package(PCL 1.10 REQUIRED)
 if( NOT PCL_FOUND )
@@ -23,18 +24,22 @@ link_directories(${PCL_LIBRARY_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${CMAKE_SOURCE_DIR}/lib/)
 
-# aux_source_directory(${CMAKE_SOURCE_DIR}/src/ VVC_SRC)
-file(GLOB_RECURSE VVC_SRC ./src/**/*.cc)
 aux_source_directory(./src/io IO_SRC)
 aux_source_directory(./src/common COMMON_SRC)
 aux_source_directory(./src/segment SEGMENT_SRC)
+aux_source_directory(./src/octree OCTREE_SRC)
 aux_source_directory(./src/registration REGISTRATION_SRC)
 
+message(${SEGMENT_SRC})
+add_library(pvvc SHARED ${IO_SRC} ${COMMON_SRC} ${SEGMENT_SRC} ${OCTREE_SRC} ${REGISTRATION_SRC})
+target_link_libraries(pvvc ${PCL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
+
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/test)
-    message("Test unavailable.")
+    message("-- Test unavailable.")
 else()
-    message("Test available.")
-    message(${CMAKE_BUILD_TYPE})
+    message("-- Test available.")
+    message("-- ${CMAKE_BUILD_TYPE}")
     add_subdirectory(${CMAKE_SOURCE_DIR}/test)
 endif()
 

@@ -12,6 +12,9 @@
  *
  */
 
+#ifndef _PVVC_COMMON_H_
+#define _PVVC_COMMON_H_
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
@@ -73,13 +76,14 @@ namespace common {
 		void SetTimeEnd() {
 			gettimeofday(&(this->time[1]), nullptr);
 		}
-		inline float GetTimeS() {
+		inline float GetTimeS() const {
 			return static_cast<float>(this->time[1].tv_sec - this->time[0].tv_sec) + static_cast<float>(this->time[1].tv_usec - this->time[0].tv_usec) / 1000000.0f;
 		}
 
-		inline float GetTimeMs() {
+		inline float GetTimeMs() const {
 			return (static_cast<float>(this->time[1].tv_sec - this->time[0].tv_sec) + static_cast<float>(this->time[1].tv_usec - this->time[0].tv_usec) / 1000000.0f) * 1000.0f;
 		}
 	};
 }  // namespace common
 }  // namespace vvc
+#endif

@@ -15,6 +15,7 @@
 #ifndef _PVVC_SEGMENT_H_
 #define _PVVC_SEGMENT_H_
 
+#include "common/common.h"
 #include "common/exception.h"
 #include "common/parameter.h"
 #include "common/statistic.h"
@@ -34,6 +35,8 @@ namespace segment {
 		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_;      /* segmentation result */
 		common::PVVCParam_t::Ptr                            params_;       /* vvc parameters */
 		common::SegmentStat_t                               stat_;         /* statistics */
+		int                                                 timestamp_;    /* point cloud timestamp */
+		common::PVVCTime_t                                  clock_;        /* clock */
 
 		/*
 		 * @description : log statistics
@@ -60,7 +63,7 @@ namespace segment {
 		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _result}
 		 * @return : {}
 		 * */
-		void GetResultPointClouds(std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _result);
+		void GetResultPointClouds(std::vector<common::Patch>& _result);
 
 		/*
 		 * @description ：set parameters
@@ -68,6 +71,13 @@ namespace segment {
 		 * @return : {}
 		 * */
 		void SetParams(common::PVVCParam_t::Ptr _ptr);
+
+		/*
+		 * @description ：set timestamp
+		 * @param : {int _time}
+		 * @return : {}
+		 * */
+		void SetTimeStamp(int _time);
 
 		/*
 		 * @description : interface of segment

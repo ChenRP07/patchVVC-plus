@@ -58,7 +58,8 @@ namespace common {
 		EMPTY_PARAMS,          /* error occured when set vvc_param_t but with no instance */
 		INVALID_PARAM_SEGMENT, /* error occured when then params of segmentation are invalid */
 		INITIALIZER_ERROR,     /* error occured when a object member is used before initialization */
-		BAD_PARAMETERS
+		BAD_PARAMETERS,        /* error occured when input an illegal parameter */
+		UNMATCHED_CLOUD_SIZE,  /* error occured when try to concate two point cloud with different size */
 	};
 
 	inline static std::string ErrorMessage[100] = {"an error occured",
@@ -73,7 +74,8 @@ namespace common {
 	                                               "empty vvc parameters, might be a null pointer to vvc_param_t",
 	                                               "parameters are invalid of segmentation",
 	                                               "object initialization error, should be initialized first",
-	                                               "bad parameters"};
+	                                               "bad parameters",
+	                                               "unmatched point cloud size"};
 
 }  // namespace common
 }  // namespace vvc

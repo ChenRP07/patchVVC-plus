@@ -7,11 +7,11 @@
  *
  * Author        : ChenRP07
  * Description   : Defination of module registration
- *                 RegistrationBase->ParallelICP
- *                                 ->ICPBase->ICP
- *                                          ->NICP
+ *                 RegistrationBase|->ParallelICP
+ *                                 |->ICPBase|->ICP
+ *                                           |->NICP
  * Create Time   : 2022/12/26 09:37
- * Last Modified : 2023/03/27 11:43
+ * Last Modified : 2023/03/29 16:21
  *
  */
 
@@ -24,10 +24,10 @@
 #include "common/statistic.h"
 
 #include <mutex>
+#include <pcl/features/normal_3d.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/registration/gicp.h>
-#include <pcl/registration/gicp6d.h>
 #include <pcl/registration/icp.h>
 #include <pcl/registration/icp_nl.h>
 #include <pcl/search/kdtree.h>
@@ -35,6 +35,25 @@
 #include <thread>
 
 namespace vvc {
+namespace common {
+    class MSE {
+        private:
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr p_, q_;
+        std::pair<float, float> geo_mses_, y_mses_, u_mses_, v_mses_;
+        public:
+            MSE();
+
+            ~MSE() = default;
+
+            void SetClouds(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _x, pcl::PointCloud<pcl::PointXYZRGB>::Ptr _y);
+            void Compute();
+
+            std::pair<float, float> GetGeoMSEs() const;
+            std::pair<float, float> GetYMSEs() const;
+            std::pair<float, float> GetUMSEs() const;
+            std::pair<float, float> GetVMSEs() const;
+    };
+}
 namespace registration {
 
 	/* Base class of all registration class, an abstract class */
@@ -130,6 +149,23 @@ namespace registration {
 		float GetMSE() const;
 
 		/*
+		 * @description : get converged_, should be called after Align().
+		 * @param : {}
+		 * @return : {bool} converged
+		 * */
+		bool Converged() const;
+
+		/*
+		 * @description : interface, set normals
+		 * * */
+		virtual void SetSourceNormal(pcl::PointCloud<pcl::Normal>::Ptr _normal) {}
+
+		/*
+		 * @description : interface, set normals
+		 * * */
+		virtual void SetTargetNormal(pcl::PointCloud<pcl::Normal>::Ptr _normal) {}
+
+		/*
 		 * @description : interface, instantiate registration algorithm
 		 * */
 		virtual void Align() = 0;
@@ -161,6 +197,10 @@ namespace registration {
 
 		virtual ~ICP() = default;
 
+		void SetSourceNormal(pcl::PointCloud<pcl::Normal>::Ptr _normal) final {}
+
+		void SetTargetNormal(pcl::PointCloud<pcl::Normal>::Ptr _normal) final {}
+
 		/*
 		 * @description : Do ICP algorithm
 		 * @param : {}
@@ -189,8 +229,8 @@ namespace registration {
 	  private:
 		pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal>::Ptr nicp_; /* Algorithm instance */
 
-		pcl::PointCloud<pcl::PointNormal>::Ptr source_normal_; /* Normals */
-		pcl::PointCloud<pcl::PointNormal>::Ptr target_normal_;
+		pcl::PointCloud<pcl::Normal>::Ptr source_normal_; /* Normals */
+		pcl::PointCloud<pcl::Normal>::Ptr target_normal_;
 
 	  public:
 		/* Default constructor and deconstructor */
@@ -203,14 +243,14 @@ namespace registration {
 		 * @param : {pcl::PointCloud<pcl::PointNormal>::Ptr _normal}
 		 * @return : {}
 		 * */
-		void SetSourceNormal(pcl::PointCloud<pcl::PointNormal>::Ptr _normal);
+		virtual void SetSourceNormal(pcl::PointCloud<pcl::Normal>::Ptr _normal);
 
 		/*
 		 * @description : Set normals of target point cloud
 		 * @param : {pcl::PointCloud<pcl::PointNormal>::Ptr _normal}
 		 * @return : {}
 		 * */
-		void SetTargetNormal(pcl::PointCloud<pcl::PointNormal>::Ptr _normal);
+		virtual void SetTargetNormal(pcl::PointCloud<pcl::Normal>::Ptr _normal);
 
 		/*
 		 * @description : Do NICP algorithm
@@ -239,7 +279,9 @@ namespace registration {
 	  protected:
 		std::vector<common::Patch> source_clouds_; /* source point cloud patches which will be transformed */
 		std::vector<common::Patch> result_clouds_; /* transformed point cloud patches result */
-		std::vector<float>         mses_;          /* mean squared errors */
+
+		std::vector<pcl::PointCloud<pcl::Normal>::Ptr> source_normals_; /* point cloud normals */
+		pcl::PointCloud<pcl::Normal>::Ptr              target_normal_;
 
 		std::mutex         task_mutex_; /* mutex for atomic procession */
 		std::queue<size_t> task_queue_; /* task queue */
@@ -293,12 +335,7 @@ namespace registration {
 		 * */
 		void GetResultClouds(std::vector<common::Patch>& _clouds);
 
-		/*
-		 * @description : get mean squared error, should be called after Align().
-		 * @param : {}
-		 * @return : {std::vector<float>} mse
-		 * */
-		std::vector<float> GetMSEs() const;
+        common::ParallelICPStat_t GetScore() const;
 
 		/*
 		 * @description : do iterative closest point.

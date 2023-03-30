@@ -18,8 +18,10 @@
 #include <algorithm>
 #include <math.h>
 #include <numeric>
+#include <float.h>
 #include <string>
 #include <vector>
+#include <memory>
 #include <boost/format.hpp>
 
 /* Colored command line message. */
@@ -51,10 +53,13 @@ namespace common {
 	};
 
     struct ParallelICPStat_t {
-        std::vector<uint8_t> converged_;
-        std::vector<float> score_;
+        std::vector<uint8_t> converged;
+        std::vector<std::pair<float, float>> geo_score, y_score, u_score, v_score;
+        float min_score(int type, int idx);
+        float max_score(int type, int idx);
+        float dev_score(int type, int idx);
+        float avg_score(int type, int idx);
     };
-
 	extern double Deviation(const std::vector<size_t>& _src);
 	extern double Deviation(const std::vector<float>& _src);
     static boost::format color_cmd("\033[%dm%s\033[0m"); 

@@ -211,6 +211,10 @@ void vvc::registration::NICP::Align() {
                 this->result_cloud_->emplace_back(p);
             }
 		}
+        else {
+            this->converged_ = false;
+            *(this->result_cloud_) += *(this->source_cloud_);
+        }
 		this->mse_ = this->CloudMSE();
         this->clock_.SetTimeEnd();
 	}

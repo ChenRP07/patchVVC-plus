@@ -326,6 +326,7 @@ namespace registration {
 		std::vector<common::Patch> source_clouds_; /* source point cloud patches which will be transformed */
 		std::vector<common::Patch> result_clouds_; /* transformed point cloud patches result */
         std::vector<float> mse_;
+        std::vector<bool> converged_;
 
 		std::vector<pcl::PointCloud<pcl::Normal>::Ptr> source_normals_; /* point cloud normals */
 		pcl::PointCloud<pcl::Normal>::Ptr              target_normal_;
@@ -377,7 +378,7 @@ namespace registration {
 		 * */
 		void GetResultClouds(std::vector<common::Patch>& _clouds);
 
-		common::ParallelICPStat_t GetScore() const;
+	    std::vector<bool> GetConverge() const;
 
 		/*
 		 * @description : do iterative closest point.

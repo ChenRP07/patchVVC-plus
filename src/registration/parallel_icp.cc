@@ -45,7 +45,7 @@ void registration::ParallelICP::SetSourceClouds(std::vector<common::Patch>& _clo
 		}
 
 		/* init */
-		this->stat_.converged.resize(this->source_clouds_.size(), false);
+		this->converged_.resize(this->source_clouds_.size(), false);
 		this->mse_.resize(this->source_clouds_.size(), -1.0f);
 	}
 	catch (const common::Exception& e) {
@@ -78,10 +78,6 @@ void registration::ParallelICP::GetResultClouds(std::vector<common::Patch>& _clo
 		e.Log();
 		throw __EXCEPT__(ERROR_OCCURED);
 	}
-}
-
-common::ParallelICPStat_t registration::ParallelICP::GetScore() const {
-	return std::move(this->stat_);
 }
 
 void registration::ParallelICP::CentroidAlignment() {
@@ -163,15 +159,17 @@ void registration::ParallelICP::Task() {
 		}
 
 		vvc::registration::ICPBase::Ptr icp;
-		if (this->params_->icp.type == common::NORMAL_ICP) {
+		/*
+         * if (this->params_->icp.type == common::NORMAL_ICP) {
 			icp.reset(new vvc::registration::NICP());
 			icp->SetSourceNormal(this->source_normals_[task_idx]);
 			icp->SetTargetNormal(this->target_normal_);
 		}
 		else {
 			icp.reset(new vvc::registration::ICP());
-		}
+		} */
 
+		icp.reset(new vvc::registration::ICP());
 		icp->SetParams(this->params_);
 		icp->SetTargetCloud(this->target_cloud_);
 		icp->SetSourceCloud(this->result_clouds_[task_idx].cloud);
@@ -181,11 +179,11 @@ void registration::ParallelICP::Task() {
 		if (icp->Converged()) {
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp = icp->GetResultCloud();
 			this->result_clouds_[task_idx].cloud->swap(*temp);
-			this->stat_.converged[task_idx] = 1;
+			this->converged_[task_idx] = 1;
 			this->mse_[task_idx]            = icp->GetMSE();
 		}
 		else {
-			this->stat_.converged[task_idx] = 0;
+			this->converged_[task_idx] = 0;
 		}
 	}
 }
@@ -241,11 +239,14 @@ void registration::ParallelICP::Align() {
 			this->CentroidAlignment();
 		}
 
+        /* Recommend to use SIMPLE_ICP here */
+        /*
 		if (this->params_->icp.type == common::NORMAL_ICP) {
 			if (this->params_->icp.radius_search_ths <= 0) {
 				throw __EXCEPT__(BAD_PARAMETERS);
 			}
 
+            this->target_normal_.reset(new pcl::PointCloud<pcl::Normal>());
 			pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> est;
 			pcl::search::KdTree<pcl::PointXYZRGB>::Ptr           kdtree(new pcl::search::KdTree<pcl::PointXYZRGB>());
 			kdtree->setInputCloud(this->target_cloud_);
@@ -271,12 +272,19 @@ void registration::ParallelICP::Align() {
 
 			int idx = 0;
 			for (int i = 0; i < this->result_clouds_.size(); ++i) {
+                this->source_normals_[i].reset(new pcl::PointCloud<pcl::Normal>());
 				for (int j = 0; j < this->result_clouds_[i].size(); ++j) {
 					this->source_normals_[i]->emplace_back(temp_normal[idx]);
 					idx++;
 				}
 			}
 		}
+        */
+
+        common::PVVCParam_t::Ptr parallel_params = common::CopyParams(this->params_);
+        parallel_params->icp.type = common::SIMPLE_ICP;
+        this->params_ = parallel_params;
+
 		/* fill the task_queue_ */
 		for (size_t i = 0; i < this->result_clouds_.size(); ++i) {
 			this->task_queue_.push(i);
@@ -336,14 +344,14 @@ void registration::ParallelICP::Align() {
 // clang-format off
 void registration::ParallelICP::Log() {
 	size_t converged = 0;
-	for (auto i : this->stat_.converged) {
-		if (i != 0) {
+	for (auto i : this->converged_) {
+		if (i == true) {
 			converged += 1;
 		}
 	}
 	if (this->params_->log_level & 0x01) {
 		std::cout << __BLUET__(Launch threads : ) << " " << this->params_->thread_num << std::endl;
-		std::cout << __BLUET__(Converged / Not patches : ) << " " << converged << " / " << this->stat_.converged.size() - converged << std::endl;
+		std::cout << __BLUET__(Converged / Not patches : ) << " " << converged << " / " << this->converged_.size() - converged << std::endl;
         std::cout << __BLUET__(Time consuming : );
         printf(" %.3fs / %.3fms\n", this->clock_.GetTimeS(), this->clock_.GetTimeMs());
 		std::cout << __AZURET__(===================================================) << std::endl;
@@ -375,9 +383,9 @@ void registration::ParallelICP::Log() {
 	}
 
 	if (this->params_->log_level & 0x04) {
-		for (size_t i = 0; i < this->stat_.converged.size(); i++) {
+		for (size_t i = 0; i < this->converged_.size(); i++) {
 			std::cout << __BLUET__(Patch #) << i << " : ";
-			if (this->stat_.converged[i] ==0) {
+			if (this->converged_[i] ==0) {
 				std::cout << __YELLOWT__(is not converged);
 			}
 			else {
@@ -388,4 +396,8 @@ void registration::ParallelICP::Log() {
 		}
 		std::cout << __AZURET__(===================================================) << std::endl;
 	}
+}
+
+std::vector<bool> registration::ParallelICP::GetConverge() const {
+    return this->converged_;
 }

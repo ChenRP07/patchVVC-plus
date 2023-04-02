@@ -56,6 +56,7 @@ namespace common {
 	 * @return : {}
 	 * */
 	extern void SetDefaultParams(PVVCParam_t::Ptr _ptr);
+    extern PVVCParam_t::Ptr CopyParams(PVVCParam_t::Ptr _ptr);
 }  // namespace common
 }  // namespace vvc
 

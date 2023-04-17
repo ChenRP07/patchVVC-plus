@@ -39,19 +39,19 @@ void segment::SegmentBase::GetResultPointClouds(std::vector<common::Patch>& _res
 		}
 
 		_result.clear();
-        int cnt = 0;
-        for (auto i : this->results_) {
-            if (!i) {
-                throw __EXCEPT__(EMPTY_POINT_CLOUD);
-            }
-            if (!i->empty()) {
-                _result.emplace_back();
-                _result.back().timestamp = this->timestamp_;
-                _result.back().cloud = i;
-                _result.back().index = cnt;
-                cnt++;
-            }
-        }
+		int cnt = 0;
+		for (auto i : this->results_) {
+			if (!i) {
+				throw __EXCEPT__(EMPTY_POINT_CLOUD);
+			}
+			if (!i->empty()) {
+				_result.emplace_back();
+				_result.back().timestamp = this->timestamp_;
+				_result.back().cloud     = i;
+				_result.back().index     = cnt;
+				cnt++;
+			}
+		}
 	}
 	catch (const common::Exception& e) {
 		e.Log();
@@ -75,18 +75,19 @@ void segment::SegmentBase::SetParams(common::PVVCParam_t::Ptr _ptr) {
 }
 
 void segment::SegmentBase::SetTimeStamp(int _time) {
-    try {
-        if (_time < 0) {
-            throw __EXCEPT__(BAD_TIME_STAMP);
-        }
-        this->timestamp_ = _time;
-    }
-    catch(const common::Exception& e) {
-        e.Log();
-        throw __EXCEPT__(ERROR_OCCURED);
-    }
+	try {
+		if (_time < 0) {
+			throw __EXCEPT__(BAD_TIME_STAMP);
+		}
+		this->timestamp_ = _time;
+	}
+	catch (const common::Exception& e) {
+		e.Log();
+		throw __EXCEPT__(ERROR_OCCURED);
+	}
 }
 
+// clang-format off
 void segment::SegmentBase::Log() const {
     std::cout << __AZURET__(===================================================) << std::endl;
 	if (this->params_->log_level & 0x01) {
@@ -119,3 +120,5 @@ void segment::SegmentBase::Log() const {
     printf("%.3fs / %.3fms\n", this->clock_.GetTimeS(), this->clock_.GetTimeMs());
     std::cout << __AZURET__(===================================================) << std::endl;
 }
+
+// clang-format on

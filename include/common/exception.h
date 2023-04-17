@@ -61,23 +61,33 @@ namespace common {
 		BAD_PARAMETERS,        /* error occured when input an illegal parameter */
 		UNMATCHED_CLOUD_SIZE,  /* error occured when try to concate two point cloud with different size */
 		BAD_TIME_STAMP,        /* error occured when set or get a illegal timestamp */
+		OUT_OF_RANGE,          /* error occured when try to access an out-of-bounds address location */
+		BAD_POSITION,          /* error occured when set or get a subspace position not in {0,1,2,3,4,5,6,7} */
+		EMPTY_OCTREE,          /* error occured when do RAHT before make an octree */
+        UNMATCHED_COLOR_SIZE,  /* error occured when size of ColorYUV is not equal to size of point cloud */
 	};
 
-	inline static std::string ErrorMessage[100] = {"an error occured",
-	                                               "wrong file format",
-	                                               "no such file",
-	                                               "permission denied",
-	                                               "file error occured with unexpected reason",
-	                                               "error occured while reading file, might be an unexpected EOF",
-	                                               "error occured while writing file, might be something wrong",
-	                                               "there is no point in cloud",
-	                                               "no processing result, maybe the handler should be called first",
-	                                               "empty vvc parameters, might be a null pointer to vvc_param_t",
-	                                               "parameters are invalid of segmentation",
-	                                               "object initialization error, should be initialized first",
-	                                               "bad parameters",
-	                                               "unmatched point cloud size",
-	                                               "set/get an illegal timestamp",};
+	inline static std::string ErrorMessage[100] = {
+	    "an error occured",
+	    "wrong file format",
+	    "no such file",
+	    "permission denied",
+	    "file error occured with unexpected reason",
+	    "error occured while reading file, might be an unexpected EOF",
+	    "error occured while writing file, might be something wrong",
+	    "there is no point in cloud",
+	    "no processing result, maybe the handler should be called first",
+	    "empty vvc parameters, might be a null pointer to vvc_param_t",
+	    "parameters are invalid of segmentation",
+	    "object initialization error, should be initialized first",
+	    "bad parameters",
+	    "unmatched point cloud size",
+	    "set/get an illegal timestamp",
+	    "access out of range",
+	    "subspace position must be an integer from 0 to 7",
+	    "should make Octree before RAHT",
+        "color size is not equal to the point cloud",
+	};
 
 }  // namespace common
 }  // namespace vvc

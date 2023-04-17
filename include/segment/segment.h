@@ -52,14 +52,15 @@ namespace segment {
 		~SegmentBase() = default;
 
 		/*
-		 * @description : set source point cloud for segmentation.
+		 * @description : Set source point cloud for segmentation.
 		 * @param : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr _src}
 		 * @return : {}
 		 * */
 		void SetSourcePointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _src);
 
 		/*
-		 * @description : get result point clouds from segmentation.
+		 * @description : Get result point clouds from segmentation.
+         * It do not use std::move because empty patch should be discarded.
 		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _result}
 		 * @return : {}
 		 * */

@@ -101,14 +101,14 @@ void vvc::registration::ICP::Align() {
 	}
 }
 
-vvc::registration::NICP::NICP() : vvc::registration::ICPBase{}, nicp_{}, source_normal_{}, target_normal_{} {} 
+vvc::registration::NICP::NICP() : vvc::registration::ICPBase{}, nicp_{}, source_normal_{}, target_normal_{} {}
 
 void vvc::registration::NICP::SetSourceNormal(pcl::PointCloud<pcl::Normal>::Ptr _normal) {
 	try {
-        if (!_normal || _normal->empty()) {
-            throw __EXCEPT__(EMPTY_POINT_CLOUD);
-        }
-        this->source_normal_ = _normal;
+		if (!_normal || _normal->empty()) {
+			throw __EXCEPT__(EMPTY_POINT_CLOUD);
+		}
+		this->source_normal_ = _normal;
 	}
 	catch (const common::Exception& e) {
 		e.Log();
@@ -118,10 +118,10 @@ void vvc::registration::NICP::SetSourceNormal(pcl::PointCloud<pcl::Normal>::Ptr 
 
 void vvc::registration::NICP::SetTargetNormal(pcl::PointCloud<pcl::Normal>::Ptr _normal) {
 	try {
-        if (!_normal || _normal->empty()) {
-            throw __EXCEPT__(EMPTY_POINT_CLOUD);
-        }
-        this->target_normal_ = _normal;
+		if (!_normal || _normal->empty()) {
+			throw __EXCEPT__(EMPTY_POINT_CLOUD);
+		}
+		this->target_normal_ = _normal;
 	}
 	catch (const common::Exception& e) {
 		e.Log();
@@ -146,12 +146,12 @@ void vvc::registration::NICP::Align() {
 		}
 
 		/* Create icp instance */
-        if (this->params_->icp.type != common::NORMAL_ICP) {
-            throw __EXCEPT__(BAD_PARAMETERS);
-        }
+		if (this->params_->icp.type != common::NORMAL_ICP) {
+			throw __EXCEPT__(BAD_PARAMETERS);
+		}
 
-        this->clock_.SetTimeBegin();
-        this->nicp_.reset(new pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal>());
+		this->clock_.SetTimeBegin();
+		this->nicp_.reset(new pcl::IterativeClosestPointWithNormals<pcl::PointXYZRGBNormal, pcl::PointXYZRGBNormal>());
 
 		/* Initlize result cloud by source cloud */
 		this->result_cloud_.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -185,16 +185,16 @@ void vvc::registration::NICP::Align() {
 			throw __EXCEPT__(BAD_PARAMETERS);
 		}
 
-        /* Concate points with normals */
-        if (this->source_cloud_->size() != this->source_normal_->size()) {
-            throw __EXCEPT__(UNMATCHED_CLOUD_SIZE);
-        }
-        pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr source(new pcl::PointCloud<pcl::PointXYZRGBNormal>()), target(new pcl::PointCloud<pcl::PointXYZRGBNormal>());
-        pcl::concatenateFields(*(source_cloud_), *(source_normal_), *(source));
-        pcl::concatenateFields(*(target_cloud_), *(target_normal_), *(target));
-		
-        /* Do nicp */
-        this->nicp_->setInputSource(source);
+		/* Concate points with normals */
+		if (this->source_cloud_->size() != this->source_normal_->size()) {
+			throw __EXCEPT__(UNMATCHED_CLOUD_SIZE);
+		}
+		pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr source(new pcl::PointCloud<pcl::PointXYZRGBNormal>()), target(new pcl::PointCloud<pcl::PointXYZRGBNormal>());
+		pcl::concatenateFields(*(source_cloud_), *(source_normal_), *(source));
+		pcl::concatenateFields(*(target_cloud_), *(target_normal_), *(target));
+
+		/* Do nicp */
+		this->nicp_->setInputSource(source);
 		this->nicp_->setInputTarget(target);
 
 		pcl::PointCloud<pcl::PointXYZRGBNormal> temp;
@@ -203,20 +203,20 @@ void vvc::registration::NICP::Align() {
 
 		if (this->nicp_->hasConverged()) {
 			this->motion_vector_ = this->nicp_->getFinalTransformation() * this->motion_vector_;
-			this->converged_ = true;
-            for (auto i : temp) {
-                pcl::PointXYZRGB p;
-                p.x = i.x, p.y = i.y, p.z = i.z;
-                p.r = i.r, p.g = i.g, p.b = i.b;
-                this->result_cloud_->emplace_back(p);
-            }
+			this->converged_     = true;
+			for (auto i : temp) {
+				pcl::PointXYZRGB p;
+				p.x = i.x, p.y = i.y, p.z = i.z;
+				p.r = i.r, p.g = i.g, p.b = i.b;
+				this->result_cloud_->emplace_back(p);
+			}
 		}
-        else {
-            this->converged_ = false;
-            *(this->result_cloud_) += *(this->source_cloud_);
-        }
+		else {
+			this->converged_ = false;
+			*(this->result_cloud_) += *(this->source_cloud_);
+		}
 		this->mse_ = this->CloudMSE();
-        this->clock_.SetTimeEnd();
+		this->clock_.SetTimeEnd();
 	}
 	catch (const common::Exception& e) {
 		e.Log();

@@ -365,14 +365,15 @@ namespace registration {
 		virtual ~ParallelICP() = default;
 
 		/*
-		 * @description : set source point cloud which will be transformed.
+		 * @description : Set source point cloud which will be transformed.
 		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
 		 * @return : {}
 		 * */
 		void SetSourceClouds(std::vector<common::Patch>& _clouds);
 
 		/*
-		 * @description : get result point cloud which is transformed by source_cloud_, should be called after Align().
+		 * @description : Get result point cloud which is transformed by source_cloud_, should be called after Align().
+         * It do not use std::move because empty patch should be discarded.
 		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
 		 * @return : {}
 		 * */

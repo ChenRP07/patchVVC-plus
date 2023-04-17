@@ -48,8 +48,8 @@ namespace common {
 
 	/* segmentation statistic */
 	struct SegmentStat_t {
-		std::vector<size_t> expect_; /* expected patches size */
-		std::vector<size_t> fact_;   /* in fact patches size */
+		std::vector<int> expect_; /* expected patches size */
+		std::vector<int> fact_;   /* in fact patches size */
 	};
 
     struct ParallelICPStat_t {
@@ -60,7 +60,13 @@ namespace common {
         float dev_score(int type, int idx);
         float avg_score(int type, int idx);
     };
-	extern double Deviation(const std::vector<size_t>& _src);
+
+    struct FittingPatchStat_t {
+        std::vector<int> iters;
+        std::vector<float> score;
+        std::vector<float> costs;
+    };
+	extern float Deviation(const std::vector<int>& _src);
 	extern float Deviation(const std::vector<float>& _src);
     static boost::format color_cmd("\033[%dm%s\033[0m"); 
 }  // namespace common

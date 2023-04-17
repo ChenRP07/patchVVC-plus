@@ -251,4 +251,19 @@ void io::SaveUniqueColorPlyFile(const std::string& file_name, const pcl::PointCl
 	}
 }
 
+std::string PatchFileName(const std::string& path_name, const std::string& prev_name, int timestamp, int index) {
+    std::string ans = "";
+    ans += path_name;
+    if (ans.back() != '/') {
+        ans += '/';
+    }
+    ans += prev_name;
+    ans += "_";
+    ans += std::to_string(timestamp);
+    ans += "_";
+    ans += std::to_string(index);
+    ans += ".ply";
+    return std::move(ans);
+}
+
 #pragma GCC diagnostic pop

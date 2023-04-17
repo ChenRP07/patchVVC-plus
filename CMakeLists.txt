@@ -6,6 +6,7 @@ project(vvc
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE Debug)
+enable_language(CUDA)
 
 find_package(PCL 1.10 REQUIRED)
 if( NOT PCL_FOUND )

@@ -23,6 +23,7 @@ namespace vvc {
 namespace common {
 	enum { DENSE_SEGMENT };
 	enum { SIMPLE_ICP, LM_ICP, NORMAL_ICP, GENERAL_ICP };
+    enum { PLANAR_BISECTION, PARTIAL_CLUSTERING };
 	struct PVVCParam_t {
 		uint8_t log_level; /* quiet brief normal complete */
 		struct {
@@ -46,6 +47,12 @@ namespace common {
 		struct {
 			float resolution;
 		} octree;
+        struct {
+            float fitting_ths;
+            int split_method;
+            float clustering_ths;
+            int max_iter;
+        } patch;
 
 		using Ptr = std::shared_ptr<PVVCParam_t>;
 	};

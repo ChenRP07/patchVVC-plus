@@ -107,7 +107,7 @@ void segment::DenseSegment::Segment() {
 		float max_x = FLT_TRUE_MIN, max_y = FLT_TRUE_MIN, max_z = FLT_TRUE_MIN;
 		float min_x = FLT_MAX, min_y = FLT_MAX, min_z = FLT_MAX;
 
-		for (auto& i : *(this->source_cloud_)) {
+		for (auto i : *(this->source_cloud_)) {
 			max_x = std::max(max_x, i.x), max_y = std::max(max_y, i.y), max_z = std::max(max_z, i.z);
 			min_x = std::min(min_x, i.x), min_y = std::min(min_y, i.y), min_z = std::min(min_z, i.z);
 		}
@@ -247,7 +247,7 @@ void segment::DenseSegment::Segment() {
 		}
 
 		this->stat_.fact_.clear();
-		for (auto& i : this->results_) {
+		for (auto i : this->results_) {
 			this->stat_.fact_.emplace_back(i->size());
 		}
         this->clock_.SetTimeEnd();

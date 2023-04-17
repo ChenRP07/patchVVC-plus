@@ -23,7 +23,7 @@ void registration::ParallelICP::SetSourceClouds(std::vector<common::Patch>& _clo
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
 
-		for (auto i : _clouds) {
+		for (auto& i : _clouds) {
 			if (!i || i.empty()) {
 				throw __EXCEPT__(EMPTY_POINT_CLOUD);
 			}
@@ -62,7 +62,7 @@ void registration::ParallelICP::GetResultClouds(std::vector<common::Patch>& _clo
 		}
 
 		_clouds.clear();
-		for (auto i : this->result_clouds_) {
+		for (auto& i : this->result_clouds_) {
 			if (!i.cloud) {
 				throw __EXCEPT__(EMPTY_POINT_CLOUD);
 			}
@@ -86,7 +86,7 @@ void registration::ParallelICP::CentroidAlignment() {
 	pcl::PointXYZ source_global_centroid(0.0f, 0.0f, 0.0f), target_global_centroid(0.0f, 0.0f, 0.0f);
 	size_t        source_size = 0;
 	for (auto& i : this->result_clouds_) {
-		for (auto& j : *i.cloud) {
+		for (auto j : *i) {
 			source_global_centroid.x += j.x;
 			source_global_centroid.y += j.y;
 			source_global_centroid.z += j.z;
@@ -94,7 +94,7 @@ void registration::ParallelICP::CentroidAlignment() {
 		}
 	}
 
-	for (auto& i : *(this->target_cloud_)) {
+	for (auto i : *(this->target_cloud_)) {
 		target_global_centroid.x += i.x;
 		target_global_centroid.y += i.y;
 		target_global_centroid.z += i.z;
@@ -110,7 +110,7 @@ void registration::ParallelICP::CentroidAlignment() {
 
 	/* move point and fill the result_clouds_ */
 	for (size_t i = 0; i < this->result_clouds_.size(); i++) {
-		for (auto& j : *(this->result_clouds_.at(i).cloud)) {
+		for (auto& j : *(this->result_clouds_.at(i))) {
 			j.x += target_global_centroid.x - source_global_centroid.x;
 			j.y += target_global_centroid.y - source_global_centroid.y;
 			j.z += target_global_centroid.z - source_global_centroid.z;
@@ -140,7 +140,7 @@ void registration::ParallelICP::Task() {
 		kdtree.setInputCloud(this->target_cloud_);
 
 		pcl::PointXYZ local(0.0f, 0.0f, 0.0f);
-		for (auto& i : *(this->result_clouds_[task_idx].cloud)) {
+		for (auto i : *(this->result_clouds_[task_idx])) {
 			std::vector<int>   idx(1);
 			std::vector<float> dis(1);
 			kdtree.nearestKSearch(i, 1, idx, dis);
@@ -152,7 +152,7 @@ void registration::ParallelICP::Task() {
 		local.y /= this->result_clouds_[task_idx].size();
 		local.z /= this->result_clouds_[task_idx].size();
 
-		for (auto& i : *(this->result_clouds_[task_idx].cloud)) {
+		for (auto& i : *(this->result_clouds_[task_idx])) {
 			i.x += local.x;
 			i.y += local.y;
 			i.z += local.z;
@@ -311,7 +311,7 @@ void registration::ParallelICP::Align() {
 		std::vector<int>                       source_index;
 
 		for (int i = 0; i < this->result_clouds_.size(); ++i) {
-			for (auto j : *(this->result_clouds_[i].cloud)) {
+			for (auto j : *(this->result_clouds_[i])) {
 				search_cloud->emplace_back(j);
 				source_index.emplace_back(i);
 			}

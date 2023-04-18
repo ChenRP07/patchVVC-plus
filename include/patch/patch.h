@@ -130,8 +130,11 @@ namespace patch {
 
 	class GoPEncoding {
 	  private:
-		octree::RAHTOctree                     tree_;
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr fitting_cloud_;
+		octree::RAHTOctree                                  tree_;
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr              fitting_cloud_;
+		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> source_clouds_;
+		std::vector<std::vector<common::ColorYUV>>          source_colors_;
+        std::vector<int> RAHT_weights_;
 	};
 }  // namespace patch
 }  // namespace vvc

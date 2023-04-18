@@ -53,9 +53,9 @@ namespace octree {
 	 * */
 	extern bool CheckSubSpace(std::vector<std::vector<int>>& _space);
 
-    extern std::pair<common::ColorYUV, common::ColorYUV> HaarTransform(std::pair<int, int>& _w, std::pair<common::ColorYUV, common::ColorYUV>& _g);
+	extern std::pair<common::ColorYUV, common::ColorYUV> HaarTransform(std::pair<int, int>& _w, std::pair<common::ColorYUV, common::ColorYUV>& _g);
 
-    extern std::pair<common::ColorYUV, common::ColorYUV> InvertHaarTransform(std::pair<int, int>& _w, std::pair<common::ColorYUV, common::ColorYUV>& _g);
+	extern std::pair<common::ColorYUV, common::ColorYUV> InvertHaarTransform(std::pair<int, int>& _w, std::pair<common::ColorYUV, common::ColorYUV>& _g);
 
 	static uint8_t NodeValue[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
 
@@ -81,8 +81,8 @@ namespace octree {
 		 * null/0-7/0246/1357/04/15/26/37/0/1/2/3/4/5/6/7 */
 		int weight[16];
 
-        /* g_DC/h_xyz/h_xy/h_xy/h_x/h_x/h_x/h_x/g0/g1/g2/g3/g4/g5/g6/g7 */
-        common::ColorYUV raht[16];
+		/* g_DC/h_xyz/h_xy/h_xy/h_x/h_x/h_x/h_x/g0/g1/g2/g3/g4/g5/g6/g7 */
+		common::ColorYUV raht[16];
 
 		/* Default constructor */
 		OctreeNode_t() : value{0x00}, index{0}, raht{} {
@@ -91,32 +91,32 @@ namespace octree {
 			}
 		}
 
-        OctreeNode_t(const OctreeNode_t& _x) : value{_x.value}, index{_x.index} {
-            for (int i = 0; i < 16; ++i) {
-                this->weight[i] = _x.weight[i];
-            }
-            
-            for (int i = 0; i < 16; ++i) {
-                this->raht[i] = _x.raht[i];
-            }
-        }
+		OctreeNode_t(const OctreeNode_t& _x) : value{_x.value}, index{_x.index} {
+			for (int i = 0; i < 16; ++i) {
+				this->weight[i] = _x.weight[i];
+			}
 
-        OctreeNode_t& operator=(const OctreeNode_t& _x) {
-            this->value = _x.value;
-            this->index = _x.index;
-            
-            for (int i = 0; i < 16; ++i) {
-                this->weight[i] = _x.weight[i];
-            }
-            
-            for (int i = 0; i < 16; ++i) {
-                this->raht[i] = _x.raht[i];
-            }
-            return *this;
-        }
+			for (int i = 0; i < 16; ++i) {
+				this->raht[i] = _x.raht[i];
+			}
+		}
 
-        void HierarchicalTransform();
-        void InvertHierarchicalTransform();
+		OctreeNode_t& operator=(const OctreeNode_t& _x) {
+			this->value = _x.value;
+			this->index = _x.index;
+
+			for (int i = 0; i < 16; ++i) {
+				this->weight[i] = _x.weight[i];
+			}
+
+			for (int i = 0; i < 16; ++i) {
+				this->raht[i] = _x.raht[i];
+			}
+			return *this;
+		}
+
+		void HierarchicalTransform();
+		void InvertHierarchicalTransform();
 	};
 
 	class OctreeBase {
@@ -216,6 +216,8 @@ namespace octree {
 		 * @return : {std::vector<common::ColorYUV>}
 		 * */
 		std::vector<common::ColorYUV> GetRAHTResult();
+
+		std::vector<int> GetRAHTWeights() const;
 
 		/*
 		 * @description : Do RAHT

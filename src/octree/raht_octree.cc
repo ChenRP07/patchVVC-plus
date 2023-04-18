@@ -181,48 +181,81 @@ namespace octree {
 		}
 	}
 
-    void RAHTOctree::RAHT() {
-        try {
-            if (!this->params_) {
-                throw __EXCEPT__(EMPTY_PARAMS);
-            }
+	void RAHTOctree::RAHT() {
+		try {
+			if (!this->params_) {
+				throw __EXCEPT__(EMPTY_PARAMS);
+			}
 
-            if (this->tree_.size() != this->tree_height_ || this->tree_height_ <= 0) {
-                throw __EXCEPT__(EMPTY_OCTREE);
-            }
+			if (this->tree_.size() != this->tree_height_ || this->tree_height_ <= 0) {
+				throw __EXCEPT__(EMPTY_OCTREE);
+			}
 
-            if (!this->source_colors_ || this->source_colors_->size() != this->source_cloud_->size()) {
-                throw __EXCEPT__(UNMATCHED_COLOR_SIZE);
-            }
+			if (!this->source_colors_ || this->source_colors_->size() != this->source_cloud_->size()) {
+				throw __EXCEPT__(UNMATCHED_COLOR_SIZE);
+			}
 
-            /* Do voxel downsampling for the leaf nodes */
-            for (auto& node : this->tree_.back()) {
-                common::ColorYUV temp;
-                for (auto i : node.index) {
-                    temp += this->source_colors_->at(i);
-                }
-                temp /= node.index.size();
-                node.raht[0] = temp;
-            }
-             
-            for (int i = this->tree_height_ - 2; i >= 0; --i) {
-                for (auto& node : this->tree_[i]) {
-                    /* Collect subnodes' g_DC */
-                    for (int idx = 0; idx < 8; ++idx) {
-                        if (node.index[idx] != -1) {
-                            node.raht[idx + 8] = this->tree_[i][node.index[idx]].raht[0];
-                        }
-                    } 
-                    /* Do region-adaptive hierarchical transform */
-                    node.HierarchicalTransform();
-                }
-            }
-        }
-        catch(const common::Exception& e) {
-            e.Log();
-            throw __EXCEPT__(ERROR_OCCURED);
-        }
-    }
+			/* Do voxel downsampling for the leaf nodes */
+			for (auto& node : this->tree_.back()) {
+				common::ColorYUV temp;
+				for (auto i : node.index) {
+					temp += this->source_colors_->at(i);
+				}
+				temp /= node.index.size();
+				node.raht[0] = temp;
+			}
+
+			for (int i = this->tree_height_ - 2; i >= 0; --i) {
+				for (auto& node : this->tree_[i]) {
+					/* Collect subnodes' g_DC */
+					for (int idx = 0; idx < 8; ++idx) {
+						if (node.index[idx] != -1) {
+							node.raht[idx + 8] = this->tree_[i][node.index[idx]].raht[0];
+						}
+					}
+					/* Do region-adaptive hierarchical transform */
+					node.HierarchicalTransform();
+				}
+			}
+
+			/* Collect all coefficients */
+			if (!this->RAHT_result_.empty()) {
+				this->RAHT_result_.clear();
+			}
+
+			/* g_DC */
+			this->RAHT_result_.emplace_back(this->tree_.front().front().raht[0]);
+			/* h_AC */
+			for (int i = 0; i < this->tree_height_ - 1; ++i) {
+				for (auto& node : this->tree_[i]) {
+					/* w1,w2 should both greater than 0 */
+					for (int idx = 1; idx < 8; ++idx) {
+						if (node.weight[NodeWeight[idx][0]] != 0 && node.weight[NodeWeight[idx][1]] != 0) {
+							this->RAHT_result_.emplace_back(node.raht[idx]);
+						}
+					}
+				}
+			}
+		}
+		catch (const common::Exception& e) {
+			e.Log();
+			throw __EXCEPT__(ERROR_OCCURED);
+		}
+	}
+
+	std::vector<int> RAHTOctree::GetRAHTWeights() const {
+		std::vector<int> result;
+		for (int i = 0; i < this->tree_height_ - 1; ++i) {
+			for (auto& node : this->tree_[i]) {
+				for (int idx = 1; idx < 8; ++idx) {
+					if (node.weight[NodeWeight[idx][0]] != 0 && node.weight[NodeWeight[idx][1]] != 0) {
+						result.emplace_back(node.weight[idx]);
+					}
+				}
+			}
+		}
+        return result;
+	}
 }  // namespace octree
 }  // namespace vvc
 

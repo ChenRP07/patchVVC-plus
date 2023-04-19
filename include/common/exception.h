@@ -64,7 +64,8 @@ namespace common {
 		OUT_OF_RANGE,          /* error occured when try to access an out-of-bounds address location */
 		BAD_POSITION,          /* error occured when set or get a subspace position not in {0,1,2,3,4,5,6,7} */
 		EMPTY_OCTREE,          /* error occured when do RAHT before make an octree */
-        UNMATCHED_COLOR_SIZE,  /* error occured when size of ColorYUV is not equal to size of point cloud */
+		UNMATCHED_COLOR_SIZE,  /* error occured when size of ColorYUV is not equal to size of point cloud */
+		ZSTD_ERROR,            /* error occured when use Zstandard API */
 	};
 
 	inline static std::string ErrorMessage[100] = {
@@ -86,7 +87,8 @@ namespace common {
 	    "access out of range",
 	    "subspace position must be an integer from 0 to 7",
 	    "should make Octree before RAHT",
-        "color size is not equal to the point cloud",
+	    "color size is not equal to the point cloud",
+        "unknown error in Zstandard API",
 	};
 
 }  // namespace common

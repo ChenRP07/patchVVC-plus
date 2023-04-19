@@ -34,6 +34,7 @@ namespace common {
 			float block_num;
 		} segment;
 		int thread_num;
+        int zstd_level;
 		struct {
 			float correspondence_ths;
 			int   iteration_ths;

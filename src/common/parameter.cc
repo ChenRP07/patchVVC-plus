@@ -32,6 +32,7 @@ void common::SetDefaultParams(common::PVVCParam_t::Ptr _ptr) {
 		_ptr->segment.block_num = 8.0f;
 
 		_ptr->thread_num = 30;
+        _ptr->zstd_level = 22;
 
 		_ptr->icp.centroid_alignment = true;
 		_ptr->icp.correspondence_ths = 100.0f;
@@ -57,6 +58,7 @@ common::PVVCParam_t::Ptr common::CopyParams(common::PVVCParam_t::Ptr _ptr) {
 
         p->log_level = _ptr->log_level;
         p->thread_num = _ptr->thread_num;
+        p->zstd_level = _ptr->zstd_level;
         
         p->segment.type = _ptr->segment.type;
         p->segment.num = _ptr->segment.num;

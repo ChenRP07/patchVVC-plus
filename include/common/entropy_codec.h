@@ -19,6 +19,7 @@
 #include <memory>
 #include <numeric>
 #include <vector>
+#include <zstd.h>
 
 #include "common/exception.h"
 #include "common/parameter.h"
@@ -79,13 +80,13 @@ namespace common {
 		}
 	}
 
-	/* 
-     * Run Length Golomb Rice Encoder 
-     * How to use ?
-     * RLGREncoder enc;
-     * enc.Encode(Your_data);
-     * result = enc.GetResult();
-     * */
+	/*
+	 * Run Length Golomb Rice Encoder
+	 * How to use ?
+	 * RLGREncoder enc;
+	 * enc.Encode(Your_data);
+	 * result = enc.GetResult();
+	 * */
 	class RLGREncoder {
 	  private:
 		FIX_INT              buffer_; /* Bitstream buffer */
@@ -114,14 +115,14 @@ namespace common {
 		 * */
 		void GRWrite(FIX_INT _x, int _bits);
 
-        /*
-         * @description : Reset encoder
-         * */
-        inline void Reset() {
-            this->result_.clear();
-            this->cnt_ = 0;
-            this->buffer_ = 0;
-        }
+		/*
+		 * @description : Reset encoder
+		 * */
+		inline void Reset() {
+			this->result_.clear();
+			this->cnt_    = 0;
+			this->buffer_ = 0;
+		}
 
 	  public:
 		/*
@@ -146,85 +147,143 @@ namespace common {
 		std::vector<uint8_t> GetResult();
 	};
 
-    /*
-     * Run-Length Golomb-Rice Decoder 
-     * How to use?
-     * RLGRDecoder dec;
-     * dec.Decode(Your_data);
-     * result = dec.GetResult();
-     * */
+	/*
+	 * Run-Length Golomb-Rice Decoder
+	 * How to use?
+	 * RLGRDecoder dec;
+	 * dec.Decode(Your_data);
+	 * result = dec.GetResult();
+	 * */
 	class RLGRDecoder {
 	  private:
-		FIX_INT                        buffer_; /* Bitstream buffer */
-		int                            cnt_; /* Valid bits in buffer */
-		std::vector<FIX_DATA_INT>      result_; /* Decoding result */
+		FIX_INT                        buffer_;    /* Bitstream buffer */
+		int                            cnt_;       /* Valid bits in buffer */
+		std::vector<FIX_DATA_INT>      result_;    /* Decoding result */
 		std::vector<uint8_t>::iterator now_, end_; /* Iterator of decoded data */
 
-        /*
-         * @description : Get data to fill the buffer 
-         * */
+		/*
+		 * @description : Get data to fill the buffer
+		 * */
 		void Fill();
 
-        /*
-         * @description : Read 1-bit from buffer_
-         * @param  : {}
-         * @return : {uint8_t}
-         * */
+		/*
+		 * @description : Read 1-bit from buffer_
+		 * @param  : {}
+		 * @return : {uint8_t}
+		 * */
 		uint8_t Read();
 
-        /*
-         * @description : Read _bits data from buffer_
-         * @param  : {int _bits}
-         * @return : {FIX_INT}
-         * */
+		/*
+		 * @description : Read _bits data from buffer_
+		 * @param  : {int _bits}
+		 * @return : {FIX_INT}
+		 * */
 		FIX_INT Read(int _bits);
 
-        /*
-         * @description : Golomb-Rice decode _bits data
-         * @param  : {int _bits}
-         * @return : {FIX_INT}
-         * */
+		/*
+		 * @description : Golomb-Rice decode _bits data
+		 * @param  : {int _bits}
+		 * @return : {FIX_INT}
+		 * */
 		FIX_INT GRRead(int _bits);
 
-        /*
-         * @description : Check decoded data stream reaches end
-         * @param  : {}
-         * @return : {bool}
-         * */
+		/*
+		 * @description : Check decoded data stream reaches end
+		 * @param  : {}
+		 * @return : {bool}
+		 * */
 		inline bool End() const {
 			return this->now_ == this->end_;
 		}
 
-        /*
-         * @description : Reset decoder
-         * */
-        inline void Reset() {
-            this->result_.clear();
-            this->cnt_ = 0;
-            this->buffer_ = 0;
-        }
+		/*
+		 * @description : Reset decoder
+		 * */
+		inline void Reset() {
+			this->result_.clear();
+			this->cnt_    = 0;
+			this->buffer_ = 0;
+		}
 
 	  public:
-        /*
-         * @description : Default constructor and deconstructor
-         * */
+		/*
+		 * @description : Default constructor and deconstructor
+		 * */
 		RLGRDecoder();
 
 		~RLGRDecoder() = default;
 
-        /*
-         * @description : Decode data, should generate _size decoding result
-         * @param  : {std::shared_ptr<std::vector<uint8_t>> _data}
-         * @param  : {int _size}
-         * @return : {}
-         * */
+		/*
+		 * @description : Decode data, should generate _size decoding result
+		 * @param  : {std::shared_ptr<std::vector<uint8_t>> _data}
+		 * @param  : {int _size}
+		 * @return : {}
+		 * */
 		void Decode(std::shared_ptr<std::vector<uint8_t>> _data, int _size);
 
-        /*
-         * @description : Get decoding result, using std::move
-         * @return : {std::vector<FIX_DATA_INT>}
-         * */
+		/*
+		 * @description : Get decoding result, using std::move
+		 * @return : {std::vector<FIX_DATA_INT>}
+		 * */
 		std::vector<FIX_DATA_INT> GetResult();
+	};
+
+	class ZstdEncoder {
+	  private:
+		PVVCParam_t::Ptr                      params_; /* patchVVC parameters */
+		std::shared_ptr<std::vector<uint8_t>> result_; /* Encoding result */
+
+	  public:
+        /* Default constructor and deconstructor */
+		ZstdEncoder();
+
+		~ZstdEncoder() = default;
+
+        /*
+         * @description : Get encoding result
+         * @param  : {}
+         * @return : {std::shared_ptr<std::vector<uint8_t>>}
+         * */
+		std::shared_ptr<std::vector<uint8_t>> GetResult() const;
+
+        /*
+         * @description : Set patchVVC parameters
+         * @param  : {PVVCParam_t::Ptr _param}
+         * @return : {}
+         * */
+        void SetParams(PVVCParam_t::Ptr _param);
+
+        /*
+         * @description : Encode data
+         * @param  : {std::shared_ptr<std::vector<uint8_t>> _data}
+         * @return : {}
+         * */
+		void Encode(std::shared_ptr<std::vector<uint8_t>> _data);
+	};
+
+    class ZstdDecoder {
+	  private:
+		std::shared_ptr<std::vector<uint8_t>> result_; /* Decoding result */
+
+	  public:
+        /* Default constructor and deconstructor */
+		ZstdDecoder();
+
+		~ZstdDecoder() = default;
+
+        /*
+         * @description : Get decoding result
+         * @param  : {}
+         * @return : {std::shared_ptr<std::vector<uint8_t>>}
+         * */
+		std::shared_ptr<std::vector<uint8_t>> GetResult() const;
+
+        /*
+         * @description : Decode data
+         * @param  : {std::shared_ptr<std::vector<uint8_t>> _data}
+         * @return : {}
+         * */
+		void Decode(std::shared_ptr<std::vector<uint8_t>> _data);
 	};
 
 	/*

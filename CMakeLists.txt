@@ -17,6 +17,9 @@ find_package(Boost COMPONENTS program_options)
 
 find_package(Threads)
 
+find_package(zstd)
+set(ZSTD_LIB zstd::libzstd_shared)
+
 include_directories(${PCL_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/include/)

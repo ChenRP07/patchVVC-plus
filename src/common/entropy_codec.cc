@@ -6,9 +6,9 @@
  * Copyright: @ChenRP07. All Right Reserved.
  *
  * Author        : ChenRP07
- * Description   :
+ * Description   : Implement of entropy_codec.h, check it for details.
  * Create Time   : 2023/04/18 11:34
- * Last Modified : 2023/04/18 11:34
+ * Last Modified : 2023/04/19 19:09
  *
  */
 
@@ -16,7 +16,10 @@
 
 namespace vvc {
 namespace common {
-	void RLGREncoder::Flush() {
+
+    RLGREncoder::RLGREncoder() : buffer_{0}, cnt_{0}, result_{} {}
+
+    void RLGREncoder::Flush() {
 		uint8_t temp;
 		while (this->cnt_ >= BIT_COUNT_8) {
 			this->cnt_ -= BIT_COUNT_8;
@@ -28,18 +31,259 @@ namespace common {
 	void RLGREncoder::Write(uint8_t _x) {
 		this->buffer_ <<= 1;
 		this->buffer_ |= (_x & 0x01);
+        this->cnt_++;
 		this->Flush();
 	}
 
-    void RLGREncoder::Write(FIX_INT _x, int _bits) {
-        if (_bits > (FIX_BIT_COUNT - BIT_COUNT_8)) {
-            this->Write(_x >> (FIX_BIT_COUNT / 2), _bits - FIX_BIT_COUNT / 2);
-            this->Write(_x & __MASK__(FIX_BIT_COUNT / 2), FIX_BIT_COUNT / 2);
-            return;
+	void RLGREncoder::Write(FIX_INT _x, int _bits) {
+		if (_bits > (FIX_BIT_COUNT - BIT_COUNT_8)) {
+			this->Write(_x >> (HALF_FIX_BIT_COUNT), _bits - HALF_FIX_BIT_COUNT);
+			this->Write(_x & __MASK__(HALF_FIX_BIT_COUNT), HALF_FIX_BIT_COUNT);
+			return;
+		}
+		this->buffer_ = (this->buffer_ << _bits) + _x;
+		this->cnt_ += _bits;
+		this->Flush();
+	}
+
+	void RLGREncoder::GRWrite(FIX_INT _x, int _bits) {
+		FIX_INT p = _x >> _bits;
+
+		if (p < HALF_FIX_BIT_COUNT) {
+			/* Quotient, 1...10 */
+			this->Write(__MASK__(p + 1) - 1, p + 1);
+
+			/* Reminder, lower _bits bit, binary */
+			this->Write(_x & __MASK__(_bits), _bits);
+		}
+		else {
+			this->Write(__MASK__(HALF_FIX_BIT_COUNT), HALF_FIX_BIT_COUNT);
+			this->Write(_x, HALF_FIX_BIT_COUNT);
+		}
+	}
+
+	void RLGREncoder::Encode(std::shared_ptr<std::vector<FIX_DATA_INT>> _data) {
+        this->Reset();
+		FIX_INT u_data;
+		FIX_INT k_P  = 0;
+		FIX_INT k_RP = 2 * L;
+		FIX_INT m    = 0;
+
+		FIX_INT k;
+		FIX_INT k_R;
+		FIX_INT p;
+
+		for (auto i : *_data) {
+			u_data = Sign2Unsign(i);
+
+			k   = k_P / L;
+			k_R = k_RP / L;
+
+			/* Run Length coding */
+			if (k) {
+				if (u_data) {
+					--u_data;
+
+					/* End run of 0 */
+					this->Write(0);
+					this->Write(m, k);
+					this->GRWrite(u_data, k_R);
+
+					/* Adapt k_RP */
+					p = u_data >> k_R;
+					if (p) {
+						k_RP += p - 1;
+						k_RP = k_RP > HALF_FIX_BIT_COUNT * L ? HALF_FIX_BIT_COUNT * L : k_RP;
+					}
+					else {
+						k_RP = k_RP < 2 ? 0 : k_RP - 2;
+					}
+
+					/* Adapt k_P */
+					k_P = k_P < D1 ? 0 : k_P - D1;
+
+					m = 0;
+				}
+				else {
+					/* Continue run of 0 */
+					++m;
+					if (m == (0x1 << k)) {
+						this->Write(1);
+						/* Adapt k_P */
+						k_P += U1;
+						m = 0;
+					}
+				}
+			}
+			/* No Run Length coding */
+			else {
+				this->GRWrite(u_data, k_R);
+
+				/* Adapt k_RP */
+				p = u_data >> k_R;
+                if (p) {
+                    k_RP = k_RP + p - 1;
+                    k_RP = k_RP > HALF_FIX_BIT_COUNT * L ? HALF_FIX_BIT_COUNT * L : k_RP;
+                }
+                else {
+                    k_RP = k_RP < 2 ? 0 : k_RP - 2;
+                }
+
+                /* Adapt k_P */
+                if (u_data) {
+                    k_P = k_P < D0 ? 0 : k_P - D0;
+                }
+                else {
+                    k_P += U0;
+                }
+
+                m = 0;
+			}
+		}
+
+        if (k && !u_data) {
+            this->Write(0);
+            this->Write(m, k_P / L);
         }
-        this->buffer_ = (this->buffer_ << _bits) + _x;
-        this->cnt_ += _bits;
-        this->Flush();
+	}
+
+    std::vector<uint8_t> RLGREncoder::GetResult() {
+        int r = this->cnt_ % BIT_COUNT_8;
+        if (r) {
+            this->Write(0, BIT_COUNT_8 - r);
+        }
+        else {
+            this->Flush();
+        }
+        return std::move(this->result_);
+    }
+
+    RLGRDecoder::RLGRDecoder() : buffer_{0}, cnt_{0}, now_{}, end_{}, result_{} {}
+
+    void RLGRDecoder::Fill() {
+        uint8_t data;
+        while (this->cnt_ <= (FIX_BIT_COUNT - BIT_COUNT_8)) {
+            if (!this->End()) {
+                data = *(this->now_);
+                this->now_ = std::next(this->now_, 1);
+                this->buffer_ = (this->buffer_ << BIT_COUNT_8) + data;
+                this->cnt_ += BIT_COUNT_8;
+            }
+            else {
+                return;
+            }
+        }
+    }
+
+    uint8_t RLGRDecoder::Read() {
+        if (this->cnt_ == 0) {
+            this->Fill();
+        }
+        --this->cnt_;
+        return (this->buffer_ >> this->cnt_) & 0x1;
+    }
+
+    FIX_INT RLGRDecoder::Read(int _bits) {
+        if (_bits > (FIX_BIT_COUNT - BIT_COUNT_8)) {
+            FIX_INT data = this->Read(_bits - HALF_FIX_BIT_COUNT) << HALF_FIX_BIT_COUNT;
+            return data + this->Read(HALF_FIX_BIT_COUNT);
+        }
+        this->Fill();
+        this->cnt_ -= _bits;
+        return (this->buffer_ >> this->cnt_) & __MASK__(_bits);
+    }
+
+    FIX_INT RLGRDecoder::GRRead(int _bits) {
+        FIX_INT p = 0;
+        while (this->Read()) {
+            p++;
+            if (p >= HALF_FIX_BIT_COUNT) {
+                return this->Read(HALF_FIX_BIT_COUNT);
+            }
+        }
+        return (p << _bits) + this->Read(_bits);
+    }
+
+    void RLGRDecoder::Decode(std::shared_ptr<std::vector<uint8_t>> _data, int _size) {
+        this->Reset();
+        this->now_ = _data->begin();
+        this->end_ = _data->end();
+        FIX_INT u_data;
+        FIX_INT k_P = 0;
+        FIX_INT k_RP = 2 * L;
+        FIX_INT m = 0;
+
+        FIX_INT k;
+        FIX_INT k_R;
+        FIX_INT p;
+
+        int n = 0;
+        while (n < _size) {
+            k = k_P / L;
+            k_R = k_RP / L;
+
+            /* Run Length coding */
+            if (k) {
+                m = 0;
+                while (this->Read()) {
+                    m += 0x1 << k;
+                    k_P += U1;
+                    k = k_P / L;
+                }
+                m += this->Read(k);
+                while (m--) {
+                    this->result_.emplace_back(0);
+                    ++n;
+                }
+                if (n >= _size) {
+                    break;
+                }
+                u_data = this->GRRead(k_R);
+                this->result_.emplace_back(Unsign2Sign(u_data + 1));
+                n++;
+
+                /* Adapt k_RP */
+                p = u_data >> k_R;
+                if (p) {
+                    k_RP += p - 1;
+                    k_RP = k_RP > HALF_FIX_BIT_COUNT * L ? HALF_FIX_BIT_COUNT * L : k_RP;
+                }
+                else {
+                    k_RP = k_RP < 2 ? 0 : k_RP - 2;
+                }
+
+                /* Adapt k_P */
+                k_P = k_P < D1 ? 0 : k_P - D1;
+            }
+            /* No Run Length coding */
+            else {
+                u_data = this->GRRead(k_R);
+                this->result_.emplace_back(Unsign2Sign(u_data));
+                n++;
+
+                /* Adapt k_RP */
+                p = u_data >> k_R;
+                if (p) {
+                    k_RP = k_RP + p - 1;
+                    k_RP = k_RP > HALF_FIX_BIT_COUNT * L ? HALF_FIX_BIT_COUNT * L : k_RP;
+                }
+                else {
+                    k_RP = k_RP < 2 ? 0 : k_RP - 2;
+                }
+
+                /* Adapt k_P */
+                if (u_data) {
+                    k_P = k_P < D0 ? 0 : k_P - D0;
+                }
+                else {
+                    k_P += U0;
+                }
+            }
+        }
+    }
+
+    std::vector<FIX_DATA_INT> RLGRDecoder::GetResult() {
+        return std::move(this->result_);
     }
 }  // namespace common
 }  // namespace vvc

@@ -13,6 +13,7 @@
  */
 
 #include "patch/patch.h"
+
 namespace vvc {
 namespace patch {
 	PatchFitting::PatchFitting() : fitting_cloud_{nullptr}, source_patches_{}, params_{nullptr}, stat_{}, clock_{}, max_height_{0} {}

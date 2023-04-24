@@ -12,17 +12,20 @@ find_package(PCL 1.10 REQUIRED)
 if( NOT PCL_FOUND )
     message(FATAL_ERROR "Cannot find PCL in this machine!")
 endif()
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+    set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+endif()
 
 find_package(Boost COMPONENTS program_options)
 
 find_package(Threads)
 
-find_package(zstd)
-set(ZSTD_LIB zstd::libzstd_shared)
+find_package(ZSTD)
 
 include_directories(${PCL_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/include/)
+include_directories(${ZSTD_INCLUDE_DIRS})
 
 link_directories(${PCL_LIBRARY_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
@@ -36,7 +39,7 @@ aux_source_directory(./src/registration REGISTRATION_SRC)
 
 message(${SEGMENT_SRC})
 add_library(pvvc SHARED ${IO_SRC} ${COMMON_SRC} ${SEGMENT_SRC} ${OCTREE_SRC} ${REGISTRATION_SRC})
-target_link_libraries(pvvc ${PCL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(pvvc ${PCL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZSTD_LIBRARIES})
 set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
 
 if(NOT EXISTS ${CMAKE_SOURCE_DIR}/test)

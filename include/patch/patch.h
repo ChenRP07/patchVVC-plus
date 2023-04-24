@@ -8,7 +8,7 @@
  * Author        : ChenRP07
  * Description   :
  * Create Time   : 2023/04/02 16:07
- * Last Modified : 2023/04/02 16:07
+ * Last Modified : 2023/04/24 10:55
  *
  */
 
@@ -130,12 +130,34 @@ namespace patch {
 
 	class GoPEncoding {
 	  private:
-		octree::RAHTOctree                                  tree_;
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr              fitting_cloud_;
-		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> source_clouds_;
-		std::vector<std::vector<common::ColorYUV>>          source_colors_;
-        std::vector<int> RAHT_weights_;
-	};
+		common::PVVCTime_t  clock_;
+		common::PVVCParam_t params_;
+		octree::RAHTOctree  tree_;
+
+        std::vector<common::Slice> results_;
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr     fitting_cloud_;
+		std::vector<common::Patch>                 source_patches_;
+		std::vector<std::vector<common::ColorYUV>> patch_colors_;
+
+	  public:
+		/* Default constructor and deconstructor */
+		GoPEncoding();
+
+		~GoPEncoding() = default;
+
+        /*
+         * @description : Set patchVVC parameters.
+         * @param  : {common::PVVCParam_t _param}
+         * @return : {}
+         * */
+        void SetParams(common::PVVCParam_t _param);
+
+        void SetFittingCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
+
+        void SetSourcePatches(std::vector<common::Patch> _patches);
+
+        void Encode(); 
+    };	
 }  // namespace patch
 }  // namespace vvc
 

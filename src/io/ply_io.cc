@@ -86,6 +86,12 @@ void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::Poi
 				}
 			}
 		}
+		if (point_cloud == nullptr) {
+			point_cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+		}
+		else {
+			point_cloud->clear();
+		}
 		// ascii
 		if (file_type == 0) {
 			for (size_t i = 0; i < point_cloud_size; i++) {
@@ -103,16 +109,16 @@ void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::Poi
 		else if (file_type == 1) {
 			for (size_t i = 0; i < point_cloud_size; i++) {
 				pcl::PointXYZRGB point;
-                float xyz[3];
-                uint8_t rgb[3];
+				float            xyz[3];
+				uint8_t          rgb[3];
 				if (fread(xyz, sizeof(float), 3, fp) != 3) {
 					throw __EXCEPT__(FILE_READ_ERROR);
 				}
-                if (fread(rgb, sizeof(uint8_t), 3, fp) != 3) {
+				if (fread(rgb, sizeof(uint8_t), 3, fp) != 3) {
 					throw __EXCEPT__(FILE_READ_ERROR);
 				}
-                point.x = xyz[0], point.y = xyz[1], point.z = xyz[2];
-                point.r = rgb[0], point.g = rgb[1], point.b = rgb[2];
+				point.x = xyz[0], point.y = xyz[1], point.z = xyz[2];
+				point.r = rgb[0], point.g = rgb[1], point.b = rgb[2];
 				point_cloud->emplace_back(point);
 			}
 		}
@@ -120,7 +126,7 @@ void io::LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::Poi
 	}
 	catch (const common::Exception& e) {
 		e.Log();
-        throw __EXCEPT__(ERROR_OCCURED);
+		throw __EXCEPT__(ERROR_OCCURED);
 	}
 }
 
@@ -142,6 +148,9 @@ void io::SaveColorPlyFile(const std::string& file_name, const pcl::PointCloud<pc
 				case EACCES: throw __EXCEPT__(PERMISSION_DENIED); break;
 				default: throw __EXCEPT__(UNEXPECTED_FILE_ERROR); break;
 			}
+		}
+		if (point_cloud == nullptr) {
+			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
 
 		std::string header;
@@ -202,6 +211,9 @@ void io::SaveUniqueColorPlyFile(const std::string& file_name, const pcl::PointCl
 				default: throw __EXCEPT__(UNEXPECTED_FILE_ERROR); break;
 			}
 		}
+		if (point_cloud == nullptr) {
+			throw __EXCEPT__(EMPTY_POINT_CLOUD);
+		}
 
 		std::string header;
 		if (binary_mode) {
@@ -252,18 +264,18 @@ void io::SaveUniqueColorPlyFile(const std::string& file_name, const pcl::PointCl
 }
 
 std::string PatchFileName(const std::string& path_name, const std::string& prev_name, int timestamp, int index) {
-    std::string ans = "";
-    ans += path_name;
-    if (ans.back() != '/') {
-        ans += '/';
-    }
-    ans += prev_name;
-    ans += "_";
-    ans += std::to_string(timestamp);
-    ans += "_";
-    ans += std::to_string(index);
-    ans += ".ply";
-    return std::move(ans);
+	std::string ans = "";
+	ans += path_name;
+	if (ans.back() != '/') {
+		ans += '/';
+	}
+	ans += prev_name;
+	ans += "_";
+	ans += std::to_string(timestamp);
+	ans += "_";
+	ans += std::to_string(index);
+	ans += ".patch";
+	return std::move(ans);
 }
 
 #pragma GCC diagnostic pop

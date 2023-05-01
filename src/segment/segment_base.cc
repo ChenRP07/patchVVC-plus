@@ -32,7 +32,7 @@ namespace segment {
 		}
 	}
 
-	std::vector<common::Patch> SegmentBase::GetResultPointClouds() {
+	std::vector<common::Patch> SegmentBase::GetResultPatches() {
 		try {
 			/* no result */
 			if (this->results_.empty()) {

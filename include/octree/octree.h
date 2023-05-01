@@ -119,6 +119,16 @@ namespace octree {
 		void InvertHierarchicalTransform();
 	};
 
+	/*
+	 * @description : Change float3 data _center, _range into 24 uint8_t data, save it with _height into _p
+	 * @param  : {pcl::PointXYZ _center}
+	 * @param  : {pcl::PointXYZ _range}
+	 * @param  : {int _height}
+	 * @param  : {std::shared_ptr<std::vector<uint8_t>> _p}
+	 * @return : {}
+	 * */
+	extern void SaveTreeCore(pcl::PointXYZ _center, pcl::PointXYZ _range, int _height, std::shared_ptr<std::vector<uint8_t>> _p);
+
 	class OctreeBase {
 	  protected:
 		/* Range of this tree, for a cube, is edge */

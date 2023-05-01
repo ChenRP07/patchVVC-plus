@@ -16,6 +16,20 @@
 
 namespace vvc {
 namespace octree {
+
+	void SaveTreeCore(pcl::PointXYZ _center, pcl::PointXYZ _range, int _height, std::shared_ptr<std::vector<uint8_t>> _p) {
+		float     data[6] = {_center.x, _center.y, _center.z, _range.x, _range.y, _range.z};
+		uint32_t* temp    = nullptr;
+		for (auto i : data) {
+			temp = reinterpret_cast<uint32_t*>(&i);
+			_p->emplace_back((*temp) >> 24);
+			_p->emplace_back((*temp) >> 16);
+			_p->emplace_back((*temp) >> 8);
+			_p->emplace_back((*temp) >> 0);
+		}
+		_p->emplace_back(static_cast<uint8_t>(_height));
+	}
+
 	OctreeBase::OctreeBase() : tree_range_{0.0f, 0.0f, 0.0f}, tree_height_{0}, params_{nullptr}, tree_center_{} {}
 
 	void OctreeBase::SetParams(common::PVVCParam_t::Ptr _param) {
@@ -50,22 +64,22 @@ namespace octree {
 		}
 	}
 
-    void OctreeNode_t::InvertHierarchicalTransform() {
+	void OctreeNode_t::InvertHierarchicalTransform() {
 		common::ColorYUV H[8];
-        for (int i = 0; i < 8; ++i) {
-            H[i] = this->raht[i];
-        }
-        /* g_DC */
-        this->raht[1] = H[0];
-        /* Invert X/Y/Z merge */
-        for (int i = 1; i < 8; ++i) {
-            std::pair<common::ColorYUV, common::ColorYUV> g(this->raht[i], H[i]), res;
+		for (int i = 0; i < 8; ++i) {
+			H[i] = this->raht[i];
+		}
+		/* g_DC */
+		this->raht[1] = H[0];
+		/* Invert X/Y/Z merge */
+		for (int i = 1; i < 8; ++i) {
+			std::pair<common::ColorYUV, common::ColorYUV> g(this->raht[i], H[i]), res;
 			std::pair<int, int>                           w(this->weight[NodeWeight[i][0]], this->weight[NodeWeight[i][1]]);
-            /* Inver haar wavelet transform */
-            res = InvertHaarTransform(w, g);
-            this->raht[NodeWeight[i][0]] = res.first;
-            this->raht[NodeWeight[i][1]] = res.second;
-        }
+			/* Inver haar wavelet transform */
+			res                          = InvertHaarTransform(w, g);
+			this->raht[NodeWeight[i][0]] = res.first;
+			this->raht[NodeWeight[i][1]] = res.second;
+		}
 	}
 
 	pcl::PointXYZ SubSpaceCenter(pcl::PointXYZ _center, pcl::PointXYZ _range, int _pos) {
@@ -149,7 +163,7 @@ namespace octree {
 			return std::make_pair(G, H);
 		}
 
-        /*
+		/*
 		 *        [ √w0 -√w1]
 		 *        [ √w1 √w0 ]
 		 * T^-1 = -----------
@@ -159,7 +173,7 @@ namespace octree {
 		float base    = std::sqrt(static_cast<float>(_w.first + _w.second));
 		float T[2][2] = {{std::sqrt(static_cast<float>(_w.first)) / base, -std::sqrt(static_cast<float>(_w.second)) / base},
 		                 {std::sqrt(static_cast<float>(_w.second)) / base, std::sqrt(static_cast<float>(_w.first)) / base}};
-        
+
 		G = _g.first * T[0][0] + _g.second * T[0][1];
 		H = _g.first * T[1][0] + _g.second * T[1][1];
 		return std::make_pair(G, H);

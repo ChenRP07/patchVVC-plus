@@ -375,13 +375,13 @@ namespace registration {
 		 * @param  : {}
 		 * @return : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
 		 * */
-		[[nodiscard("Registration result might be discarded!")]] std::vector<common::Patch> GetResultClouds();
+		[[nodiscard]] std::vector<common::Patch> GetResultClouds();
 
 		/*
 		 * @description : Get converged or not, should only be used in debugging of development.
 		 * @
 		 * */
-		[[deprecated("Only be used in development for debugging!")]] std::vector<bool> GetConverge() const;
+		[[deprecated]] std::vector<bool> GetConverge() const;
 
 		/*
 		 * @description : do iterative closest point.

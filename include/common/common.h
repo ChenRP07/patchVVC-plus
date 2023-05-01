@@ -27,7 +27,7 @@
 
 namespace vvc {
 namespace common {
-	enum { PVVC_SLICE_TYPE_INTRA, PVVC_SLICE_TYPE_INTER };
+	enum { PVVC_SLICE_TYPE_INTRA = 1, PVVC_SLICE_TYPE_INTER };
 
 	/* Three channels color implementation, Y/Cb/Cr or Y/U/V */
 	struct ColorYUV {
@@ -230,9 +230,18 @@ namespace common {
 		int                                   index;     /* Patch index */
 		uint8_t                               type;      /* Slice type, intra / inter / TODO:skip / direct */
 		Eigen::Matrix4f                       mv;        /* Motion vector */
+		size_t                                size;      /* Total size */
 		std::shared_ptr<std::vector<uint8_t>> geometry;  /* Compressed geometry, only valid if type is intra */
 		std::shared_ptr<std::vector<uint8_t>> color;     /* Compressed color, valid if type is intra or inter */
 
+		void clear() {
+			this->timestamp = this->index = -1;
+			this->type                    = 0;
+			this->mv                      = Eigen::Matrix4f::Identity();
+			this->size                    = 0;
+			this->geometry.reset();
+			this->color.reset();
+		}
 		using Ptr = std::shared_ptr<vvc::common::Slice>;
 	};
 
@@ -287,8 +296,7 @@ namespace common {
 		std::string                            name;
 		uint8_t                                check_point_type;
 
-		Frame() : cloud{nullptr}, timestamp{-1}, name{""}, check_point_type {0x00} {}
-        
+		Frame() : cloud{nullptr}, timestamp{-1}, name{""}, check_point_type{0x00} {}
 	};
 
 }  // namespace common

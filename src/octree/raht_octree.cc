@@ -46,6 +46,7 @@ namespace octree {
 
 	std::shared_ptr<std::vector<uint8_t>> RAHTOctree::GetOctree() const {
 		auto result = std::make_shared<std::vector<uint8_t>>();
+		SaveTreeCore(this->tree_center_, this->tree_range_, this->tree_height_, result);
 		for (int i = 0; i < this->tree_height_ - 1; ++i) {
 			for (auto& j : this->tree_.at(i)) {
 				result->emplace_back(j.value);
@@ -220,7 +221,7 @@ namespace octree {
 			}
 
 			/* Collect all coefficients */
-            this->RAHT_result_ = std::make_shared<std::vector<common::ColorYUV>>();
+			this->RAHT_result_ = std::make_shared<std::vector<common::ColorYUV>>();
 			/* g_DC */
 			this->RAHT_result_->emplace_back(this->tree_.front().front().raht[0]);
 			/* h_AC */
@@ -234,7 +235,7 @@ namespace octree {
 					}
 				}
 			}
-            std::reverse(this->RAHT_result_->begin(), this->RAHT_result_->end());
+			std::reverse(this->RAHT_result_->begin(), this->RAHT_result_->end());
 		}
 		catch (const common::Exception& e) {
 			e.Log();

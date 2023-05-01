@@ -64,7 +64,7 @@ namespace segment {
 		 * @param  : {}
 		 * @return : {std::vector<common::Patch>>}
 		 * */
-		[[nodiscard("Segmentation result might be discarded!")]] std::vector<common::Patch> GetResultPointClouds();
+		[[nodiscard]] std::vector<common::Patch> GetResultPatches();
 
 		/*
 		 * @description ：set parameters

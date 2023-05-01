@@ -49,6 +49,9 @@ namespace io {
 			if (fwrite(&_patch.mv, sizeof(Eigen::Matrix4f), 1, fp) != 1) {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
+			if (!_patch.cloud) {
+				throw __EXCEPT__(EMPTY_POINT_CLOUD);
+			}
 
 			size_t p_size = _patch.cloud->size();
 

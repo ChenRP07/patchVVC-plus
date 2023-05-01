@@ -52,6 +52,9 @@ namespace io {
 			}
 
 			if (_slice.type == common::PVVC_SLICE_TYPE_INTRA) {
+				if (!_slice.geometry) {
+					throw __EXCEPT__(EMPTY_RESULT);
+				}
 				size_t g_size = _slice.geometry->size();
 				if (!g_size) {
 					throw __EXCEPT__(EMPTY_RESULT);
@@ -65,6 +68,9 @@ namespace io {
 			}
 
 			if (_slice.type == common::PVVC_SLICE_TYPE_INTRA || _slice.type == common::PVVC_SLICE_TYPE_INTER) {
+				if (!_slice.color) {
+					throw __EXCEPT__(EMPTY_RESULT);
+				}
 				size_t c_size = _slice.color->size();
 				if (!c_size) {
 					throw __EXCEPT__(EMPTY_RESULT);

@@ -16,6 +16,7 @@
 #define _PVVC_PATCH_H_
 
 #include "common/common.h"
+#include "common/entropy_codec.h"
 #include "common/exception.h"
 #include "common/parameter.h"
 #include "common/statistic.h"
@@ -83,6 +84,11 @@ namespace patch {
 		 * */
 		int PlanarBisection(std::vector<std::vector<int>>& _points, pcl::PointXYZ _center, std::vector<std::vector<std::vector<int>>>& _result);
 
+		/*
+		 * @description : Log information of single patch.
+		 * */
+		void LogPatch() const;
+
 	  public:
 		/* Default constructor and deconstructor */
 		PatchFitting();
@@ -128,16 +134,34 @@ namespace patch {
 		void Clear();
 	};
 
+	/*
+	 * Class GoPEncoding, encode a GoP.
+	 * How to use?
+	 * GoPEncoding enc;
+	 * enc.SetParams(param);
+	 * enc.SetFittingCloud(cloud_ptr);
+	 * enc.SetSourcePatches(patches);
+	 * result = enc.GetResults();
+	 * */
 	class GoPEncoding {
 	  private:
-		common::PVVCTime_t  clock_;
-		common::PVVCParam_t params_;
-		octree::RAHTOctree  tree_;
+		common::PVVCTime_t       clock_;  /* Clock */
+		common::PVVCParam_t::Ptr params_; /* Parameters */
+		octree::RAHTOctree       tree_;   /* Octree for RAHT */
 
-        std::vector<common::Slice> results_;
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr     fitting_cloud_;
-		std::vector<common::Patch>                 source_patches_;
-		std::vector<std::vector<common::ColorYUV>> patch_colors_;
+		std::vector<common::Slice>                                  results_;        /* Coded slices */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr                      fitting_cloud_;  /* Common geometry */
+		std::vector<common::Patch>                                  source_patches_; /* Source patches */
+		std::vector<std::shared_ptr<std::vector<common::ColorYUV>>> patch_colors_;   /* Interpolated colors */
+
+		/*
+		 * @description : Color interpolation.
+		 * @param  : {int _i} Index of source_patches_
+		 * @param  : {std::vector<int>& _idx} NN index
+		 * @param  : {std::vector<float>& _dis} NN distance
+		 * @return : {common::ColorYUV} Interpolation result.
+		 * */
+		common::ColorYUV Interpolation(int _i, std::vector<int>& _idx, std::vector<float>& _dis);
 
 	  public:
 		/* Default constructor and deconstructor */
@@ -145,19 +169,41 @@ namespace patch {
 
 		~GoPEncoding() = default;
 
-        /*
-         * @description : Set patchVVC parameters.
-         * @param  : {common::PVVCParam_t _param}
-         * @return : {}
-         * */
-        void SetParams(common::PVVCParam_t _param);
+		/*
+		 * @description : Set patchVVC parameters.
+		 * @param  : {common::PVVCParam_t::Ptr _param}
+		 * @return : {}
+		 * */
+		void SetParams(common::PVVCParam_t::Ptr _param);
 
-        void SetFittingCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
+		/*
+		 * @description : Set fitting cloud, i.e., common geometry.
+		 * @param  : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud}
+		 * @return : {}
+		 * */
+		void SetFittingCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud);
 
-        void SetSourcePatches(std::vector<common::Patch> _patches);
+		/*
+		 * @description : Set source patches of this GoP.
+		 * @param  : {std::vector<common::Patch> _patches}
+		 * @return : {}
+		 * */
+		void SetSourcePatches(std::vector<common::Patch> _patches);
 
-        void Encode(); 
-    };	
+		/*
+		 * @description : Encode this GoP.
+		 * */
+		void Encode();
+
+		/*
+		 * @description : Get results.
+		 * @param  : {}
+		 * @return : {std::vector<common::Slice>}
+		 * */
+		std::vector<common::Slice> GetResults() const;
+
+        using Ptr = std::shared_ptr<patch::GoPEncoding>;
+	};
 }  // namespace patch
 }  // namespace vvc
 

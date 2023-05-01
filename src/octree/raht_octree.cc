@@ -16,7 +16,7 @@
 
 namespace vvc {
 namespace octree {
-	RAHTOctree::RAHTOctree() : OctreeBase{}, tree_{}, source_cloud_{nullptr}, source_colors_{nullptr}, RAHT_result_{} {}
+	RAHTOctree::RAHTOctree() : OctreeBase{}, tree_{}, source_cloud_{nullptr}, source_colors_{nullptr}, RAHT_result_{nullptr} {}
 
 	void RAHTOctree::SetSourceCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud) {
 		try {
@@ -44,18 +44,18 @@ namespace octree {
 		}
 	}
 
-	std::vector<uint8_t> RAHTOctree::GetOctree() const {
-		std::vector<uint8_t> result;
+	std::shared_ptr<std::vector<uint8_t>> RAHTOctree::GetOctree() const {
+		auto result = std::make_shared<std::vector<uint8_t>>();
 		for (int i = 0; i < this->tree_height_ - 1; ++i) {
 			for (auto& j : this->tree_.at(i)) {
-				result.emplace_back(j.value);
+				result->emplace_back(j.value);
 			}
 		}
 		return result;
 	}
 
-	std::vector<common::ColorYUV> RAHTOctree::GetRAHTResult() {
-		return std::move(this->RAHT_result_);
+	std::shared_ptr<std::vector<common::ColorYUV>> RAHTOctree::GetRAHTResult() {
+		return this->RAHT_result_;
 	}
 
 	void RAHTOctree::MakeTree() {
@@ -100,6 +100,7 @@ namespace octree {
 
 			std::vector<int> points(this->source_cloud_->size());
 			std::iota(points.begin(), points.end(), 0);
+			this->AddNode(points, 0, this->tree_center_, this->tree_range_);
 		}
 		catch (const common::Exception& e) {
 			e.Log();
@@ -219,42 +220,26 @@ namespace octree {
 			}
 
 			/* Collect all coefficients */
-			if (!this->RAHT_result_.empty()) {
-				this->RAHT_result_.clear();
-			}
-
+            this->RAHT_result_ = std::make_shared<std::vector<common::ColorYUV>>();
 			/* g_DC */
-			this->RAHT_result_.emplace_back(this->tree_.front().front().raht[0]);
+			this->RAHT_result_->emplace_back(this->tree_.front().front().raht[0]);
 			/* h_AC */
 			for (int i = 0; i < this->tree_height_ - 1; ++i) {
 				for (auto& node : this->tree_[i]) {
 					/* w1,w2 should both greater than 0 */
 					for (int idx = 1; idx < 8; ++idx) {
 						if (node.weight[NodeWeight[idx][0]] != 0 && node.weight[NodeWeight[idx][1]] != 0) {
-							this->RAHT_result_.emplace_back(node.raht[idx]);
+							this->RAHT_result_->emplace_back(node.raht[idx]);
 						}
 					}
 				}
 			}
+            std::reverse(this->RAHT_result_->begin(), this->RAHT_result_->end());
 		}
 		catch (const common::Exception& e) {
 			e.Log();
 			throw __EXCEPT__(ERROR_OCCURED);
 		}
-	}
-
-	std::vector<int> RAHTOctree::GetRAHTWeights() const {
-		std::vector<int> result;
-		for (int i = 0; i < this->tree_height_ - 1; ++i) {
-			for (auto& node : this->tree_[i]) {
-				for (int idx = 1; idx < 8; ++idx) {
-					if (node.weight[NodeWeight[idx][0]] != 0 && node.weight[NodeWeight[idx][1]] != 0) {
-						result.emplace_back(node.weight[idx]);
-					}
-				}
-			}
-		}
-        return result;
 	}
 }  // namespace octree
 }  // namespace vvc

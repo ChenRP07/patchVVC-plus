@@ -107,7 +107,7 @@ namespace registration {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud_; /* target point cloud which is the registration reference */
 		common::PVVCParam_t::Ptr               params_;       /* parameters */
-		common::PVVCTime_t                     clock_;         /* Clock */
+		common::PVVCTime_t                     clock_;        /* Clock */
 
 	  public:
 		/* default constructor and deconstructor */
@@ -316,8 +316,6 @@ namespace registration {
 	 * picp.SetTargetCloud(target_cloud_ptr)
 	 * picp.Align();
 	 * picp.GetResultClouds(your_result_clouds_ptr_vector);
-	 * res_mv = picp.GetMotionVectors();
-	 * res_mse = picp.GetMSEs();
 	 *
 	 * Make sure SetParams, SetSourceClouds and SetTargetCloud are called before Align;
 	 * */
@@ -325,8 +323,8 @@ namespace registration {
 	  protected:
 		std::vector<common::Patch> source_clouds_; /* source point cloud patches which will be transformed */
 		std::vector<common::Patch> result_clouds_; /* transformed point cloud patches result */
-        std::vector<float> mse_;
-        std::vector<bool> converged_;
+		std::vector<float>         mse_;
+		std::vector<bool>          converged_;
 
 		std::vector<pcl::PointCloud<pcl::Normal>::Ptr> source_normals_; /* point cloud normals */
 		pcl::PointCloud<pcl::Normal>::Ptr              target_normal_;
@@ -334,9 +332,9 @@ namespace registration {
 		std::mutex         task_mutex_; /* mutex for atomic procession */
 		std::queue<size_t> task_queue_; /* task queue */
 
-        /* XXX : stat_ is obsolete */
+		/* XXX : stat_ is obsolete */
 		// common::ParallelICPStat_t stat_; [> statistic <]
-        
+
 		/*
 		 * @description : do centroid alignment for source_clouds_ to target_cloud_.
 		 * @param : {}
@@ -366,20 +364,24 @@ namespace registration {
 
 		/*
 		 * @description : Set source point cloud which will be transformed.
-		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
+		 * @param : {std::vector<common::Patch>}
 		 * @return : {}
 		 * */
 		void SetSourceClouds(std::vector<common::Patch>& _clouds);
 
 		/*
 		 * @description : Get result point cloud which is transformed by source_cloud_, should be called after Align().
-         * It do not use std::move because empty patch should be discarded.
-		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
-		 * @return : {}
+		 * It do not use std::move because empty patch should be discarded.
+		 * @param  : {}
+		 * @return : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
 		 * */
-		void GetResultClouds(std::vector<common::Patch>& _clouds);
+		[[nodiscard("Registration result might be discarded!")]] std::vector<common::Patch> GetResultClouds();
 
-	    std::vector<bool> GetConverge() const;
+		/*
+		 * @description : Get converged or not, should only be used in debugging of development.
+		 * @
+		 * */
+		[[deprecated("Only be used in development for debugging!")]] std::vector<bool> GetConverge() const;
 
 		/*
 		 * @description : do iterative closest point.

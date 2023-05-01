@@ -5,3 +5,5 @@ lib/
 .cache/*
 test/
 .cache
+
+compile_commands.json

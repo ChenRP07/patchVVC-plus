@@ -24,7 +24,7 @@ namespace common {
 		while (this->cnt_ >= BIT_COUNT_8) {
 			this->cnt_ -= BIT_COUNT_8;
 			temp = ((this->buffer_) >> (this->cnt_)) & UINT_LEAST8_MAX;
-			this->result_.emplace_back(temp);
+			this->result_->emplace_back(temp);
 		}
 	}
 
@@ -147,7 +147,7 @@ namespace common {
 		}
 	}
 
-	std::vector<uint8_t> RLGREncoder::GetResult() {
+	std::shared_ptr<std::vector<uint8_t>> RLGREncoder::GetResult() {
 		int r = this->cnt_ % BIT_COUNT_8;
 		if (r) {
 			this->Write(0, BIT_COUNT_8 - r);
@@ -155,7 +155,7 @@ namespace common {
 		else {
 			this->Flush();
 		}
-		return std::move(this->result_);
+		return this->result_;
 	}
 
 	RLGRDecoder::RLGRDecoder() : buffer_{0}, cnt_{0}, now_{}, end_{}, result_{} {}
@@ -303,9 +303,9 @@ namespace common {
 
 	void ZstdEncoder::Encode(std::shared_ptr<std::vector<uint8_t>> _data) {
 		try {
-            if (!this->params_) {
-                throw __EXCEPT__(EMPTY_PARAMS);
-            }
+			if (!this->params_) {
+				throw __EXCEPT__(EMPTY_PARAMS);
+			}
 			size_t buffer_size = ZSTD_compressBound(_data->size());
 			this->result_.reset(new std::vector<uint8_t>(buffer_size));
 			int z_level        = this->params_->zstd_level;
@@ -323,32 +323,31 @@ namespace common {
 		}
 	}
 
-    std::shared_ptr<std::vector<uint8_t>> ZstdEncoder::GetResult() const {
-        try {
-            if (!this->result_ || this->result_->empty()) {
-                throw __EXCEPT__(EMPTY_RESULT);
-            }
-            return this->result_;
-        }
+	std::shared_ptr<std::vector<uint8_t>> ZstdEncoder::GetResult() const {
+		try {
+			if (!this->result_ || this->result_->empty()) {
+				throw __EXCEPT__(EMPTY_RESULT);
+			}
+			return this->result_;
+		}
 		catch (const common::Exception& e) {
 			e.Log();
 			throw __EXCEPT__(ERROR_OCCURED);
 		}
+	}
 
-    }
-    
-    ZstdDecoder::ZstdDecoder() : result_{nullptr} {}
+	ZstdDecoder::ZstdDecoder() : result_{nullptr} {}
 
 	void ZstdDecoder::Decode(std::shared_ptr<std::vector<uint8_t>> _data) {
 		try {
 			size_t buffer_size = ZSTD_getFrameContentSize(_data->data(), _data->size());
-            
-            if (buffer_size == 0 || buffer_size == ZSTD_CONTENTSIZE_UNKNOWN || buffer_size == ZSTD_CONTENTSIZE_ERROR) {
-                throw __EXCEPT__(ZSTD_ERROR);
-            }
+
+			if (buffer_size == 0 || buffer_size == ZSTD_CONTENTSIZE_UNKNOWN || buffer_size == ZSTD_CONTENTSIZE_ERROR) {
+				throw __EXCEPT__(ZSTD_ERROR);
+			}
 			this->result_.reset(new std::vector<uint8_t>(buffer_size));
-		
-            size_t result_size = ZSTD_decompress(this->result_->data(), buffer_size, _data->data(), _data->size());
+
+			size_t result_size = ZSTD_decompress(this->result_->data(), buffer_size, _data->data(), _data->size());
 			if (ZSTD_isError(result_size) != 0) {
 				throw __EXCEPT__(ZSTD_ERROR);
 			}
@@ -360,18 +359,17 @@ namespace common {
 		}
 	}
 
-    std::shared_ptr<std::vector<uint8_t>> ZstdDecoder::GetResult() const {
-        try {
-            if (!this->result_ || this->result_->empty()) {
-                throw __EXCEPT__(EMPTY_RESULT);
-            }
-            return this->result_;
-        }
+	std::shared_ptr<std::vector<uint8_t>> ZstdDecoder::GetResult() const {
+		try {
+			if (!this->result_ || this->result_->empty()) {
+				throw __EXCEPT__(EMPTY_RESULT);
+			}
+			return this->result_;
+		}
 		catch (const common::Exception& e) {
 			e.Log();
 			throw __EXCEPT__(ERROR_OCCURED);
 		}
-
-    }
+	}
 }  // namespace common
 }  // namespace vvc

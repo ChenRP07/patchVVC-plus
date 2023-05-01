@@ -15,13 +15,58 @@
 #ifndef _PVVC_EXCEPTION_H_
 #define _PVVC_EXCEPTION_H_
 
+#include <boost/format.hpp>
 #include <iostream>
+#include <mutex>
 #include <string>
 
+// clang-format off
 #define __EXCEPT__(msg) vvc::common::Exception(__LINE__, __FILE__, __FUNCTION__, vvc::common::ErrorMessage[vvc::common::msg])
+/* Colored command line message. */
+/* 
+ * Examples :
+ * __BLACKT__(This is a book.)
+ * */
+#define __BLACKT__(Msg) vvc::common::color_cmd%30%#Msg
+#define __REDT__(Msg) vvc::common::color_cmd%31%#Msg
+#define __GREENT__(Msg) vvc::common::color_cmd%32%#Msg
+#define __YELLOWT__(Msg) vvc::common::color_cmd%33%#Msg
+#define __BLUET__(Msg) vvc::common::color_cmd%34%#Msg
+#define __PURPLET__(Msg) vvc::common::color_cmd%35%#Msg
+#define __AZURET__(Msg)  vvc::common::color_cmd%36%#Msg
+#define __WHITET__(Msg) vvc::common::color_cmd%37%#Msg
+#define __B_BLACKT__(Msg) vvc::common::color_cmd%90%#Msg
+#define __B_REDT__(Msg) vvc::common::color_cmd%91%#Msg
+#define __B_GREENT__(Msg) vvc::common::color_cmd%92%#Msg
+#define __B_YELLOWT__(Msg) vvc::common::color_cmd%93%#Msg
+#define __B_BLUET__(Msg) vvc::common::color_cmd%94%#Msg
+#define __B_PURPLET__(Msg) vvc::common::color_cmd%95%#Msg
+#define __B_AZURET__(Msg) vvc::common::color_cmd%96%#Msg
+#define __B_WHITET__(Msg) vvc::common::color_cmd%97%#Msg
 
+#define __BLACKT_STR__(Msg) boost::str(__BLACKT__(Msg))
+#define __REDT_STR__(Msg) boost::str(__REDT__(Msg))
+#define __GREENT_STR__(Msg) boost::str(__GREENT__(Msg))
+#define __YELLOWT_STR__(Msg) boost::str(__YELLOWT__(Msg))
+#define __BLUET_STR__(Msg) boost::str(__BLUET__(Msg))
+#define __PURPLET_STR__(Msg) boost::str(__PURPLET__(Msg))
+#define __AZURET_STR__(Msg)  boost::str(__AZURET__(Msg))
+#define __WHITET_STR__(Msg) boost::str(__WHITET__(Msg))
+#define __B_BLACKT_STR__(Msg) boost::str(__B_BLACKT__(Msg))
+#define __B_REDT_STR__(Msg) boost::str(__B_REDT__(Msg))
+#define __B_GREENT_STR__(Msg) boost::str(__B_GREENT__(Msg))
+#define __B_YELLOWT_STR__(Msg) boost::str(__B_YELLOWT__(Msg))
+#define __B_BLUET_STR__(Msg) boost::str(__B_BLUET__(Msg))
+#define __B_PURPLET_STR__(Msg) boost::str(__B_PURPLET__(Msg))
+#define __B_AZURET_STR__(Msg) boost::str(__B_AZURET__(Msg))
+#define __B_WHITET_STR__(Msg) boost::str(__B_WHITET__(Msg))
+
+// clang-format on
 namespace vvc {
 namespace common {
+	/* Mutex to output message to terminal, should be called in multi cout or printf, thread safe in single printf and cout */
+	static std::mutex    PVVCLog_Mutex = std::mutex();
+	static boost::format color_cmd("\033[%dm%s\033[0m");
 	class Exception {
 	  private:
 		unsigned int line_;    /* line index where error occured  */
@@ -66,6 +111,7 @@ namespace common {
 		EMPTY_OCTREE,          /* error occured when do RAHT before make an octree */
 		UNMATCHED_COLOR_SIZE,  /* error occured when size of ColorYUV is not equal to size of point cloud */
 		ZSTD_ERROR,            /* error occured when use Zstandard API */
+		EMPTY_GOP,             /* error occured when try to encode a GoP whose size is zero */
 	};
 
 	inline static std::string ErrorMessage[100] = {
@@ -88,7 +134,8 @@ namespace common {
 	    "subspace position must be an integer from 0 to 7",
 	    "should make Octree before RAHT",
 	    "color size is not equal to the point cloud",
-        "unknown error in Zstandard API",
+	    "unknown error in Zstandard API",
+	    "cannot encode a GoP with size zero",
 	};
 
 }  // namespace common

@@ -27,40 +27,47 @@
 
 namespace vvc {
 namespace common {
+	enum { PVVC_SLICE_TYPE_INTRA, PVVC_SLICE_TYPE_INTER };
 
-    /* Three channels color implementation, Y/Cb/Cr or Y/U/V */
+	/* Three channels color implementation, Y/Cb/Cr or Y/U/V */
 	struct ColorYUV {
 		float y, u, v; /* Channels */
 
-        /* Default constructor */
+		/* Default constructor */
 		ColorYUV() {
 			this->y = this->u = this->v = 0.0f;
 		}
 
-        /* Copy constructor */
+		/* Copy constructor */
 		ColorYUV(const ColorYUV& _x) {
 			this->y = _x.y, this->u = _x.u, this->v = _x.v;
 		}
 
-        /* Assign constructor */
+		/* Assign constructor */
 		ColorYUV& operator=(const ColorYUV& _x) {
 			this->y = _x.y, this->u = _x.u, this->v = _x.v;
 			return *this;
 		}
 
-        /* Construct by data of three channels */
-		ColorYUV(float _y, float _u, float _v) {
-			this->y = _y, this->u = _u, this->v = _v;
+		/* Construct by data of three channels */
+		ColorYUV(float _r, float _g, float _b, bool _type = true) {
+			if (_type) {
+				this->y = _r, this->u = _g, this->v = _b;
+			}
+			else {
+				this->y = _r * 0.299f + _g * 0.587f + _b * 0.114f;
+				this->u = _r * -0.168736f - _g * 0.331264f + _b * 0.5f + 128;
+				this->v = _r * 0.5f - _g * 0.418688f - _b * 0.081312f + 128;
+			}
 		}
-
-        /* Construct by a RGB format color, reference BT601 */
+		/* Construct by a RGB format color, reference BT601 */
 		ColorYUV(const pcl::PointXYZRGB& _p) {
 			this->y = _p.r * 0.299f + _p.g * 0.587f + _p.b * 0.114f;
 			this->u = _p.r * -0.168736f - _p.g * 0.331264f + _p.b * 0.5f + 128;
 			this->v = _p.r * 0.5f - _p.g * 0.418688f - _p.b * 0.081312f + 128;
 		}
 
-        /* Assign constructor by a RGB format color, reference BT601 */
+		/* Assign constructor by a RGB format color, reference BT601 */
 		ColorYUV& operator=(const pcl::PointXYZRGB& _p) {
 			this->y = _p.r * 0.299f + _p.g * 0.587f + _p.b * 0.114f;
 			this->u = _p.r * -0.168736f - _p.g * 0.331264f + _p.b * 0.5f + 128;
@@ -68,33 +75,39 @@ namespace common {
 			return *this;
 		}
 
-        /* Add data with _x relative channel */
+		/* Add data with _x relative channel */
 		ColorYUV& operator+=(const ColorYUV& _x) {
 			this->y += _x.y, this->u += _x.u, this->v += _x.v;
 			return *this;
 		}
 
-        /* Change _p into ColorYUV and add to this */
+		/* Change _p into ColorYUV and add to this */
 		ColorYUV& operator+=(const pcl::PointXYZRGB& _p) {
 			ColorYUV _x(_p);
 			this->y += _x.y, this->u += _x.u, this->v += _x.v;
 			return *this;
 		}
 
-        /* Divide data by _x */
+		/* Divide data by _x */
 		ColorYUV& operator/=(const int _x) {
 			this->y /= _x, this->u /= _x, this->v /= _x;
 			return *this;
 		}
 
-        /* Add _x to this, return result */
+		/* Multiple data by _x */
+		ColorYUV& operator*=(const float _x) {
+			this->y *= _x, this->u *= _x, this->v *= _x;
+			return *this;
+		}
+
+		/* Add _x to this, return result */
 		ColorYUV operator+(const ColorYUV& _x) const {
 			ColorYUV result;
 			result.y = this->y + _x.y, result.u = this->u + _x.u, result.v = this->v + _x.v;
 			return result;
 		}
 
-        /* Divide this by _x, return result */
+		/* Multiple this by _x, return result */
 		ColorYUV operator*(const float _x) const {
 			ColorYUV result;
 			result.y = this->y * _x, result.u = this->u * _x, result.v = this->v * _x;
@@ -220,7 +233,7 @@ namespace common {
 		std::shared_ptr<std::vector<uint8_t>> geometry;  /* Compressed geometry, only valid if type is intra */
 		std::shared_ptr<std::vector<uint8_t>> color;     /* Compressed color, valid if type is intra or inter */
 
-        using Ptr = std::shared_ptr<vvc::common::Slice>;
+		using Ptr = std::shared_ptr<vvc::common::Slice>;
 	};
 
 	/* Clocker
@@ -267,6 +280,17 @@ namespace common {
 			return (static_cast<float>(this->time[1].tv_sec - this->time[0].tv_sec) + static_cast<float>(this->time[1].tv_usec - this->time[0].tv_usec) / 1000000.0f) * 1000.0f;
 		}
 	};
+
+	struct Frame {
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
+		int                                    timestamp;
+		std::string                            name;
+		uint8_t                                check_point_type;
+
+		Frame() : cloud{nullptr}, timestamp{-1}, name{""}, check_point_type {0x00} {}
+        
+	};
+
 }  // namespace common
 }  // namespace vvc
 #endif

@@ -89,9 +89,9 @@ namespace common {
 	 * */
 	class RLGREncoder {
 	  private:
-		FIX_INT              buffer_; /* Bitstream buffer */
-		int                  cnt_;    /* Valid bit count in buffer */
-		std::vector<uint8_t> result_; /* Encoding result */
+		FIX_INT                               buffer_; /* Bitstream buffer */
+		int                                   cnt_;    /* Valid bit count in buffer */
+		std::shared_ptr<std::vector<uint8_t>> result_; /* Encoding result */
 
 		/*
 		 * @description : Flush buffer_, output highest 8-bit data.
@@ -119,7 +119,7 @@ namespace common {
 		 * @description : Reset encoder
 		 * */
 		inline void Reset() {
-			this->result_.clear();
+			this->result_ = std::make_shared<std::vector<uint8_t>>();
 			this->cnt_    = 0;
 			this->buffer_ = 0;
 		}
@@ -144,7 +144,7 @@ namespace common {
 		 * @param  : {}
 		 * @return : {std::vector<uint8_t>}
 		 * */
-		std::vector<uint8_t> GetResult();
+		std::shared_ptr<std::vector<uint8_t>> GetResult();
 	};
 
 	/*
@@ -234,55 +234,55 @@ namespace common {
 		std::shared_ptr<std::vector<uint8_t>> result_; /* Encoding result */
 
 	  public:
-        /* Default constructor and deconstructor */
+		/* Default constructor and deconstructor */
 		ZstdEncoder();
 
 		~ZstdEncoder() = default;
 
-        /*
-         * @description : Get encoding result
-         * @param  : {}
-         * @return : {std::shared_ptr<std::vector<uint8_t>>}
-         * */
+		/*
+		 * @description : Get encoding result
+		 * @param  : {}
+		 * @return : {std::shared_ptr<std::vector<uint8_t>>}
+		 * */
 		std::shared_ptr<std::vector<uint8_t>> GetResult() const;
 
-        /*
-         * @description : Set patchVVC parameters
-         * @param  : {PVVCParam_t::Ptr _param}
-         * @return : {}
-         * */
-        void SetParams(PVVCParam_t::Ptr _param);
+		/*
+		 * @description : Set patchVVC parameters
+		 * @param  : {PVVCParam_t::Ptr _param}
+		 * @return : {}
+		 * */
+		void SetParams(PVVCParam_t::Ptr _param);
 
-        /*
-         * @description : Encode data
-         * @param  : {std::shared_ptr<std::vector<uint8_t>> _data}
-         * @return : {}
-         * */
+		/*
+		 * @description : Encode data
+		 * @param  : {std::shared_ptr<std::vector<uint8_t>> _data}
+		 * @return : {}
+		 * */
 		void Encode(std::shared_ptr<std::vector<uint8_t>> _data);
 	};
 
-    class ZstdDecoder {
+	class ZstdDecoder {
 	  private:
 		std::shared_ptr<std::vector<uint8_t>> result_; /* Decoding result */
 
 	  public:
-        /* Default constructor and deconstructor */
+		/* Default constructor and deconstructor */
 		ZstdDecoder();
 
 		~ZstdDecoder() = default;
 
-        /*
-         * @description : Get decoding result
-         * @param  : {}
-         * @return : {std::shared_ptr<std::vector<uint8_t>>}
-         * */
+		/*
+		 * @description : Get decoding result
+		 * @param  : {}
+		 * @return : {std::shared_ptr<std::vector<uint8_t>>}
+		 * */
 		std::shared_ptr<std::vector<uint8_t>> GetResult() const;
 
-        /*
-         * @description : Decode data
-         * @param  : {std::shared_ptr<std::vector<uint8_t>> _data}
-         * @return : {}
-         * */
+		/*
+		 * @description : Decode data
+		 * @param  : {std::shared_ptr<std::vector<uint8_t>> _data}
+		 * @return : {}
+		 * */
 		void Decode(std::shared_ptr<std::vector<uint8_t>> _data);
 	};
 

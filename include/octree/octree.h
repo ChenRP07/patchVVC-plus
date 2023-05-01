@@ -166,12 +166,26 @@ namespace octree {
 
 	class CommonOctree : public OctreeBase {};
 
+	/*
+	 * Class RAHTOctree, do octree encoding and RAHT encoding.
+	 * How to use?
+	 * RAHTOctree tree;
+	 * tree.SetParams(param);
+	 * tree.SetSourceCloud(cloud_ptr);
+	 * tree.MakeTree();
+	 * oct_result = tree.GetOctree();
+	 * Loop {
+	 *     tree.SetSourceColors(colors_ptr);
+	 *     tree.RAHT();
+	 *     color_result = tree.GetRAHTResult();
+	 * }
+	 * */
 	class RAHTOctree : public OctreeBase {
 	  private:
 		std::vector<std::vector<OctreeNode_t>>         tree_;          /* Tree nodes */
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr         source_cloud_;  /* Geometry of common patch */
 		std::shared_ptr<std::vector<common::ColorYUV>> source_colors_; /* YUV colors to be transformed */
-		std::vector<common::ColorYUV>                  RAHT_result_;   /* RAHT result */
+		std::shared_ptr<std::vector<common::ColorYUV>> RAHT_result_;   /* RAHT result */
 
 		/*
 		 * @description : Add a node in _height layer.
@@ -206,18 +220,16 @@ namespace octree {
 		/*
 		 * @description : Output octree by sequence traversal
 		 * @param  : {}
-		 * @return : {std::vector<uint8_t>}
+		 * @return : {std::shared_ptr<std::vector<uint8_t>>}
 		 * */
-		std::vector<uint8_t> GetOctree() const;
+		std::shared_ptr<std::vector<uint8_t>> GetOctree() const;
 
 		/*
 		 * @description : Move color result to return value
 		 * @param  : {}
-		 * @return : {std::vector<common::ColorYUV>}
+		 * @return : {std::shared_ptr<std::vector<common::ColorYUV>>}
 		 * */
-		std::vector<common::ColorYUV> GetRAHTResult();
-
-		std::vector<int> GetRAHTWeights() const;
+		std::shared_ptr<std::vector<common::ColorYUV>> GetRAHTResult();
 
 		/*
 		 * @description : Do RAHT

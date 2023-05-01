@@ -23,48 +23,73 @@ namespace vvc {
 namespace common {
 	enum { DENSE_SEGMENT };
 	enum { SIMPLE_ICP, LM_ICP, NORMAL_ICP, GENERAL_ICP };
-    enum { PLANAR_BISECTION, PARTIAL_CLUSTERING };
+	enum { PLANAR_BISECTION, PARTIAL_CLUSTERING };
 	struct PVVCParam_t {
-		uint8_t log_level; /* quiet brief normal complete */
+		uint8_t log_level;       /* quiet brief normal complete */
+		uint8_t check_point;     /* from low to high : none first_segment all_segment fitting encoding saving */
+		int     thread_num;      /* Launch how many threads to encode */
+		int     zstd_level;      /* Zstd encoder level */
+		int     max_keyframe;    /* Max key frame interval */
+		int     start_timestamp; /* Start timestamp */
+		int     time_interval;   /* Interval between two frames */
+		int     frames;          /* Encoding frames number */
+
+		/* File path */
 		struct {
-			int   num;
-			int   type;
-			int   iter;
-			int   nn;
-			float block_num;
+			boost::format source_file; /* Souce point clouds */
+			boost::format buffer_file; /* Middle results */
+			boost::format result_file; /* Coding results */
+		} io;
+		/* Parameters of segmentation */
+		struct {
+			int   num;       /* Point number in each patch */
+			int   type;      /* Segment method */
+			int   nn;        /* k in KNN search */
+			float block_num; /* Segmentation blocks number in method DENSE_SEGMENT */
 		} segment;
-		int thread_num;
-        int zstd_level;
+		/* Parameters of ICP registration */
 		struct {
-			float correspondence_ths;
-			int   iteration_ths;
-			float mse_ths;
-			float transformation_ths;
-			bool  centroid_alignment;
-			float patch_err_ths;
-			int   type;
-            float radius_search_ths;
+			float correspondence_ths; /* Max distance of correspondence point pair */
+			int   iteration_ths;      /* Max ICP iterations */
+			float mse_ths;            /* Max mse difference in two iterations of ICP */
+			float transformation_ths; /* Max difference in two transformation of two iterations */
+			bool  centroid_alignment; /* Do centroid alignment before ICP? */
+			int   type;               /* ICP method */
+			float radius_search_ths;  /* Max radius in neighbor search */
 		} icp;
+		/* Parameters of patch encoding */
 		struct {
-			float resolution;
+			size_t qp_i, qp_p; /* Quantization parameter of i_patch and p_patch */
+		} slice;
+		/* Parameters of octree */
+		struct {
+			float resolution; /* Min resolution of octree, edge length of cube in the last level */
 		} octree;
-        struct {
-            float fitting_ths;
-            int split_method;
-            float clustering_ths;
-            int max_iter;
-        } patch;
+		/* Parameters of patch fitting */
+		struct {
+			float fitting_ths;       /* Max MSE ths, deciding whether a patch can be fitted */
+			int   split_method;      /* Split method in patch fitting */
+			float clustering_ths;    /* Max difference between two iteration in clustering */
+			int   max_iter;          /* Max clustering iterations */
+			int   interpolation_num; /* k in KNN search of color interpolation */
+		} patch;
 
 		using Ptr = std::shared_ptr<PVVCParam_t>;
 	};
 
 	/*
 	 * @description : set default parameters
-	 * @param : {std::shared_ptr<VVCParam_t> _ptr}
+	 * @param  : {PVVCParam_t::Ptr _ptr}
 	 * @return : {}
 	 * */
 	extern void SetDefaultParams(PVVCParam_t::Ptr _ptr);
-    extern PVVCParam_t::Ptr CopyParams(PVVCParam_t::Ptr _ptr);
+
+	/*
+	 * @description : Copy parameters and generate a new instance.
+	 * @param  : {PVVCParam_t::Ptr _ptr}
+	 * @return : {PVVCParam_t::Ptr}
+	 * */
+	extern PVVCParam_t::Ptr CopyParams(PVVCParam_t::Ptr _ptr);
 }  // namespace common
 }  // namespace vvc
 

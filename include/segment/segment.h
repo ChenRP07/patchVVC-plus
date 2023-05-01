@@ -60,11 +60,11 @@ namespace segment {
 
 		/*
 		 * @description : Get result point clouds from segmentation.
-         * It do not use std::move because empty patch should be discarded.
-		 * @param : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>& _result}
-		 * @return : {}
+		 * It do not use std::move because empty patch should be discarded.
+		 * @param  : {}
+		 * @return : {std::vector<common::Patch>>}
 		 * */
-		void GetResultPointClouds(std::vector<common::Patch>& _result);
+		[[nodiscard("Segmentation result might be discarded!")]] std::vector<common::Patch> GetResultPointClouds();
 
 		/*
 		 * @description ：set parameters

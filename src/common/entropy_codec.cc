@@ -232,14 +232,14 @@ namespace common {
 				}
 				m += this->Read(k);
 				while (m--) {
-					this->result_.emplace_back(0);
+					this->result_->emplace_back(0);
 					++n;
 				}
 				if (n >= _size) {
 					break;
 				}
 				u_data = this->GRRead(k_R);
-				this->result_.emplace_back(Unsign2Sign(u_data + 1));
+				this->result_->emplace_back(Unsign2Sign(u_data + 1));
 				n++;
 
 				/* Adapt k_RP */
@@ -258,7 +258,7 @@ namespace common {
 			/* No Run Length coding */
 			else {
 				u_data = this->GRRead(k_R);
-				this->result_.emplace_back(Unsign2Sign(u_data));
+				this->result_->emplace_back(Unsign2Sign(u_data));
 				n++;
 
 				/* Adapt k_RP */
@@ -282,8 +282,8 @@ namespace common {
 		}
 	}
 
-	std::vector<FIX_DATA_INT> RLGRDecoder::GetResult() {
-		return std::move(this->result_);
+	std::shared_ptr<std::vector<FIX_DATA_INT>> RLGRDecoder::GetResult() {
+		return this->result_;
 	}
 
 	ZstdEncoder::ZstdEncoder() : params_{nullptr}, result_{nullptr} {}

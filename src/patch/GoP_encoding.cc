@@ -118,7 +118,7 @@ namespace patch {
 			/* Init slices */
 			this->results_.resize(this->source_patches_.size());
 			for (int i = 0; i < this->source_patches_.size(); ++i) {
-				this->results_[i].type      = common::PVVC_SLICE_TYPE_INTER;
+				this->results_[i].type      = common::PVVC_SLICE_TYPE_DEFAULT_PREDICT;
 				this->results_[i].mv        = this->source_patches_[i].mv.inverse();
 				this->results_[i].timestamp = this->source_patches_[i].timestamp;
 				this->results_[i].index     = this->source_patches_[i].index;
@@ -126,7 +126,7 @@ namespace patch {
 				this->results_[i].color     = nullptr;
 			}
 			/* First slice is an intra slice */
-			this->results_.front().type = common::PVVC_SLICE_TYPE_INTRA;
+			this->results_.front().type = common::PVVC_SLICE_TYPE_DEFAULT_INTRA;
 
 			/* Color interpolation */
 			this->patch_colors_.resize(this->source_patches_.size());
@@ -149,6 +149,7 @@ namespace patch {
 			this->tree_.MakeTree();
 
 			/* Get geometry */
+			/* TODO: Zstd here. */
 			this->results_.front().geometry = this->tree_.GetOctree();
 
 			for (int i = 0; i < this->patch_colors_.size(); ++i) {

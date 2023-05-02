@@ -7,15 +7,15 @@
  *
  * Author        : ChenRP07
  * Description   :
- * Create Time   : 2023/04/18 10:25
- * Last Modified : 2023/04/18 10:25
+ * Create Time   : 2023/05/02 16:54
+ * Last Modified : 2023/05/02 16:54
  *
  */
 
-#ifndef _PVVC_OCTREE_CUH_
-#define _PVVC_OCTREE_CUH_
+#include "octree/octree.cuh"
+
 namespace vvc {
 namespace octree {
+
 }  // namespace octree
 }  // namespace vvc
-#endif

@@ -156,10 +156,10 @@ namespace common {
 	 * */
 	class RLGRDecoder {
 	  private:
-		FIX_INT                        buffer_;    /* Bitstream buffer */
-		int                            cnt_;       /* Valid bits in buffer */
-		std::vector<FIX_DATA_INT>      result_;    /* Decoding result */
-		std::vector<uint8_t>::iterator now_, end_; /* Iterator of decoded data */
+		FIX_INT                                    buffer_;    /* Bitstream buffer */
+		int                                        cnt_;       /* Valid bits in buffer */
+		std::shared_ptr<std::vector<FIX_DATA_INT>> result_;    /* Decoding result */
+		std::vector<uint8_t>::iterator             now_, end_; /* Iterator of decoded data */
 
 		/*
 		 * @description : Get data to fill the buffer
@@ -200,7 +200,7 @@ namespace common {
 		 * @description : Reset decoder
 		 * */
 		inline void Reset() {
-			this->result_.clear();
+			this->result_ = std::make_shared<std::vector<FIX_DATA_INT>>();
 			this->cnt_    = 0;
 			this->buffer_ = 0;
 		}
@@ -225,7 +225,7 @@ namespace common {
 		 * @description : Get decoding result, using std::move
 		 * @return : {std::vector<FIX_DATA_INT>}
 		 * */
-		std::vector<FIX_DATA_INT> GetResult();
+		std::shared_ptr<std::vector<FIX_DATA_INT>> GetResult();
 	};
 
 	class ZstdEncoder {

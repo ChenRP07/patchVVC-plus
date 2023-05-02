@@ -28,7 +28,7 @@ namespace io {
 	 * @param  : {const std::string& _name}
 	 * @return : {}
 	 * */
-	extern void SaveSlice(const common::Slice& _slice, const std::string& _name);
+	[[nodiscard]] extern int SaveSlice(const common::Slice& _slice, const std::string& _name);
 
 	/*
 	 * @description : Save patchVVC slice.

@@ -112,6 +112,7 @@ namespace common {
 		UNMATCHED_COLOR_SIZE,  /* error occured when size of ColorYUV is not equal to size of point cloud */
 		ZSTD_ERROR,            /* error occured when use Zstandard API */
 		EMPTY_GOP,             /* error occured when try to encode a GoP whose size is zero */
+		BAD_SLICE,             /* error occured when the type of one slice is invalid */
 	};
 
 	inline static std::string ErrorMessage[100] = {
@@ -136,6 +137,7 @@ namespace common {
 	    "color size is not equal to the point cloud",
 	    "unknown error in Zstandard API",
 	    "cannot encode a GoP with size zero",
+	    "invalid slice type",
 	};
 
 }  // namespace common

@@ -11,13 +11,8 @@
 Module-IO: Read and write .ply point cloud file, supporting binary and ASCII format.
 <h style="color:gold"> Completed. (Coding, formatting, checking)</h>
 
+## TODO list 
 
-Read point cloud I-frame.(IO)
-Generate initial patches.(segment--dense segment)
-Read point cloud.(IO)
-Search motion vectors.(registration)
-Add patches to group, select new I-patch for deviate patches.(TODO)
-Generate common patch.(TODO)
-Compress geometry and colors.(TODO:RAHT, new entrpy codec)
-Decompress.(TODO)
-FoV.(Optional)
+* Add Optional Zstd encoding in `vvc::Patch::GoPEncoding::Encode()::152`
+* Implement `vvc::Octree::InverRAHTOctree`
+* Test ``

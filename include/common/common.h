@@ -29,6 +29,42 @@ namespace vvc {
 namespace common {
 	enum { PVVC_SLICE_TYPE_INTRA = 1, PVVC_SLICE_TYPE_INTER };
 
+	/*
+	 * From low to high : valid 1 | I 0 P 1 | none 0 skip 1 | none 0 zstd 1 | none 0 zstd 1
+	 * */
+	enum PVVC_SLICE_TYPE { PVVC_SLICE_TYPE_VALID, PVVC_SLICE_TYPE_PREDICT, PVVC_SLICE_TYPE_SKIP, PVVC_SLICE_TYPE_GEO_ZSTD, PVVC_SLICE_TYPE_COLOR_ZSTD };
+
+	enum PVVC_SLICE_TYPE_CONFIG {
+		PVVC_SLICE_TYPE_CONFIG_INVALID,
+		PVVC_SLICE_TYPE_CONFIG_VALID,
+		PVVC_SLICE_TYPE_CONFIG_INTRA,
+		PVVC_SLICE_TYPE_CONFIG_PREDICT,
+		PVVC_SLICE_TYPE_CONFIG_NOSKIP,
+		PVVC_SLICE_TYPE_CONFIG_SKIP,
+		PVVC_SLICE_TYPE_CONFIG_GEO_NOZSTD,
+		PVVC_SLICE_TYPE_CONFIG_GEO_ZSTD,
+		PVVC_SLICE_TYPE_CONFIG_COLOR_NOZSTD,
+		PVVC_SLICE_TYPE_CONFIG_COLOR_ZSTD
+	};
+
+	static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
+
+	static uint8_t PVVC_SLICE_TYPE_DEFAULT_INTRA   = 0b00000001;
+	static uint8_t PVVC_SLICE_TYPE_DEFAULT_PREDICT = 0b00000011;
+
+	inline bool CheckSliceType(int _type, PVVC_SLICE_TYPE _MASK) {
+		return _type & PVVC_SLICE_TYPE_MASK[_MASK];
+	}
+
+	inline void SetSliceType(int& _type, PVVC_SLICE_TYPE_CONFIG _MASK) {
+		if (_MASK & 0x01) {
+			_type |= PVVC_SLICE_TYPE_MASK[_MASK >> 1];
+		}
+		else {
+			_type &= (~PVVC_SLICE_TYPE_MASK[_MASK >> 1]);
+		}
+	}
+
 	/* Three channels color implementation, Y/Cb/Cr or Y/U/V */
 	struct ColorYUV {
 		float y, u, v; /* Channels */
@@ -233,6 +269,8 @@ namespace common {
 		size_t                                size;      /* Total size */
 		std::shared_ptr<std::vector<uint8_t>> geometry;  /* Compressed geometry, only valid if type is intra */
 		std::shared_ptr<std::vector<uint8_t>> color;     /* Compressed color, valid if type is intra or inter */
+
+		Slice() : timestamp{-1}, index{-1}, type{0x00}, mv{Eigen::Matrix4f::Identity()}, size{0}, geometry{nullptr}, color{nullptr} {}
 
 		void clear() {
 			this->timestamp = this->index = -1;

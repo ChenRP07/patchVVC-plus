@@ -30,6 +30,23 @@ namespace octree {
 		_p->emplace_back(static_cast<uint8_t>(_height));
 	}
 
+	void LoadTreeCore(pcl::PointXYZ& _center, pcl::PointXYZ& _range, int& _height, uint8_t (&_p)[25]) {
+		float data[6] = {};
+
+		for (int i = 0; i < 6; ++i) {
+			int d{0};
+			for (int j = 0; j < 4; ++j) {
+				d <<= 8;
+				d |= _p[i * 4 + j];
+			}
+			float* t = reinterpret_cast<float*>(&d);
+			data[i]  = *t;
+		}
+		_center.x = data[0], _center.y = data[1], _center.z = data[2];
+		_range.x = data[3], _range.y = data[4], _range.z = data[5];
+		_height = _p[24];
+	}
+
 	OctreeBase::OctreeBase() : tree_range_{0.0f, 0.0f, 0.0f}, tree_height_{0}, params_{nullptr}, tree_center_{} {}
 
 	void OctreeBase::SetParams(common::PVVCParam_t::Ptr _param) {

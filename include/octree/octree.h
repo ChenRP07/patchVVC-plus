@@ -8,7 +8,7 @@
  * Author        : ChenRP07
  * Description   :
  * Create Time   : 2023/03/14 10:21
- * Last Modified : 2023/04/14 10:33
+ * Last Modified : 2023/05/02 21:49
  *
  */
 
@@ -128,6 +128,8 @@ namespace octree {
 	 * @return : {}
 	 * */
 	extern void SaveTreeCore(pcl::PointXYZ _center, pcl::PointXYZ _range, int _height, std::shared_ptr<std::vector<uint8_t>> _p);
+
+	extern void LoadTreeCore(pcl::PointXYZ& _center, pcl::PointXYZ& _range, int& _height, uint8_t (&_p)[25]);
 
 	class OctreeBase {
 	  protected:
@@ -253,6 +255,31 @@ namespace octree {
 		 * @param  : {}
 		 * @return : {}
 		 * */
+		void MakeTree();
+	};
+
+	class InvertRAHTOctree : public OctreeBase {
+	  private:
+		std::vector<std::vector<OctreeNode_t>>         tree_;
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr         source_cloud_;
+		std::shared_ptr<std::vector<common::ColorYUV>> source_colors_;
+		common::Slice                                  slice_;
+
+		/**/
+		void AddNode();
+
+	  public:
+		/* Default constructor and deconstructor */
+		InvertRAHTOctree();
+
+		virtual ~InvertRAHTOctree() = default;
+
+		void SetSlice(const common::Slice& _slice);
+
+		vvc::common::Patch GetPatch() const;
+
+		void InvertRAHT();
+
 		void MakeTree();
 	};
 }  // namespace octree

@@ -5,7 +5,7 @@ lib/
 .cache/*
 test/*.patch
 test/*.slice
-
+test/data/
 .cache
 
 compile_commands.json

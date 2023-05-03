@@ -52,6 +52,7 @@ namespace octree {
 			result.mv        = this->slice_.mv;
 
 			result.cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+			return result;
 		}
 		catch (const common::Exception& e) {
 			e.Log();

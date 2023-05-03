@@ -3,7 +3,9 @@ bin/
 lib/
 ./*.cpp
 .cache/*
-test/
+test/*.patch
+test/*.slice
+
 .cache
 
 compile_commands.json

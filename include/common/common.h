@@ -272,6 +272,8 @@ namespace common {
 
 		Slice() : timestamp{-1}, index{-1}, type{0x00}, mv{Eigen::Matrix4f::Identity()}, size{0}, geometry{nullptr}, color{nullptr} {}
 
+		Slice(const Slice& _x) : timestamp{_x.timestamp}, index{_x.index}, type{_x.type}, mv{_x.mv}, size{_x.size}, geometry{_x.geometry}, color{_x.color} {}
+
 		void clear() {
 			this->timestamp = this->index = -1;
 			this->type                    = 0;

@@ -37,8 +37,6 @@ include_directories(${CMAKE_SOURCE_DIR}/include/)
 
 link_directories(${CMAKE_SOURCE_DIR}/lib/)
 
-add_subdirectory(./src)
-
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/io IO_SRC)
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/common COMMON_SRC)
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/segment SEGMENT_SRC)

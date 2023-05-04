@@ -7,7 +7,7 @@ test/*.patch
 test/*.slice
 test/data/
 test/*
-!test/*.txt
+!test/CMakeLists.txt
 !test/*.cc
 .cache
 

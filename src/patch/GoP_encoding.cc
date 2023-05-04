@@ -149,7 +149,6 @@ namespace patch {
 			this->tree_.MakeTree();
 
 			/* Get geometry */
-			/* TODO: Zstd here. */
 			this->results_.front().geometry = this->tree_.GetOctree();
 
 			for (int i = 0; i < this->patch_colors_.size(); ++i) {

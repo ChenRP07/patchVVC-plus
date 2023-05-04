@@ -113,9 +113,10 @@ namespace common {
 		ZSTD_ERROR,            /* error occured when use Zstandard API */
 		EMPTY_GOP,             /* error occured when try to encode a GoP whose size is zero */
 		BAD_SLICE,             /* error occured when the type of one slice is invalid */
+		EMPTY_REFERENCE,       /* error occured when try to decode a predictive slice without intra slice */
 	};
 
-	inline static std::string ErrorMessage[100] = {
+	static std::string ErrorMessage[100] = {
 	    "an error occured",
 	    "wrong file format",
 	    "no such file",
@@ -138,6 +139,7 @@ namespace common {
 	    "unknown error in Zstandard API",
 	    "cannot encode a GoP with size zero",
 	    "invalid slice type",
+	    "no reference for predictive slice",
 	};
 
 }  // namespace common

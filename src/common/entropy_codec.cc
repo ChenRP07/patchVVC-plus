@@ -307,7 +307,7 @@ namespace common {
 				throw __EXCEPT__(EMPTY_PARAMS);
 			}
 			size_t buffer_size = ZSTD_compressBound(_data->size());
-			this->result_.reset(new std::vector<uint8_t>(buffer_size));
+			this->result_      = std::make_shared<std::vector<uint8_t>>(buffer_size);
 			int z_level        = this->params_->zstd_level;
 			z_level            = z_level > ZSTD_maxCLevel() ? ZSTD_maxCLevel() : z_level;
 			z_level            = z_level < ZSTD_minCLevel() ? ZSTD_minCLevel() : z_level;
@@ -345,7 +345,7 @@ namespace common {
 			if (buffer_size == 0 || buffer_size == ZSTD_CONTENTSIZE_UNKNOWN || buffer_size == ZSTD_CONTENTSIZE_ERROR) {
 				throw __EXCEPT__(ZSTD_ERROR);
 			}
-			this->result_.reset(new std::vector<uint8_t>(buffer_size));
+			this->result_ = std::make_shared<std::vector<uint8_t>>(buffer_size);
 
 			size_t result_size = ZSTD_decompress(this->result_->data(), buffer_size, _data->data(), _data->size());
 			if (ZSTD_isError(result_size) != 0) {

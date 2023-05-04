@@ -31,7 +31,7 @@ void common::SetDefaultParams(common::PVVCParam_t::Ptr _ptr) {
 		_ptr->segment.block_num = 8.0f;
 
 		_ptr->thread_num = 30;
-        _ptr->zstd_level = 22;
+		_ptr->zstd_level = 22;
 
 		_ptr->icp.centroid_alignment = true;
 		_ptr->icp.correspondence_ths = 100.0f;
@@ -40,6 +40,8 @@ void common::SetDefaultParams(common::PVVCParam_t::Ptr _ptr) {
 		_ptr->icp.transformation_ths = 1e-6;
 		_ptr->icp.radius_search_ths  = 10.0f;
 		_ptr->icp.type               = common::SIMPLE_ICP;
+
+		_ptr->octree.resolution = 1.0f;
 	}
 	catch (const common::Exception& e) {
 		e.Log();
@@ -53,26 +55,26 @@ common::PVVCParam_t::Ptr common::CopyParams(common::PVVCParam_t::Ptr _ptr) {
 			throw __EXCEPT__(EMPTY_PARAMS);
 		}
 
-        common::PVVCParam_t::Ptr p(new common::PVVCParam_t());
+		common::PVVCParam_t::Ptr p(new common::PVVCParam_t());
 
-        p->log_level = _ptr->log_level;
-        p->thread_num = _ptr->thread_num;
-        p->zstd_level = _ptr->zstd_level;
-        
-        p->segment.type = _ptr->segment.type;
-        p->segment.num = _ptr->segment.num;
-        p->segment.nn = _ptr->segment.nn;
-        p->segment.block_num = _ptr->segment.block_num;
+		p->log_level  = _ptr->log_level;
+		p->thread_num = _ptr->thread_num;
+		p->zstd_level = _ptr->zstd_level;
 
-        p->icp.centroid_alignment = _ptr->icp.centroid_alignment;
+		p->segment.type      = _ptr->segment.type;
+		p->segment.num       = _ptr->segment.num;
+		p->segment.nn        = _ptr->segment.nn;
+		p->segment.block_num = _ptr->segment.block_num;
+
+		p->icp.centroid_alignment = _ptr->icp.centroid_alignment;
 		p->icp.correspondence_ths = _ptr->icp.correspondence_ths;
-        p->icp.iteration_ths = _ptr->icp.iteration_ths;
-        p->icp.mse_ths = _ptr->icp.mse_ths;
-        p->icp.transformation_ths = _ptr->icp.transformation_ths;
-        p->icp.radius_search_ths = _ptr->icp.radius_search_ths;
-        p->icp.type = _ptr->icp.type;
+		p->icp.iteration_ths      = _ptr->icp.iteration_ths;
+		p->icp.mse_ths            = _ptr->icp.mse_ths;
+		p->icp.transformation_ths = _ptr->icp.transformation_ths;
+		p->icp.radius_search_ths  = _ptr->icp.radius_search_ths;
+		p->icp.type               = _ptr->icp.type;
 
-        return p;
+		return p;
 	}
 	catch (const common::Exception& e) {
 		e.Log();

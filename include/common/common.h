@@ -27,8 +27,6 @@
 
 namespace vvc {
 namespace common {
-	enum { PVVC_SLICE_TYPE_INTRA = 1, PVVC_SLICE_TYPE_INTER };
-
 	/*
 	 * From low to high : valid 1 | I 0 P 1 | none 0 skip 1 | none 0 zstd 1 | none 0 zstd 1
 	 * */
@@ -70,14 +68,10 @@ namespace common {
 		float y, u, v; /* Channels */
 
 		/* Default constructor */
-		ColorYUV() {
-			this->y = this->u = this->v = 0.0f;
-		}
+		ColorYUV() : y{}, u{}, v{} {}
 
 		/* Copy constructor */
-		ColorYUV(const ColorYUV& _x) {
-			this->y = _x.y, this->u = _x.u, this->v = _x.v;
-		}
+		ColorYUV(const ColorYUV& _x) : y{_x.y}, u{_x.u}, v{_x.v} {}
 
 		/* Assign constructor */
 		ColorYUV& operator=(const ColorYUV& _x) {
@@ -148,6 +142,13 @@ namespace common {
 			ColorYUV result;
 			result.y = this->y * _x, result.u = this->u * _x, result.v = this->v * _x;
 			return result;
+		}
+
+		/* Convert to a RGB format, according to BT.601 */
+		void ConvertRGB(pcl::PointXYZRGB& _p) {
+			_p.r = static_cast<uint8_t>(std::round(this->y + 1.4020f * this->v));
+			_p.g = static_cast<uint8_t>(std::round(this->y - 0.3441f * this->u - 0.7141f * this->v));
+			_p.b = static_cast<uint8_t>(std::round(this->y + 1.7720f * this->u));
 		}
 	};
 
@@ -266,19 +267,33 @@ namespace common {
 		int                                   index;     /* Patch index */
 		uint8_t                               type;      /* Slice type, intra / inter / TODO:skip / direct */
 		Eigen::Matrix4f                       mv;        /* Motion vector */
-		size_t                                size;      /* Total size */
+		size_t                                size;      /* Total point number */
+		uint8_t                               qp;        /* Quantization parameter */
 		std::shared_ptr<std::vector<uint8_t>> geometry;  /* Compressed geometry, only valid if type is intra */
 		std::shared_ptr<std::vector<uint8_t>> color;     /* Compressed color, valid if type is intra or inter */
 
-		Slice() : timestamp{-1}, index{-1}, type{0x00}, mv{Eigen::Matrix4f::Identity()}, size{0}, geometry{nullptr}, color{nullptr} {}
+		Slice() : timestamp{-1}, index{-1}, type{0x00}, mv{Eigen::Matrix4f::Identity()}, size{0}, qp{1}, geometry{}, color{} {}
 
-		Slice(const Slice& _x) : timestamp{_x.timestamp}, index{_x.index}, type{_x.type}, mv{_x.mv}, size{_x.size}, geometry{_x.geometry}, color{_x.color} {}
+		Slice(const Slice& _x) : timestamp{_x.timestamp}, index{_x.index}, type{_x.type}, mv{_x.mv}, size{_x.size}, qp{_x.qp}, geometry{_x.geometry}, color{_x.color} {}
+
+		Slice& operator=(const Slice& _x) {
+			this->timestamp = _x.timestamp;
+			this->index     = _x.index;
+			this->type      = _x.type;
+			this->geometry  = _x.geometry;
+			this->color     = _x.color;
+			this->size      = _x.size;
+			this->qp        = _x.qp;
+			this->mv        = _x.mv;
+			return *this;
+		}
 
 		void clear() {
 			this->timestamp = this->index = -1;
 			this->type                    = 0;
 			this->mv                      = Eigen::Matrix4f::Identity();
 			this->size                    = 0;
+			this->qp                      = 1;
 			this->geometry.reset();
 			this->color.reset();
 		}

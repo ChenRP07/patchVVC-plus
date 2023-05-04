@@ -16,6 +16,7 @@
 #define _PVVC_OCTREE_H_
 
 #include "common/common.h"
+#include "common/entropy_codec.h"
 #include "common/exception.h"
 #include "common/parameter.h"
 
@@ -85,11 +86,7 @@ namespace octree {
 		common::ColorYUV raht[16];
 
 		/* Default constructor */
-		OctreeNode_t() : value{0x00}, index{0}, raht{} {
-			for (auto& i : weight) {
-				i = 0;
-			}
-		}
+		OctreeNode_t() : value{}, index{}, weight{}, raht{} {}
 
 		OctreeNode_t(const OctreeNode_t& _x) : value{_x.value}, index{_x.index} {
 			for (int i = 0; i < 16; ++i) {
@@ -258,12 +255,18 @@ namespace octree {
 		void MakeTree();
 	};
 
+	/*
+	 * Class InvertRAHTOctree, generate Patch from Slice by reconstructing octree and invert RAHT
+	 * */
 	class InvertRAHTOctree : public OctreeBase {
 	  private:
-		std::vector<std::vector<OctreeNode_t>>         tree_;
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr         source_cloud_;
-		std::shared_ptr<std::vector<common::ColorYUV>> source_colors_;
-		common::Slice                                  slice_;
+		std::vector<std::vector<OctreeNode_t>>         tree_;         /* Octree */
+		pcl::PointCloud<pcl::PointXYZ>::Ptr            source_cloud_; /* Common geometry */
+		std::shared_ptr<std::vector<uint8_t>>          node_values_;
+		std::shared_ptr<std::vector<common::ColorYUV>> coefficients_;
+		std::shared_ptr<std::vector<common::ColorYUV>> reference_colors_; /* Reference ColorYUV */
+		std::shared_ptr<std::vector<common::ColorYUV>> source_colors_;    /* Result ColorYUV, after invert compensation */
+		common::Slice                                  slice_;            /* Slice to be decoded */
 
 		/**/
 		void AddNode();
@@ -274,9 +277,19 @@ namespace octree {
 
 		virtual ~InvertRAHTOctree() = default;
 
+		/*
+		 * @description : Set decoded Slice
+		 * @param  : {const common::Slice& _slice}
+		 * @return : {}
+		 * */
 		void SetSlice(const common::Slice& _slice);
 
-		vvc::common::Patch GetPatch() const;
+		/*
+		 * @description : Get result Patch
+		 * @param  : {}
+		 * @return : {common::Patch}
+		 * */
+		common::Patch GetPatch() const;
 
 		void InvertRAHT();
 

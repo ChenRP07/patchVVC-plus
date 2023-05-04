@@ -6,6 +6,7 @@ lib/
 test/*.patch
 test/*.slice
 test/data/
+test/*_exe
 .cache
 
 compile_commands.json

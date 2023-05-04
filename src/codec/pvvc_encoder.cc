@@ -84,7 +84,7 @@ namespace codec {
 					seg.SetParams(this->params_);
 					seg.SetTimeStamp(this->params_->start_timestamp + this->params_->time_interval * i);
 					seg.SetSourcePointCloud(this->frames_[i].cloud);
-					this->patches_[i] = seg.GetResultPointClouds();
+					this->patches_[i] = seg.GetResultPatches();
 				}
 				else {
 					/* Load check points */

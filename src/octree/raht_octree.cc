@@ -137,11 +137,11 @@ namespace octree {
 				std::vector<int> subnodes[8];
 				for (auto i : _points) {
 					int pos = 0;
-					pos += this->source_cloud_->at(i).x > _center.x ? 0 : 1;
+					pos |= this->source_cloud_->at(i).x > _center.x ? 0 : 1;
 					pos <<= 1;
-					pos += this->source_cloud_->at(i).y > _center.y ? 0 : 1;
+					pos |= this->source_cloud_->at(i).y > _center.y ? 0 : 1;
 					pos <<= 1;
-					pos += this->source_cloud_->at(i).z > _center.z ? 0 : 1;
+					pos |= this->source_cloud_->at(i).z > _center.z ? 0 : 1;
 					subnodes[pos].emplace_back(i);
 				}
 				/* Release _points */
@@ -152,7 +152,7 @@ namespace octree {
 					/* If subnode is not empty */
 					if (!subnodes[i].empty()) {
 						/* Set i-th bit to 1 */
-						node.value += NodeValue[i];
+						node.value |= NodeValue[i];
 						/* Compute subnode center */
 						pcl::PointXYZ subcenter = SubSpaceCenter(_center, subrange, i);
 						/* Next line will add an element in next layer */

@@ -268,8 +268,15 @@ namespace octree {
 		std::shared_ptr<std::vector<common::ColorYUV>> source_colors_;    /* Result ColorYUV, after invert compensation */
 		common::Slice                                  slice_;            /* Slice to be decoded */
 
-		/**/
-		void AddNode();
+		/*
+		 * @description : Back root traversal of octree, compute center and update weight.
+		 * @param  : {const int _height}
+		 * @param  : {const int _index}
+		 * @param  : {const pcl::PointXYZ _center}
+		 * @param  : {const pcl::PointXYZ _range}
+		 * @return : {}
+		 * */
+		void AddPoints(const int _height, const int _index, const pcl::PointXYZ _center, const pcl::PointXYZ _range);
 
 	  public:
 		/* Default constructor and deconstructor */

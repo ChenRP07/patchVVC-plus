@@ -100,6 +100,7 @@ namespace octree {
 				throw __EXCEPT__(EMPTY_REFERENCE);
 			}
 
+			/* Optional Zstd decoding */
 			if (common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_GEO_ZSTD)) {
 				common::ZstdDecoder dec;
 				dec.Decode(this->slice_.geometry);
@@ -154,6 +155,65 @@ namespace octree {
 					}
 				}
 				curr_layer_node_count = next_layer_node_count;
+			}
+			if (curr_layer_node_count != this->slice_.size) {
+				throw __EXCEPT__(UNMATCHED_COLOR_SIZE);
+			}
+			this->tree_.front().resize(curr_layer_node_count);
+
+			this->AddPoints(0, 0, this->tree_center_, this->tree_range_);
+		}
+		catch (const common::Exception& e) {
+			e.Log();
+			throw __EXCEPT__(ERROR_OCCURED);
+		}
+	}
+
+	void InvertRAHTOctree::AddPoints(const int _height, const int _index, const pcl::PointXYZ _center, const pcl::PointXYZ _range) {
+		try {
+			/* Check valid */
+			if (_height >= this->tree_height_) {
+				throw __EXCEPT__(OUT_OF_RANGE);
+			}
+			if (_index >= this->tree_.at(_height).size()) {
+				throw __EXCEPT__(OUT_OF_RANGE);
+			}
+
+			auto& node = this->tree_[_height][_index];
+			/* Leaf layer */
+			if (_height == this->tree_height_ - 1) {
+				node.value     = 0xff;
+				node.weight[1] = 1;
+				this->source_cloud_->emplace_back(_center);
+				node.index.emplace_back(this->source_cloud_->size());
+			}
+			else {
+				/* Subrange : half of _range */
+				pcl::PointXYZ subrange(_range.x / 2.0f, _range.y / 2.0f, _range.z / 2.0f);
+
+				/* For each subnode */
+				for (int i = 0; i < 8; ++i) {
+					/* If subnode is not empty */
+					if (node.index[i] != -1) {
+						/* Compute subnode center */
+						pcl::PointXYZ subcenter = SubSpaceCenter(_center, subrange, i);
+						/* Iteratively traversal */
+						this->AddPoints(_height + 1, node.index[i], subcenter, subrange);
+					}
+				}
+
+				/* Update weight
+				 * Note the weights of children of node are already computed
+				 * */
+				for (int i = 0; i < 8; ++i) {
+					if (node.index[i] != -1) {
+						node.weight[i + 8] = this->tree_[_height + 1][node.index[i]].weight[0];
+					}
+				}
+
+				for (int i = 7; i > 0; --i) {
+					node.weight[i] = node.weight[NodeWeight[i][0]] + node.weight[NodeWeight[i][1]];
+				}
 			}
 		}
 		catch (const common::Exception& e) {

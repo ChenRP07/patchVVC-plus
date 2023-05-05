@@ -59,7 +59,7 @@ namespace common {
 		} icp;
 		/* Parameters of patch encoding */
 		struct {
-			size_t qp_i, qp_p; /* Quantization parameter of i_patch and p_patch */
+			uint8_t qp_i, qp_p; /* Quantization parameter of i_patch and p_patch */
 		} slice;
 		/* Parameters of octree */
 		struct {

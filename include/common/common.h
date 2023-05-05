@@ -50,11 +50,11 @@ namespace common {
 	static uint8_t PVVC_SLICE_TYPE_DEFAULT_INTRA   = 0b00000001;
 	static uint8_t PVVC_SLICE_TYPE_DEFAULT_PREDICT = 0b00000011;
 
-	inline bool CheckSliceType(int _type, PVVC_SLICE_TYPE _MASK) {
+	inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
 		return _type & PVVC_SLICE_TYPE_MASK[_MASK];
 	}
 
-	inline void SetSliceType(int& _type, PVVC_SLICE_TYPE_CONFIG _MASK) {
+	inline void SetSliceType(uint8_t& _type, PVVC_SLICE_TYPE_CONFIG _MASK) {
 		if (_MASK & 0x01) {
 			_type |= PVVC_SLICE_TYPE_MASK[_MASK >> 1];
 		}

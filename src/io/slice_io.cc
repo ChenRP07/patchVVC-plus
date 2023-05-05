@@ -56,6 +56,16 @@ namespace io {
 			}
 			stream_size += sizeof(int) * 1;
 
+			if (fwrite(&_slice.size, sizeof(size_t), 1, fp) != 1) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+			stream_size += sizeof(size_t) * 1;
+
+			if (fwrite(&_slice.qp, sizeof(uint8_t), 1, fp) != 1) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+			stream_size += sizeof(uint8_t) * 1;
+
 			if (fwrite(&_slice.mv, sizeof(Eigen::Matrix4f), 1, fp) != 1) {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
@@ -139,6 +149,14 @@ namespace io {
 			}
 
 			if (fread(&_slice.index, sizeof(int), 1, fp) != 1) {
+				throw __EXCEPT__(FILE_READ_ERROR);
+			}
+
+			if (fread(&_slice.size, sizeof(size_t), 1, fp) != 1) {
+				throw __EXCEPT__(FILE_READ_ERROR);
+			}
+
+			if (fread(&_slice.qp, sizeof(uint8_t), 1, fp) != 1) {
 				throw __EXCEPT__(FILE_READ_ERROR);
 			}
 

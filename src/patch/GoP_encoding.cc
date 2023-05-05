@@ -149,17 +149,32 @@ namespace patch {
 			this->tree_.MakeTree();
 
 			/* Get geometry */
-			this->results_.front().geometry = this->tree_.GetOctree();
+			auto geo_temp = this->tree_.GetOctree();
+			/* Optional Zstd encoding, valid when get real improvement in compression ratio */
+			common::ZstdEncoder zstd_enc;
+			zstd_enc.SetParams(this->params_);
+			zstd_enc.Encode(geo_temp);
+			auto geo_zstd = zstd_enc.GetResult();
+			if (geo_zstd->size() < geo_temp->size()) {
+				common::SetSliceType(this->results_.front().type, common::PVVC_SLICE_TYPE_CONFIG_GEO_ZSTD);
+				this->results_.front().geometry = geo_zstd;
+			}
+			else {
+				common::SetSliceType(this->results_.front().type, common::PVVC_SLICE_TYPE_CONFIG_GEO_NOZSTD);
+				this->results_.front().geometry = geo_temp;
+			}
 
 			for (int i = 0; i < this->patch_colors_.size(); ++i) {
 				/* QP */
-				size_t QP = i == 0 ? this->params_->slice.qp_i : this->params_->slice.qp_p;
+				uint8_t QP = i == 0 ? this->params_->slice.qp_i : this->params_->slice.qp_p;
 
 				/* Do RAHT */
 				this->tree_.SetSourceColors(this->patch_colors_[i]);
 				this->tree_.RAHT();
-				auto RAHT_data         = this->tree_.GetRAHTResult();
-				auto RAHT_quant_result = std::make_shared<std::vector<common::FIX_DATA_INT>>(RAHT_data->size() * 3);
+				auto RAHT_data            = this->tree_.GetRAHTResult();
+				this->results_.at(i).size = RAHT_data->size();
+				this->results_.at(i).qp   = QP;
+				auto RAHT_quant_result    = std::make_shared<std::vector<common::FIX_DATA_INT>>(RAHT_data->size() * 3);
 
 				/* Quantization */
 				for (int j = 0; j < RAHT_data->size(); ++j) {
@@ -171,7 +186,18 @@ namespace patch {
 				/* RLGR encoding */
 				common::RLGREncoder enc;
 				enc.Encode(RAHT_quant_result);
-				this->results_[i].color = enc.GetResult();
+				auto color_temp = enc.GetResult();
+				/* Optional Zstd encoding, valid whn get real improvement in compression ratio */
+				zstd_enc.Encode(color_temp);
+				auto color_zstd = zstd_enc.GetResult();
+				if (color_zstd->size() < color_temp->size()) {
+					common::SetSliceType(this->results_.at(i).type, common::PVVC_SLICE_TYPE_CONFIG_COLOR_ZSTD);
+					this->results_.at(i).color = color_zstd;
+				}
+				else {
+					common::SetSliceType(this->results_.at(i).type, common::PVVC_SLICE_TYPE_CONFIG_COLOR_NOZSTD);
+					this->results_.at(i).color = color_temp;
+				}
 			}
 		}
 		catch (const common::Exception& e) {

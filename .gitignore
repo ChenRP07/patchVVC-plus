@@ -3,6 +3,7 @@ bin/
 lib/
 ./*.cpp
 .cache/*
+.vscode/*
 test/*.patch
 test/*.slice
 test/data/

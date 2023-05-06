@@ -1,7 +1,7 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-05 16:04:08
- * @LastEditTime: 2023-05-06 16:38:37
+ * @LastEditTime: 2023-05-06 18:24:23
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -302,7 +302,8 @@ namespace render {
                 void Rendering(){
                     int frame_size = vertices.size();
                     /*渲染设置*/
-                    glClear(GL_COLOR_BUFFER_BIT);//清屏	
+                    glClearColor(0, 0, 0, 1.0f);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
                     glfwSwapInterval(1);//设置前后缓冲区交换间隔为1，使得每帧更新一次
 
                     // 时间差计算
@@ -332,8 +333,8 @@ namespace render {
                     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));//把矩阵数据发送给着色器。1、查询uniform变量的地址值；2、要发送多少个矩阵；3、是否置换矩阵（交换我们矩阵的行和列）；4、GLM的矩阵数据转为OpenGL所能接受的数据
                     glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 40000.0f);//投影矩阵,创建可视空间的大平截头体（任何在平截头体以外的东西不会出现在裁剪空间体积内，并且将会受到裁剪）。1、视野，设定观察空间大小；2、宽高比；2、平截头的近平面；4、平截头的远平面
                     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
-                    
+                    glDepthMask(GL_TRUE);
+                    glEnable(GL_DEPTH_TEST);
                     ///绘制顶点
                     glUseProgram(shaderProgram);//激活着色器程序对象，之后每个着色器调用和渲染调用都会使用这个程序对象		
                     glBindVertexArray(VAO);//绑定VAO

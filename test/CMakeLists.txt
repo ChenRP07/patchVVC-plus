@@ -11,3 +11,11 @@ target_link_libraries(slice_i ${PCL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZSTD_
 
 add_executable(zstd_exe test_zstd.cc)
 target_link_libraries(zstd_exe ${PCL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZSTD_LIBRARIES} pvvc)
+
+include_directories(/usr/local/cuda/samples/common/inc)
+include_directories(/usr/local/cuda/include/)
+find_package(glfw3 REQUIRED)
+# add_library(decoderlib STATIC CUDA2OpenGL.cu)
+add_executable(player.out main.cc)
+target_link_libraries(player.out PUBLIC glfw GL GLEW)
+# target_link_libraries(player.out PUBLIC decoderlib glfw GL GLEW)

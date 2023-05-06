@@ -12,7 +12,7 @@
  *
  */
 
-#include "octree/octree.cuh"
+
 
 namespace vvc {
 namespace octree {

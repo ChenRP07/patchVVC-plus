@@ -28,7 +28,7 @@
 namespace vvc {
 namespace io {
 	/*
-	 * @description: load cololed point cloud from a ply format file
+	 * @description: load colored point cloud from a ply format file
 	 * @param  : {const string&} file_name
 	 * @param  : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr} point_cloud
 	 * @return : {}

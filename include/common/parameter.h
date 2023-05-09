@@ -74,7 +74,21 @@ namespace common {
 			int   interpolation_num; /* k in KNN search of color interpolation */
 		} patch;
 
-		using Ptr = std::shared_ptr<PVVCParam_t>;
+		struct {
+			double      scr_width;
+			double      scr_height;
+			double      FoV;
+			std::string scr_name;
+			int         gl_major_version;
+			int         gl_minor_version;
+			size_t      buffer_size;
+			size_t      vbo_buffer_size;
+			std::string vertex_source;
+			std::string fragment_source;
+			double      camera_move_ratio;
+		} render;
+
+		using Ptr = std::shared_ptr<const PVVCParam_t>;
 	};
 
 	/*
@@ -82,7 +96,7 @@ namespace common {
 	 * @param  : {PVVCParam_t::Ptr _ptr}
 	 * @return : {}
 	 * */
-	extern void SetDefaultParams(PVVCParam_t::Ptr _ptr);
+	extern void SetDefaultParams(PVVCParam_t::Ptr& _ptr);
 
 	/*
 	 * @description : Copy parameters and generate a new instance.

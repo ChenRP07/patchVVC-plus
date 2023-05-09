@@ -282,9 +282,7 @@ namespace registration {
 			}
 			*/
 
-			common::PVVCParam_t::Ptr parallel_params = common::CopyParams(this->params_);
-			parallel_params->icp.type                = common::SIMPLE_ICP;
-			this->params_                            = parallel_params;
+			this->params_ = common::CopyParams(this->params_);
 
 			/* fill the task_queue_ */
 			for (size_t i = 0; i < this->result_clouds_.size(); ++i) {

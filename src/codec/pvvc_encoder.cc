@@ -47,7 +47,8 @@ namespace codec {
 				int index = this->params_->start_timestamp + i * this->params_->time_interval;
 				if (!(i % this->params_->max_keyframe)) {
 					if (this->params_->check_point & 0x01) {
-						std::string file_name = boost::str(this->params_->io.source_file % index);
+						boost::format file_name_fmt = this->params_->io.source_file;
+						std::string   file_name     = boost::str(file_name_fmt % index);
 						std::cout << __B_AZURET__(Loading key frame #) << index << ", from ";
 					}
 				}

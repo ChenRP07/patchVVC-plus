@@ -4,7 +4,7 @@ int main() {
 	vvc::common::Slice slice;
 
 	vvc::io::LoadSlice(slice, "./save_test.slice");
-	vvc::common::PVVCParam_t::Ptr param(new vvc::common::PVVCParam_t());
+	vvc::common::PVVCParam_t::Ptr param;
 	vvc::common::SetDefaultParams(param);
 
 	std::cout << "Zstd geo : " << slice.geometry->size() << '\n';

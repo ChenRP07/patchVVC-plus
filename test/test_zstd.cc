@@ -3,7 +3,7 @@ int main() {
 	using namespace std;
 	auto p    = std::make_shared<std::vector<uint8_t>>(100, 12);
 	p->at(23) = 100;
-	auto pp   = std::make_shared<vvc::common::PVVCParam_t>();
+    vvc::common::PVVCParam_t::Ptr pp;
 	vvc::common::SetDefaultParams(pp);
 	vvc::common::ZstdEncoder enc;
 	enc.SetParams(pp);

@@ -8,7 +8,7 @@ int main() {
 	slice.mv(2, 3)  = 122.1827f;
 	pcl::PointXYZ center{1.1f, 4.5f, 1.4f}, range{128.0f, 128.0f, 128.0f};
 
-	vvc::common::PVVCParam_t::Ptr param(new vvc::common::PVVCParam_t());
+	vvc::common::PVVCParam_t::Ptr param;
 	vvc::common::SetDefaultParams(param);
 	auto geo = std::make_shared<std::vector<uint8_t>>();
 

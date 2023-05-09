@@ -18,6 +18,7 @@
 #include <boost/format.hpp>
 #include <iostream>
 #include <mutex>
+#include <string.h>
 #include <string>
 
 // clang-format off
@@ -65,7 +66,7 @@
 namespace vvc {
 namespace common {
 	/* Mutex to output message to terminal, should be called in multi cout or printf, thread safe in single printf and cout */
-	static std::mutex    PVVCLog_Mutex = std::mutex();
+	static std::mutex    PVVCLog_Mutex;
 	static boost::format color_cmd("\033[%dm%s\033[0m");
 	class Exception {
 	  private:
@@ -114,6 +115,10 @@ namespace common {
 		EMPTY_GOP,             /* error occured when try to encode a GoP whose size is zero */
 		BAD_SLICE,             /* error occured when the type of one slice is invalid */
 		EMPTY_REFERENCE,       /* error occured when try to decode a predictive slice without intra slice */
+		BAD_GLFW_INIT,         /* error occured when try to initialize glfw by glfwInit() but failed */
+		WINDOW_CREATE_ERROR,   /* error occured when try to create a window by glfwCreateWindow() but failed */
+		BAD_GLEW_INIT,         /* error occured when try to initialize glew by glewInit() but failed */
+		SHADER_COMPILE_ERROR,  /* error occured when try to compile shader but failed */
 	};
 
 	static std::string ErrorMessage[100] = {
@@ -140,6 +145,10 @@ namespace common {
 	    "cannot encode a GoP with size zero",
 	    "invalid slice type",
 	    "no reference for predictive slice",
+	    "cannot initialize glfw",
+	    "cannot create window by glfw",
+	    "cannot initialize glew",
+	    "cannot compile shader",
 	};
 
 }  // namespace common

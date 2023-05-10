@@ -39,6 +39,45 @@ namespace octree {
 				}
 			}
 			this->slice_ = _slice;
+
+			/* Optional Zstd decoding */
+			if (common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_GEO_ZSTD)) {
+				common::ZstdDecoder dec;
+				dec.Decode(this->slice_.geometry);
+				this->node_values_ = dec.GetResult();
+			}
+			else {
+				this->node_values_ = this->slice_.geometry;
+			}
+
+			auto temp_color = this->slice_.color;
+			if (common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_COLOR_ZSTD)) {
+				common::ZstdDecoder dec;
+				dec.Decode(this->slice_.color);
+				temp_color = dec.GetResult();
+			}
+
+			/* RLGR decoding */
+			common::RLGRDecoder rlgr_dec;
+			rlgr_dec.Decode(temp_color, 3 * this->slice_.size);
+			auto rlgr_res       = rlgr_dec.GetResult();
+			this->coefficients_ = std::make_shared<std::vector<common::ColorYUV>>(this->slice_.size);
+			/* Reconstruct coefficients */
+			for (int i = 0; i < this->slice_.size; ++i) {
+				this->coefficients_->at(i).y = static_cast<float>(rlgr_res->at(i) * this->slice_.qp);
+				this->coefficients_->at(i).u = static_cast<float>(rlgr_res->at(i + this->slice_.size) * this->slice_.qp);
+				this->coefficients_->at(i).v = static_cast<float>(rlgr_res->at(i + 2 * this->slice_.size) * this->slice_.qp);
+			}
+
+			/* If intra slice, clear tree and related container */
+			if (!common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_PREDICT)) {
+				this->tree_.clear();
+				this->source_cloud_.reset(new pcl::PointCloud<pcl::PointXYZ>());
+				this->reference_colors_ = std::make_shared<std::vector<common::ColorYUV>>();
+				this->source_colors_    = std::make_shared<std::vector<common::ColorYUV>>();
+				this->MakeTree();
+			}
+			this->InvertRAHT();
 		}
 		catch (const common::Exception& e) {
 			e.Log();
@@ -100,15 +139,6 @@ namespace octree {
 				throw __EXCEPT__(EMPTY_REFERENCE);
 			}
 
-			/* Optional Zstd decoding */
-			if (common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_GEO_ZSTD)) {
-				common::ZstdDecoder dec;
-				dec.Decode(this->slice_.geometry);
-				this->node_values_ = dec.GetResult();
-			}
-			else {
-				this->node_values_ = this->slice_.geometry;
-			}
 			/* Load center, range and height from geometry */
 			uint8_t tree_attr[25] = {};
 
@@ -216,6 +246,66 @@ namespace octree {
 				for (int i = 7; i > 0; --i) {
 					node.weight[i] = node.weight[NodeWeight[i][0]] + node.weight[NodeWeight[i][1]];
 				}
+			}
+		}
+		catch (const common::Exception& e) {
+			e.Log();
+			throw __EXCEPT__(ERROR_OCCURED);
+		}
+	}
+
+	void InvertRAHTOctree::InvertRAHT() {
+		try {
+			if (!this->params_) {
+				throw __EXCEPT__(EMPTY_PARAMS);
+			}
+			if (this->tree_.size() != this->tree_height_ || this->tree_height_ <= 0) {
+				throw __EXCEPT__(EMPTY_OCTREE);
+			}
+			if (!this->coefficients_ || this->coefficients_->size() != this->source_cloud_->size()) {
+				throw __EXCEPT__(UNMATCHED_COLOR_SIZE);
+			}
+			/* Reverse iterator */
+			auto iter = this->coefficients_->rbegin();
+
+			/* Set g_DC */
+			this->tree_.front().front().raht[0] = *iter;
+
+			iter = std::next(iter, 1);
+
+			for (int i = 0; i < this->tree_height_ - 1; ++i) {
+				for (auto& node : this->tree_[i]) {
+					/* Set h_ACs */
+					for (int idx = 1; idx < 8; ++idx) {
+						if (node.weight[NodeWeight[idx][0]] != 0 && node.weight[NodeWeight[idx][0]] != 0) {
+							node.raht[idx] = *iter;
+							iter           = std::next(iter, 1);
+						}
+					}
+					/* Compute g_DC */
+					node.InvertHierarchicalTransform();
+
+					/* Update g_DC for each subnode */
+					for (int idx = 0; idx < 8; ++idx) {
+						if (node.index[idx] != -1) {
+							this->tree_[i + 1][node.index[idx]].raht[0] = node.raht[idx + 8];
+						}
+					}
+				}
+			}
+
+			/* Collect colors */
+			this->source_colors_->clear();
+			for (auto& node : this->tree_.back()) {
+				this->source_colors_->emplace_back(node.raht[0]);
+			}
+			if (common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_PREDICT)) {
+				for (int i = 0; i < this->source_colors_->size(); ++i) {
+					this->source_colors_->at(i) += this->reference_colors_->at(i);
+				}
+			}
+			else {
+				this->reference_colors_->assign(this->source_colors_->begin(), this->source_colors_->end());
 			}
 		}
 		catch (const common::Exception& e) {

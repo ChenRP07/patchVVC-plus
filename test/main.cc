@@ -1,7 +1,7 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-06 12:50:36
- * @LastEditTime: 2023-05-06 15:37:03
+ * @LastEditTime: 2023-05-10 10:47:19
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -18,7 +18,9 @@
 #include "cuda/common/base.cuh"
 #include <fstream>//文件流
 
-#define BUFFSIZE 1
+#define VBOSIZE BUFFER_SIZE                 // VBO 缓冲区大小
+#define ROUND 10                            // 刷新 10 次缓冲区
+#define BUFFSIZE (BUFFER_SIZE*ROUND)        // 共需要 10 * VBOSIZE 帧数据
 int main()
 {
     std::vector<vvc::common::Points> vertices[BUFFSIZE];//点数据容器对象
@@ -77,10 +79,11 @@ int main()
 
     int index = 0;
     while (!glfwWindowShouldClose(renderer.window)){
-        renderer.InputData(vertices[index % BUFFSIZE]);
+        renderer.InputData(&vertices[  VBOSIZE*index ]);
         std::cout<<"InputData"<<std::endl;
         renderer.Rendering();
         index ++;
+        index = index % ROUND;
     }
 
     return 0;

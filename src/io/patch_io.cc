@@ -17,9 +17,6 @@
 namespace vvc {
 namespace io {
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-result"
-
 	void SavePatch(const common::Patch& _patch, const std::string& _name) {
 		try {
 			std::regex name_type{"^.*\\.patch$"};
@@ -142,6 +139,5 @@ namespace io {
 		}
 	}
 
-#pragma GCC diagnostic pop
 }  // namespace io
 }  // namespace vvc

@@ -159,8 +159,10 @@ namespace octree {
 			if (curr_layer_node_count != this->slice_.size) {
 				throw __EXCEPT__(UNMATCHED_COLOR_SIZE);
 			}
-			this->tree_.front().resize(curr_layer_node_count);
+			/* Malloc space for last layer */
+			this->tree_.back().resize(curr_layer_node_count);
 
+			/* Update weight and add point into cloud */
 			this->AddPoints(0, 0, this->tree_center_, this->tree_range_);
 		}
 		catch (const common::Exception& e) {

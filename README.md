@@ -30,9 +30,9 @@ Note: libzstd and libboost are usually installed by default in linux distributio
 
 ## TODO list 
 
-* ~~Add Optional Zstd encoding in `vvc::Patch::GoPEncoding::Encode()::152`~~
-* Move Zstd and RLGR encoding from `vvc::Patch::GoPEncoding::Encode()` to `vvc::Octree::RAHTOctree`
-* Change interface of `vvc::Octree::RAHTOctree`, input `vvc::common::Patch` and output `vvc::common::Slice`
-* Add `vvc::common::Slice::size, vvc::common::Slice::qp` to `vvc::io::SaveSlice(), vvc::io::LoadSlice`
+* √ Add Optional Zstd encoding in `vvc::Patch::GoPEncoding::Encode()::152`  
+* ~~Move Zstd and RLGR encoding from `vvc::Patch::GoPEncoding::Encode()` to `vvc::Octree::RAHTOctree`~~
+* ~~Change interface of `vvc::Octree::RAHTOctree`, input `vvc::common::Patch` and output `vvc::common::Slice`~~
+* √ Add `vvc::common::Slice::size, vvc::common::Slice::qp` to `vvc::io::SaveSlice(), vvc::io::LoadSlice`
 * Implement `vvc::Octree::InverRAHTOctree`
 * Test

@@ -15,8 +15,6 @@
 #ifndef _PVVC_PLY_IO_H_
 #define _PVVC_PLY_IO_H_
 
-// NOTE: This I/O module had been tested, and there is no bug until !--Last Modified--! .
-
 #include "common/exception.h"
 
 #include <pcl/point_cloud.h>
@@ -33,7 +31,7 @@ namespace io {
 	 * @param  : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr} point_cloud
 	 * @return : {}
 	 */
-	extern void LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud);
+	extern pcl::PointCloud<pcl::PointXYZRGB>::Ptr LoadColorPlyFile(const std::string& file_name);
 
 	/*
 	 * @description: save point_cloud to file_name, using binary_mode

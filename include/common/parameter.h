@@ -36,9 +36,9 @@ namespace common {
 
 		/* File path */
 		struct {
-			boost::format source_file; /* Souce point clouds */
-			boost::format buffer_file; /* Middle results */
-			boost::format result_file; /* Coding results */
+			std::string source_file; /* Souce point clouds */
+			std::string buffer_file; /* Middle results */
+			std::string result_file; /* Coding results */
 		} io;
 		/* Parameters of segmentation */
 		struct {
@@ -74,15 +74,15 @@ namespace common {
 			int   interpolation_num; /* k in KNN search of color interpolation */
 		} patch;
 
-		using Ptr = std::shared_ptr<PVVCParam_t>;
+		using Ptr = std::shared_ptr<const PVVCParam_t>;
 	};
 
 	/*
-	 * @description : set default parameters
-	 * @param  : {PVVCParam_t::Ptr _ptr}
-	 * @return : {}
+	 * @description : Return a pointer to default parameters
+	 * @param  : {}
+	 * @return : {PVVCParam_t::Ptr}
 	 * */
-	extern void SetDefaultParams(PVVCParam_t::Ptr _ptr);
+	extern PVVCParam_t::Ptr SetDefaultParams();
 
 	/*
 	 * @description : Copy parameters and generate a new instance.

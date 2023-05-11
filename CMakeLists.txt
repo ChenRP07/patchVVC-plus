@@ -42,8 +42,10 @@ aux_source_directory(${CMAKE_SOURCE_DIR}/src/common COMMON_SRC)
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/segment SEGMENT_SRC)
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/octree OCTREE_SRC)
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/registration REGISTRATION_SRC)
+aux_source_directory(${CMAKE_SOURCE_DIR}/src/patch PATCH_SRC)
+aux_source_directory(${CMAKE_SOURCE_DIR}/src/codec CODEC_SRC)
 
-add_library(pvvc SHARED ${IO_SRC} ${COMMON_SRC} ${SEGMENT_SRC} ${OCTREE_SRC} ${REGISTRATION_SRC})
+add_library(pvvc SHARED ${IO_SRC} ${COMMON_SRC} ${SEGMENT_SRC} ${OCTREE_SRC} ${REGISTRATION_SRC} ${PATCH_SRC} ${CODEC_SRC})
 target_link_libraries(pvvc ${PCL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZSTD_LIBRARIES})
 
 add_subdirectory(./src/cuda)

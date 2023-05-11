@@ -18,7 +18,7 @@ using namespace vvc;
 namespace vvc {
 namespace io {
 
-	void LoadColorPlyFile(const std::string& file_name, pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud) {
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr LoadColorPlyFile(const std::string& file_name) {
 		try {
 			// file_name must be *.ply format
 			std::regex  name_type{"^.*\\.ply$"};
@@ -85,12 +85,8 @@ namespace io {
 					}
 				}
 			}
-			if (point_cloud == nullptr) {
-				point_cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
-			}
-			else {
-				point_cloud->clear();
-			}
+
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr point_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
 			// ascii
 			if (file_type == 0) {
 				for (size_t i = 0; i < point_cloud_size; i++) {
@@ -122,6 +118,7 @@ namespace io {
 				}
 			}
 			fclose(fp);
+            return point_cloud;
 		}
 		catch (const common::Exception& e) {
 			e.Log();

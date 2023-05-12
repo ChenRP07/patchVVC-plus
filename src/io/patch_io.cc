@@ -126,6 +126,7 @@ namespace io {
 				point.r = rgb[0], point.g = rgb[1], point.b = rgb[2];
 				_patch.cloud->emplace_back(point);
 			}
+			getc(fp);
 			if (!feof(fp)) {
 				common::PVVCLog_Mutex.lock();
 				std::cout << __B_YELLOWT__([Warning]) << ' ' << _name << " seems to have extra content.\n";

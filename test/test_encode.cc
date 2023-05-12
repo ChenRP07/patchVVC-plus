@@ -79,6 +79,7 @@ void Encode() {
 
 int main() {
 	param = vvc::common::SetDefaultParams();
-	SegmentCloud();
+	// SegmentCloud();
+    Read();
 	return 0;
 }

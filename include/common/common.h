@@ -146,9 +146,9 @@ namespace common {
 
 		/* Convert to a RGB format, according to BT.601 */
 		void ConvertRGB(pcl::PointXYZRGB& _p) {
-			_p.r = static_cast<uint8_t>(std::round(this->y + 1.4020f * this->v));
-			_p.g = static_cast<uint8_t>(std::round(this->y - 0.3441f * this->u - 0.7141f * this->v));
-			_p.b = static_cast<uint8_t>(std::round(this->y + 1.7720f * this->u));
+			_p.r = static_cast<uint8_t>(std::round(this->y + 1.4020f * (this->v - 128.0f)));
+			_p.g = static_cast<uint8_t>(std::round(this->y - 0.3441f * (this->u - 128.0f) - 0.7141f * (this->v - 128.0f)));
+			_p.b = static_cast<uint8_t>(std::round(this->y + 1.7720f * (this->u - 128.0f)));
 		}
 	};
 

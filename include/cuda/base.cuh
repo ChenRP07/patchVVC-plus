@@ -14,4 +14,102 @@
 
 #ifndef _PVVC_CUDA_BASE_CUH_
 #define _PVVC_CUDA_BASE_CUH_
+
+typedef unsigned char uint8_t;
+typedef unsigned short int uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long uint64_t;
+
+// typedef char int8_t;
+// typedef short int16_t;
+// typedef int int32_t;
+// typedef long int64_t;
+
+namespace vvc {
+    namespace common {
+        struct PointXYZ {
+            float x, y, z;
+
+            __device__ PointXYZ(){
+                this->x = 0.0f;
+                this->y = 0.0f;
+                this->z = 0.0f;
+            }
+            __device__ PointXYZ(float _x, float _y, float _z){
+                this->x = _x;
+                this->y = _y;
+                this->z = _z;
+            }
+        };
+
+        /* Three channels color implementation, Y/Cb/Cr or Y/U/V */
+        struct ColorYUV {
+            float y, u, v; /* Channels */
+
+            /* Default constructor */
+            ColorYUV() : y{}, u{}, v{} {}
+
+            /* Copy constructor */
+            ColorYUV(const ColorYUV& _x) : y{_x.y}, u{_x.u}, v{_x.v} {}
+
+            /* Assign constructor */
+            ColorYUV& operator=(const ColorYUV& _x) {
+                this->y = _x.y, this->u = _x.u, this->v = _x.v;
+                return *this;
+            }
+
+            /* Construct by data of three channels */
+            ColorYUV(float _r, float _g, float _b, bool _type = true) {
+                if (_type) {
+                    this->y = _r, this->u = _g, this->v = _b;
+                }
+                else {
+                    this->y = _r * 0.299f + _g * 0.587f + _b * 0.114f;
+                    this->u = _r * -0.168736f - _g * 0.331264f + _b * 0.5f + 128;
+                    this->v = _r * 0.5f - _g * 0.418688f - _b * 0.081312f + 128;
+                }
+            }
+
+            /* Add data with _x relative channel */
+            ColorYUV& operator+=(const ColorYUV& _x) {
+                this->y += _x.y, this->u += _x.u, this->v += _x.v;
+                return *this;
+            }
+
+            /* Divide data by _x */
+            ColorYUV& operator/=(const int _x) {
+                this->y /= _x, this->u /= _x, this->v /= _x;
+                return *this;
+            }
+
+            /* Multiple data by _x */
+            ColorYUV& operator*=(const float _x) {
+                this->y *= _x, this->u *= _x, this->v *= _x;
+                return *this;
+            }
+
+            /* Add _x to this, return result */
+            ColorYUV operator+(const ColorYUV& _x) const {
+                ColorYUV result;
+                result.y = this->y + _x.y, result.u = this->u + _x.u, result.v = this->v + _x.v;
+                return result;
+            }
+
+            /* Multiple this by _x, return result */
+            ColorYUV operator*(const float _x) const {
+                ColorYUV result;
+                result.y = this->y * _x, result.u = this->u * _x, result.v = this->v * _x;
+                return result;
+            }
+
+            // /* Convert to a RGB format, according to BT.601 */
+            // void ConvertRGB(pcl::PointXYZRGB& _p) {
+            //     _p.r = static_cast<uint8_t>(std::round(this->y + 1.4020f * this->v));
+            //     _p.g = static_cast<uint8_t>(std::round(this->y - 0.3441f * this->u - 0.7141f * this->v));
+            //     _p.b = static_cast<uint8_t>(std::round(this->y + 1.7720f * this->u));
+            // }
+        };
+
+    }
+}
 #endif

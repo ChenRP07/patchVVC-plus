@@ -143,6 +143,41 @@ namespace common {
 		MotionVector mv;
 		uint32_t     size;
 		uint8_t      qp;
+		uint8_t*     geometry;
+		uint32_t     geometry_size;
+		uint8_t*     color;
+		uint32_t     color_size;
+
+		Slice_t() = default;
+
+		Slice_t(const Slice_t& _x) {
+			this->timestamp     = _x.timestamp;
+			this->index         = _x.index;
+			this->type          = _x.type;
+			this->mv            = _x.mv;
+			this->size          = _x.size;
+			this->qp            = _x.qp;
+			this->geometry_size = _x.geometry_size;
+			this->color_size    = _x.color_size;
+
+			this->geometry   = _x.geometry;
+			this->color_size = _x.color_size;
+		}
+
+		Slice_t& operator=(const Slice_t& _x) {
+			this->timestamp     = _x.timestamp;
+			this->index         = _x.index;
+			this->type          = _x.type;
+			this->mv            = _x.mv;
+			this->size          = _x.size;
+			this->qp            = _x.qp;
+			this->geometry_size = _x.geometry_size;
+			this->color_size    = _x.color_size;
+
+			this->geometry   = _x.geometry;
+			this->color_size = _x.color_size;
+			return *this;
+		}
 	};
 }  // namespace common
 }  // namespace vvc

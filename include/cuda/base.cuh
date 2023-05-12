@@ -27,6 +27,17 @@ typedef unsigned long uint64_t;
 
 namespace vvc {
     namespace common {
+        static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
+
+        /*
+        * From low to high : valid 1 | I 0 P 1 | none 0 skip 1 | none 0 zstd 1 | none 0 zstd 1
+        * */
+        enum PVVC_SLICE_TYPE { PVVC_SLICE_TYPE_VALID, PVVC_SLICE_TYPE_PREDICT, PVVC_SLICE_TYPE_SKIP, PVVC_SLICE_TYPE_GEO_ZSTD, PVVC_SLICE_TYPE_COLOR_ZSTD };
+
+        inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
+		    return _type & PVVC_SLICE_TYPE_MASK[_MASK];
+	    }
+
         struct PointXYZ {
             float x, y, z;
 
@@ -53,7 +64,7 @@ namespace vvc {
             ColorYUV(const ColorYUV& _x) : y{_x.y}, u{_x.u}, v{_x.v} {}
 
             /* Assign constructor */
-            ColorYUV& operator=(const ColorYUV& _x) {
+            __device__ ColorYUV& operator=(const ColorYUV& _x) {
                 this->y = _x.y, this->u = _x.u, this->v = _x.v;
                 return *this;
             }

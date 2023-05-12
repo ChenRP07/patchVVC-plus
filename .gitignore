@@ -9,6 +9,7 @@ test/data/
 test/*
 !test/CMakeLists.txt
 !test/*.cc
+!test/*.cu
 .cache
 
 compile_commands.json

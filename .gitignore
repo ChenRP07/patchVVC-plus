@@ -11,5 +11,5 @@ test/*
 !test/*.cc
 !test/*.cu
 .cache
-
+.clangd
 compile_commands.json

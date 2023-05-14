@@ -3,9 +3,9 @@
  * Please read the LICENSE file in the project root directory for details
  * of the open source licenses referenced by this source code.
  *
- * Copyright: @ChenRP07. All Right Reserved.
+ * Copyright: @SDUCS_IIC. All Right Reserved.
  *
- * Author        : ChenRP07
+ * Author        : Lixin, ChenRP07
  * Description   :
  * Create Time   : 2023/05/03 12:55
  * Last Modified : 2023/05/03 12:55
@@ -30,20 +30,29 @@ typedef unsigned long      uint64_t;
 
 namespace vvc {
 namespace common {
-        __device__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
+	/* 1-bit in uint8_t 0-7 */
+	__device__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
-        /*
-        * From low to high : valid 1 | I 0 P 1 | none 0 skip 1 | none 0 zstd 1 | none 0 zstd 1
-        * */
-        enum PVVC_SLICE_TYPE { PVVC_SLICE_TYPE_VALID, PVVC_SLICE_TYPE_PREDICT, PVVC_SLICE_TYPE_SKIP, PVVC_SLICE_TYPE_GEO_ZSTD, PVVC_SLICE_TYPE_COLOR_ZSTD };
+	/*
+	 * From low to high : valid 1 | I 0 P 1 | none 0 skip 1 | none 0 zstd 1 | none 0 zstd 1
+	 * */
+	enum PVVC_SLICE_TYPE { PVVC_SLICE_TYPE_VALID, PVVC_SLICE_TYPE_PREDICT, PVVC_SLICE_TYPE_SKIP, PVVC_SLICE_TYPE_GEO_ZSTD, PVVC_SLICE_TYPE_COLOR_ZSTD };
 
-        __device__ inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
-		    return _type & PVVC_SLICE_TYPE_MASK[_MASK];
-	    }
+    /* 
+     * @desciption : Check type of slice.
+     * @param  : {uint8_t _type} slice_t.type
+     * @param  : {PVVC_SLICE_TYPE _MASK}
+     * @return : {bool}
+     * */
+	__device__ inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
+		return _type & PVVC_SLICE_TYPE_MASK[_MASK];
+	}
 
+    /* Point with xyz */
 	struct PointXYZ {
 		float x, y, z;
 
+        /* Constructor */
 		__device__ PointXYZ() {
 			this->x = 0.0f;
 			this->y = 0.0f;
@@ -66,11 +75,11 @@ namespace common {
 		/* Copy constructor */
 		__device__ ColorYUV(const ColorYUV& _x) : y{_x.y}, u{_x.u}, v{_x.v} {}
 
-            /* Assign constructor */
-            __device__ ColorYUV& operator=(const ColorYUV& _x) {
-                this->y = _x.y, this->u = _x.u, this->v = _x.v;
-                return *this;
-            }
+		/* Assign constructor */
+		__device__ ColorYUV& operator=(const ColorYUV& _x) {
+			this->y = _x.y, this->u = _x.u, this->v = _x.v;
+			return *this;
+		}
 
 		/* Construct by data of three channels */
 		__device__ ColorYUV(float _r, float _g, float _b, bool _type = true) {
@@ -124,9 +133,11 @@ namespace common {
 		// }
 	};
 
+    /* Motion vector, float 4x4 */
 	struct MotionVector {
 		float data[16];
 
+        /* Constructor */
 		__device__ MotionVector() : data{} {}
 
 		__device__ MotionVector(const MotionVector& _x) {
@@ -147,18 +158,20 @@ namespace common {
 		}
 	};
 
+    /* Slice in CUDA */
 	struct Slice_t {
-		int          timestamp;
-		int          index;
-		uint8_t      type;
-		MotionVector mv;
-		uint32_t     size;
-		uint8_t      qp;
-		uint8_t*     geometry;
-		uint32_t     geometry_size;
-		uint8_t*     color;
-		uint32_t     color_size;
+		int          timestamp; /* Time stamp */
+		int          index;     /* Index in a frame */
+		uint8_t      type; /* Slice type */
+		MotionVector mv; /* Motion vector */
+		uint32_t     size; /* Point number */
+		uint8_t      qp; /* QP */
+		uint8_t*     geometry; /* Geometry info */
+		uint32_t     geometry_size; /* Size of geometry info */
+		uint8_t*     color; /* Color info */
+		uint32_t     color_size; /* Size of color info*/
 
+        /* Constructor */
 		Slice_t() = default;
 
 		__device__ Slice_t(const Slice_t& _x) {

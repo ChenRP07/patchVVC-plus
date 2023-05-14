@@ -1,3 +1,17 @@
+/* Copyright Notice.
+ * 
+ * Please read the LICENSE file in the project root directory for details
+ * of the open source licenses referenced by this source code.
+ * 
+ * Copyright: @SDUCS_IIC. All Right Reserved.
+ * 
+ * Author        : Lixin
+ * Description   : 
+ * Create Time   : 2023/05/14 14:38
+ * Last Modified : 2023/05/14 14:38
+ * 
+ */
+
 typedef unsigned char      uint8_t;
 typedef unsigned short int uint16_t;
 typedef unsigned int       uint32_t;
@@ -26,7 +40,6 @@ namespace common {
 	/* 32 */
 	__device__ static int HALF_FIX_BIT_COUNT = sizeof(FIX_INT) * 8 / 2;
 
-
 	/*
 	 * @description : Change a signed int to unsigned int, _x = {2 * |_x|, _x >= 0} {2 * |_x| - 1, _x < 0}
 	 * @param  : {FIX_DATA_INT _x}
@@ -44,7 +57,6 @@ namespace common {
 		}
 		return ans;
 	}
-
 
 	/*
 	 * @description : Change an unsigned into to signed int, _x = 2y - 1 -> -y, _x = 2y -> y
@@ -70,11 +82,11 @@ namespace common {
 	 * */
 	class RLGRDecoder {
 	  private:
-		FIX_INT                                    buffer_;    /* Bitstream buffer */
-		int                                        cnt_;       /* Valid bits in buffer */
-		FIX_DATA_INT* result_;    /* Decoding result */
-		uint8_t             *now_, *end_; /* Iterator of decoded data */
-		int 				result_index_;
+		FIX_INT       buffer_;     /* Bitstream buffer */
+		int           cnt_;        /* Valid bits in buffer */
+		FIX_DATA_INT* result_;     /* Decoding result */
+		uint8_t *     now_, *end_; /* Iterator of decoded data */
+		int           result_index_;
 
 		/*
 		 * @description : Get data to fill the buffer
@@ -142,5 +154,5 @@ namespace common {
 		 * */
 		__device__ FIX_DATA_INT* GetResult();
 	};
-}
-}
+}  // namespace common
+}  // namespace vvc

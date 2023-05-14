@@ -1,21 +1,27 @@
-/*
- * @Author: lixin
- * @Date: 2023-05-13 15:41:53
- * @LastEditTime: 2023-05-13 16:21:38
- * @Description: 
- * Copyright (c) @lixin, All Rights Reserved.
+/* Copyright Notice.
+ *
+ * Please read the LICENSE file in the project root directory for details
+ * of the open source licenses referenced by this source code.
+ *
+ * Copyright: @SDUCS_IIC. All Right Reserved.
+ *
+ * Author        : Lixin
+ * Description   :
+ * Create Time   : 2023/05/14 14:39
+ * Last Modified : 2023/05/14 14:39
+ *
  */
 #include "cuda/entropy_codec.cuh"
 
 namespace vvc {
 namespace common {
 
-    __device__ void RLGRDecoder::Fill() {
+	__device__ void RLGRDecoder::Fill() {
 		uint8_t data;
 		while (this->cnt_ <= (FIX_BIT_COUNT - BIT_COUNT_8)) {
 			if (!this->End()) {
-				data          = *(this->now_);
-				this->now_ ++;
+				data = *(this->now_);
+				this->now_++;
 				this->buffer_ = (this->buffer_ << BIT_COUNT_8) + data;
 				this->cnt_ += BIT_COUNT_8;
 			}
@@ -25,15 +31,15 @@ namespace common {
 		}
 	}
 
-    __device__ uint8_t RLGRDecoder::Read() {
+	__device__ uint8_t RLGRDecoder::Read() {
 		if (this->cnt_ == 0) {
 			this->Fill();
 		}
 		--this->cnt_;
 		return (this->buffer_ >> this->cnt_) & 0x1;
 	}
-    
-    __device__ FIX_INT RLGRDecoder::Read(int _bits) {
+
+	__device__ FIX_INT RLGRDecoder::Read(int _bits) {
 		if (_bits > (FIX_BIT_COUNT - BIT_COUNT_8)) {
 			FIX_INT data = this->Read(_bits - HALF_FIX_BIT_COUNT) << HALF_FIX_BIT_COUNT;
 			return data + this->Read(HALF_FIX_BIT_COUNT);
@@ -43,7 +49,7 @@ namespace common {
 		return (this->buffer_ >> this->cnt_) & __MASK__(_bits);
 	}
 
-    __device__ FIX_INT RLGRDecoder::GRRead(int _bits) {
+	__device__ FIX_INT RLGRDecoder::GRRead(int _bits) {
 		FIX_INT p = 0;
 		while (this->Read()) {
 			p++;
@@ -54,7 +60,7 @@ namespace common {
 		return (p << _bits) + this->Read(_bits);
 	}
 
-    __device__ void RLGRDecoder::Decode(uint8_t* _data, int _datasize, int _size) {
+	__device__ void RLGRDecoder::Decode(uint8_t* _data, int _datasize, int _size) {
 		this->Reset(_size);
 		this->now_ = &_data[0];
 		this->end_ = &_data[_datasize];
@@ -88,7 +94,7 @@ namespace common {
 				if (n >= _size) {
 					break;
 				}
-				u_data = this->GRRead(k_R);
+				u_data                         = this->GRRead(k_R);
 				this->result_[result_index_++] = Unsign2Sign(u_data + 1);
 				n++;
 
@@ -107,7 +113,7 @@ namespace common {
 			}
 			/* No Run Length coding */
 			else {
-				u_data = this->GRRead(k_R);
+				u_data                         = this->GRRead(k_R);
 				this->result_[result_index_++] = Unsign2Sign(u_data);
 				n++;
 
@@ -132,8 +138,8 @@ namespace common {
 		}
 	}
 
-    __device__ FIX_DATA_INT* RLGRDecoder::GetResult() {
+	__device__ FIX_DATA_INT* RLGRDecoder::GetResult() {
 		return this->result_;
 	}
-}
-}
+}  // namespace common
+}  // namespace vvc

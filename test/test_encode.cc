@@ -77,8 +77,9 @@ void Encode() {
 	mse2.Compute();
 	auto m2 = mse2.GetGeoMSEs();
 	std::cout << m2.first << " " << m2.second << '\n';
-	vvc::io::SaveColorPlyFile("./data/result_fit.ply", ptr);
-	vvc::patch::GoPEncoding enc;
+    vvc::io::SavePatch(pts[0], "./data/result_fit_1_100.patch");
+    vvc::io::SavePatch(pts[1], "./data/result_fit_2_100.patch");
+    vvc::patch::GoPEncoding enc;
 }
 
 int main() {

@@ -12,6 +12,7 @@
  *
  */
 #include "cuda/octree.cuh"
+#include "cuda/entropy_codec.cuh"
 #include <stdio.h>
 
 namespace vvc {
@@ -48,29 +49,51 @@ namespace octree {
         }
 	}
 
-    // TODO SetSlice 类型暂无
-    // void InvertRAHTOctree::SetSlice(const common::Slice& _slice) 
+    __device__ void InvertRAHTOctree::SetSlice(const common::Slice_t& _slice) {
+        this->slice_ = _slice;
+        /* Optional Zstd decoding */
+        this->node_values_ = this->slice_.geometry;
+        auto temp_color = this->slice_.color;
 
-    // TODO 返回类型 common:Patch 其 mv 属性未定义
-    __device__ void InvertRAHTOctree::GetPatch() const {
-        // /* Generate Patch and copy data */
-        // int timestamp = this->slice_.timestamp;
-        // int index     = this->slice_.index;
-        // int mv        = this->slice_.mv;
+        /* RLGR decoding */
+        common::RLGRDecoder rlgr_dec;
+        rlgr_dec.Decode(temp_color, this->slice_.color_size, 3 * this->slice_.size);
+        auto rlgr_res       = rlgr_dec.GetResult();
+        this->coefficients_ = (common::ColorYUV*)malloc(this->slice_.size);
+        /* Reconstruct coefficients */
+        for (int i = 0; i < this->slice_.size; ++i) {
+            this->coefficients_[i].y = static_cast<float>(rlgr_res[i] * this->slice_.qp);
+            this->coefficients_[i].u = static_cast<float>(rlgr_res[i + this->slice_.size] * this->slice_.qp);
+            this->coefficients_[i].v = static_cast<float>(rlgr_res[i + 2 * this->slice_.size] * this->slice_.qp);
+        }
 
-        // /* Malloc a point cloud */
-        // result.cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
-        // /* Convert yuv to rgb and concate with xyz */
-        // for (int i = 0; i < this->source_cloud_->size(); ++i) {
-        //     pcl::PointXYZRGB p;
-        //     p.x = this->source_cloud_->at(i).x, p.y = this->source_cloud_->at(i).y, p.z = this->source_cloud_->at(i).z;
-        //     this->source_colors_->at(i).ConvertRGB(p);
-        //     result.cloud->emplace_back(p);
-        // }
-        // return result;
+        /* If intra slice, clear tree and related container */
+        if (!common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_PREDICT)) {
+            free(this->tree_);
+            free(this->source_cloud_);
+            this->source_cloud_index_ = 0;
+            free(this->reference_colors_);
+            free(this->source_colors_);
+            this->MakeTree();
+        }
+        this->InvertRAHT();
+	} 
+
+    __device__ void InvertRAHTOctree::GetPatch()  {
+        /* Generate Patch and copy data */
+        printf("this->slice_.timestamp = %d\n",this->slice_.timestamp);
+        printf("this->slice_.index = %d\n",this->slice_.index);
+        for(uint32_t i=0; i<4; i++){
+            for (uint32_t j=0; j<4; j++){
+                printf("%.2f ", this->slice_.mv(i,j));
+            }
+            printf("\n");
+        }
+        for(int i=0; i<source_cloud_index_; i++){
+            printf("%.2f %.2f %.2f %.2f %.2f %.2f\n", this->source_cloud_[i].x, this->source_cloud_[i].y, this->source_cloud_[i].z, this->source_colors_[i].y, this->source_colors_[i].u, this->source_colors_[i].v);
+        }
 	}
 
-    // 已完成
     __device__ void InvertRAHTOctree::MakeTree() {
 
         /* Load center, range and height from geometry */
@@ -120,7 +143,6 @@ namespace octree {
         this->AddPoints(0, 0, this->tree_center_, this->tree_range_);
 	}
 
-    // 已完成
     __device__ void InvertRAHTOctree::AddPoints(const int _height, const int _index, const common::PointXYZ _center, const common::PointXYZ _range) {
         auto& node = this->tree_[_height].nodes[_index];
         /* Leaf layer */
@@ -161,7 +183,6 @@ namespace octree {
         }
 	}
 
-    // TODO 使用到了 slice_
     __device__ void InvertRAHTOctree::InvertRAHT() {
         
         /* coefficients_ and source_cloud_ have the same size */
@@ -197,15 +218,17 @@ namespace octree {
         for (int i = 0; i < last_layer.length; i++){
             this->source_colors_[i] = last_layer.nodes[i].raht[0];
         }
-        // TODO 使用到了 slice_
-        // if (common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_PREDICT)) {
-        //     for (int i = 0; i < this->source_colors_->size(); ++i) {
-        //         this->source_colors_->at(i) += this->reference_colors_->at(i);
-        //     }
-        // }
-        // else {
-        //     this->reference_colors_->assign(this->source_colors_->begin(), this->source_colors_->end());
-        // }
+
+        if (common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_PREDICT)) {
+            for (int i = 0; i < this->source_cloud_index_; ++i) {
+                this->source_colors_[i] += this->reference_colors_[i];
+            }
+        }
+        else {
+            for(int i=0; i<source_cloud_index_; i++){
+                this->reference_colors_[i] = this->source_colors_[i];
+            }
+        }
     }
 
 }  // namespace octree

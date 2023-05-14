@@ -84,8 +84,8 @@ namespace patch {
 			}
 
 			icp->SetParams(this->params_);
-			icp->SetSourceCloud(this->fitting_cloud_);
-			icp->SetTargetCloud(_patch.cloud);
+			icp->SetSourceCloud(_patch.cloud);
+			icp->SetTargetCloud(this->fitting_cloud_);
 			icp->Align();
 
 			/* This patch can be added into GOP, change point cloud to transformed cloud, record motion vector */
@@ -94,11 +94,12 @@ namespace patch {
 					_patch.cloud = icp->GetResultCloud();
 					_patch.mv    = icp->GetMotionVector() * _patch.mv;
 					this->source_patches_.emplace_back(_patch);
+					this->fitting_cloud_->clear();
 					/* Compute fitting patch */
 					this->Compute();
 					this->stat_.score.emplace_back(icp->GetMSE());
 					this->clock_.SetTimeEnd();
-					this->stat_.score.emplace_back(this->clock_.GetTimeMs());
+					this->stat_.costs.emplace_back(this->clock_.GetTimeMs());
 					int   ans = std::accumulate(this->stat_.iters.begin(), this->stat_.iters.end(), 0);
 					float avg = static_cast<float>(ans) / static_cast<float>(this->stat_.iters.size());
 					this->stat_.avg_iters.emplace_back(avg);
@@ -226,7 +227,7 @@ namespace patch {
 
 				/* Compute new centroids */
 				float error = 0.0f;
-				for (int i = 0; i < points->size(); ++i) {
+				for (int i = 0; i < centers->size(); ++i) {
 					/* There is no point in this cluster, choose a random point as the new centroid */
 					if (points_count[i] == 0) {
 						next_center->at(i) = points->at(rand() % points->size());
@@ -247,7 +248,7 @@ namespace patch {
 				centers.swap(next_center);
 
 				/* K-Means converged */
-				if (error < this->params_->patch.clustering_ths) {
+				if (error < this->params_->patch.clustering_err_ths) {
 					break;
 				}
 			}
@@ -265,11 +266,14 @@ namespace patch {
 
 	void PatchFitting::Split(std::vector<std::vector<int>>& _points, pcl::PointXYZ _center, pcl::PointXYZ _range, int _height) {
 		try {
+			if (octree::CheckSpaceEmpty(_points)) {
+				return;
+			}
 			/* Reaches the givien depth threshold, do clustering */
 			if (_height >= this->max_height_) {
 				this->Clustering(_points);
 				/* Release memory */
-				std::vector<std::vector<int>>().swap(_points);
+				// std::vector<std::vector<int>>().swap(_points);
 				return;
 			}
 
@@ -373,6 +377,9 @@ namespace patch {
 					std::vector<std::vector<int>>().swap(_points);
 					this->Clustering(clustering_points);
 				}
+				else if (this->params_->patch.split_method == common::DIRECT_CLUSTERING) {
+					do_clustering = true;
+				}
 				else {
 					throw __EXCEPT__(BAD_PARAMETERS);
 				}
@@ -381,13 +388,13 @@ namespace patch {
 				if (do_clustering) {
 					this->Clustering(_points);
 					/* Release memory */
-					std::vector<std::vector<int>>().swap(_points);
+					// std::vector<std::vector<int>>().swap(_points);
 				}
 			}
 			/* Otherwise, continue to split */
 			else {
 				/* Release memory */
-				std::vector<std::vector<int>>().swap(_points);
+				// std::vector<std::vector<int>>().swap(_points);
 				/* Subspace range is half of _range */
 				pcl::PointXYZ subspace_range(_range.x / 2.0f, _range.y / 2.0f, _range.z / 2.0f);
 				for (int i = 0; i < 8; ++i) {
@@ -414,7 +421,7 @@ namespace patch {
 			/* For x/y/z */
 			for (int i = 0; i < 3; ++i) {
 				/* Split */
-				for (int idx = 0; idx < _points.size(); ++i) {
+				for (int idx = 0; idx < _points.size(); ++idx) {
 					for (auto p : _points[idx]) {
 						float data[3] = {this->source_patches_[idx][p].x, this->source_patches_[idx][p].y, this->source_patches_[idx][p].z};
 						if (data[i] > Mid[i]) {
@@ -449,7 +456,7 @@ namespace patch {
 				}
 			}
 			if (type != -1) {
-				_result = std::move(sub[type]);
+				_result.swap(sub[type]);
 			}
 			return type;
 		}

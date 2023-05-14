@@ -54,6 +54,8 @@ namespace octree {
 	 * */
 	extern bool CheckSubSpace(std::vector<std::vector<int>>& _space);
 
+    extern bool CheckSpaceEmpty(std::vector<std::vector<int>>& _space);
+
 	/*
 	 * @description : Haar transform
 	 * @param  : {std::pair<int, int>& _w} weights

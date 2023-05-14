@@ -26,6 +26,8 @@ find_package(Threads)
 
 find_package(ZSTD)
 
+find_package(libconfig++)
+
 include_directories(${PCL_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${ZSTD_INCLUDE_DIRS})
@@ -46,7 +48,7 @@ aux_source_directory(${CMAKE_SOURCE_DIR}/src/patch PATCH_SRC)
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/codec CODEC_SRC)
 
 add_library(pvvc SHARED ${IO_SRC} ${COMMON_SRC} ${SEGMENT_SRC} ${OCTREE_SRC} ${REGISTRATION_SRC} ${PATCH_SRC} ${CODEC_SRC})
-target_link_libraries(pvvc ${PCL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZSTD_LIBRARIES})
+target_link_libraries(pvvc ${PCL_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${ZSTD_LIBRARIES} ${LIBCONFIG++_LIBRARIES} )
 
 add_subdirectory(./src/cuda)
 

@@ -10,6 +10,7 @@ test/*
 !test/CMakeLists.txt
 !test/*.cc
 !test/*.cu
+!test/*.cfg
 .cache
 .clangd
 compile_commands.json

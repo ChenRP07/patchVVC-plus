@@ -16,14 +16,15 @@
 #define _PVVC_PARAMETER_H_
 
 #include "common/exception.h"
+#include <libconfig++.h>
 #include <memory>
 #include <stdint.h>
 
 namespace vvc {
 namespace common {
-	enum { DENSE_SEGMENT };
-	enum { SIMPLE_ICP, LM_ICP, NORMAL_ICP, GENERAL_ICP };
-	enum { PLANAR_BISECTION, PARTIAL_CLUSTERING };
+	enum SEGMENT_TYPE { DENSE_SEGMENT };
+	enum ICP_TYPE { SIMPLE_ICP, LM_ICP, NORMAL_ICP, GENERAL_ICP };
+	enum SPLIT_TYPE { PLANAR_BISECTION, PARTIAL_CLUSTERING, DIRECT_CLUSTERING };
 	struct PVVCParam_t {
 		uint8_t log_level;       /* quiet brief normal complete */
 		uint8_t check_point;     /* from low to high : none first_segment all_segment fitting encoding saving */
@@ -42,20 +43,20 @@ namespace common {
 		} io;
 		/* Parameters of segmentation */
 		struct {
-			int   num;       /* Point number in each patch */
-			int   type;      /* Segment method */
-			int   nn;        /* k in KNN search */
-			float block_num; /* Segmentation blocks number in method DENSE_SEGMENT */
+			int          num;       /* Point number in each patch */
+			SEGMENT_TYPE type;      /* Segment method */
+			int          nn;        /* k in KNN search */
+			float        block_num; /* Segmentation blocks number in method DENSE_SEGMENT */
 		} segment;
 		/* Parameters of ICP registration */
 		struct {
-			float correspondence_ths; /* Max distance of correspondence point pair */
-			int   iteration_ths;      /* Max ICP iterations */
-			float mse_ths;            /* Max mse difference in two iterations of ICP */
-			float transformation_ths; /* Max difference in two transformation of two iterations */
-			bool  centroid_alignment; /* Do centroid alignment before ICP? */
-			int   type;               /* ICP method */
-			float radius_search_ths;  /* Max radius in neighbor search */
+			float    correspondence_ths; /* Max distance of correspondence point pair */
+			int      iteration_ths;      /* Max ICP iterations */
+			float    mse_ths;            /* Max mse difference in two iterations of ICP */
+			float    transformation_ths; /* Max difference in two transformation of two iterations */
+			bool     centroid_alignment; /* Do centroid alignment before ICP? */
+			ICP_TYPE type;               /* ICP method */
+			float    radius_search_ths;  /* Max radius in neighbor search */
 		} icp;
 		/* Parameters of patch encoding */
 		struct {
@@ -67,14 +68,31 @@ namespace common {
 		} octree;
 		/* Parameters of patch fitting */
 		struct {
-			float fitting_ths;       /* Max MSE ths, deciding whether a patch can be fitted */
-			int   split_method;      /* Split method in patch fitting */
-			float clustering_ths;    /* Max difference between two iteration in clustering */
-			int   max_iter;          /* Max clustering iterations */
-			int   interpolation_num; /* k in KNN search of color interpolation */
+			float      fitting_ths;        /* Max MSE ths, deciding whether a patch can be fitted */
+			SPLIT_TYPE split_method;       /* Split method in patch fitting */
+			float      clustering_err_ths; /* Max difference between two iteration in clustering */
+			float      clustering_ths;     /* If tree resolution reach ths, do clustering */
+			int        max_iter;           /* Max clustering iterations */
+			int        interpolation_num;  /* k in KNN search of color interpolation */
 		} patch;
 
 		using Ptr = std::shared_ptr<const PVVCParam_t>;
+
+		void Log() const;
+	};
+
+	class ParameterLoader {
+	  private:
+		std::string cfg_name_;
+		libconfig::Config cfg_;
+
+	  public:
+		ParameterLoader();
+		ParameterLoader(const std::string& _name);
+
+		~ParameterLoader() = default;
+
+		PVVCParam_t::Ptr GetPVVCParam();
 	};
 
 	/*

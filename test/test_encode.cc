@@ -53,33 +53,38 @@ void                          SegmentCloud() {
     }
 }
 
+vvc::common::Patch p1, p2;
+
 void Read() {
-	vvc::common::Patch p1, p2;
 	vvc::io::LoadPatch(p1, "./data/result_1_100.patch");
 	vvc::io::LoadPatch(p2, "./data/result_2_100.patch");
-	std::ofstream out("./data/p11.txt");
-	out << p1.index << ' ' << p1.timestamp << '\n';
-	out << p1.mv << '\n';
-	for (auto i : *p1.cloud) {
-		out << i << '\n';
-	}
-	std::ofstream outt("./data/p22.txt");
-	outt << p2.index << ' ' << p2.timestamp << '\n';
-	outt << p2.mv << '\n';
-	for (auto i : *p2.cloud) {
-		outt << i << '\n';
-	}
 }
 
 void Encode() {
 	vvc::patch::PatchFitting fit;
 	fit.SetParams(param);
+	fit.AddPatch(p1);
+	fit.AddPatch(p2);
+	auto ptr = fit.GetFittingCloud();
+	auto pts = fit.GetSourcePatches();
+	std::cout << ptr->size() << std::endl;
+	vvc::common::MSE mse1, mse2;
+	mse1.SetClouds(ptr, pts[0].cloud);
+	mse1.Compute();
+	auto m1 = mse1.GetGeoMSEs();
+	std::cout << m1.first << " " << m1.second << '\n';
+	mse2.SetClouds(ptr, pts[1].cloud);
+	mse2.Compute();
+	auto m2 = mse2.GetGeoMSEs();
+	std::cout << m2.first << " " << m2.second << '\n';
+	vvc::io::SaveColorPlyFile("./data/result_fit.ply", ptr);
 	vvc::patch::GoPEncoding enc;
 }
 
 int main() {
 	param = vvc::common::SetDefaultParams();
 	// SegmentCloud();
-    Read();
+	Read();
+	Encode();
 	return 0;
 }

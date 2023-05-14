@@ -152,6 +152,15 @@ namespace octree {
 		return false;
 	}
 
+	bool CheckSpaceEmpty(std::vector<std::vector<int>>& _space) {
+		for (auto& i : _space) {
+			if (!i.empty()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	std::pair<common::ColorYUV, common::ColorYUV> HaarTransform(std::pair<int, int>& _w, std::pair<common::ColorYUV, common::ColorYUV>& _g) {
 		common::ColorYUV G, H;
 		if (_w.first == 0 && _w.second == 0) {

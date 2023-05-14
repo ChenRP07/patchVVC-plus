@@ -77,7 +77,6 @@ namespace octree {
         uint8_t tree_attr[25]{};
 
         int node_values_index = 0;
-        for ( ; node_values_index < 25; node_values_index++) {
         for (; node_values_index < 25; node_values_index++) {
             tree_attr[node_values_index] = node_values_[node_values_index];
         }

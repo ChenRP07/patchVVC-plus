@@ -179,6 +179,9 @@ float common::ParallelICPStat_t::dev_score(int type, int idx) {
 }
 
 float common::Deviation(const std::vector<int>& _src) {
+    if (_src.empty()) {
+        return FLT_MAX;
+    }
 	float sum      = std::accumulate(_src.begin(), _src.end(), 0);
 	float mean     = sum / _src.size();
 	float variance = 0.0;

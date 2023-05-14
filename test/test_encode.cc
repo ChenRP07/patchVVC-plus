@@ -1,6 +1,7 @@
 #include "codec/pvvc_encoder.h"
 #include "io/patch_io.h"
 #include "io/ply_io.h"
+#include "io/slice_io.h"
 #include <fstream>
 vvc::common::PVVCParam_t::Ptr param;
 void                          SegmentCloud() {
@@ -43,12 +44,6 @@ void                          SegmentCloud() {
         vvc::io::SaveColorPlyFile(name, p.cloud);
         if (p.index == 100) {
             vvc::io::SavePatch(p, "./data/result_2_100.patch");
-            std::ofstream out("./data/p2.txt");
-            out << p.index << ' ' << p.timestamp << '\n';
-            out << p.mv << '\n';
-            for (auto i : *p.cloud) {
-                out << i << '\n';
-            }
         }
     }
 }
@@ -67,23 +62,32 @@ void Encode() {
 	fit.AddPatch(p2);
 	auto ptr = fit.GetFittingCloud();
 	auto pts = fit.GetSourcePatches();
-	std::cout << ptr->size() << std::endl;
 	vvc::common::MSE mse1, mse2;
 	mse1.SetClouds(ptr, pts[0].cloud);
 	mse1.Compute();
 	auto m1 = mse1.GetGeoMSEs();
-	std::cout << m1.first << " " << m1.second << '\n';
 	mse2.SetClouds(ptr, pts[1].cloud);
 	mse2.Compute();
 	auto m2 = mse2.GetGeoMSEs();
 	std::cout << m2.first << " " << m2.second << '\n';
-    vvc::io::SavePatch(pts[0], "./data/result_fit_1_100.patch");
-    vvc::io::SavePatch(pts[1], "./data/result_fit_2_100.patch");
-    vvc::patch::GoPEncoding enc;
+	vvc::io::SavePatch(pts[0], "./data/result_fit_1_100.patch");
+	vvc::io::SavePatch(pts[1], "./data/result_fit_2_100.patch");
+	vvc::io::SaveColorPlyFile("./data/result_fit_1_100.ply", pts[0].cloud);
+	vvc::io::SaveColorPlyFile("./data/result_fit_2_100.ply", pts[1].cloud);
+	vvc::patch::GoPEncoding enc;
+	enc.SetParams(param);
+	enc.SetFittingCloud(ptr);
+	enc.SetSourcePatches(pts);
+	enc.Encode();
+	auto res = enc.GetResults();
+	int size_1 = vvc::io::SaveSlice(res[0], "./data/result_1_100.slice");
+	int size_2 = vvc::io::SaveSlice(res[1], "./data/result_2_100.slice");
 }
 
+
 int main() {
-	param = vvc::common::SetDefaultParams();
+	vvc::common::ParameterLoader Loader;
+	param = Loader.GetPVVCParam();
 	// SegmentCloud();
 	Read();
 	Encode();

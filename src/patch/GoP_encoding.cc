@@ -142,6 +142,11 @@ namespace patch {
 					kdtree.nearestKSearch(p, this->params_->patch.interpolation_num, idx, dis);
 					this->patch_colors_[i]->emplace_back(this->Interpolation(i, idx, dis));
 				}
+				if (i != 0) {
+					for (int color_idx = 0; color_idx < this->patch_colors_[0]->size(); ++color_idx) {
+						this->patch_colors_[i]->at(color_idx) -= this->patch_colors_[0]->at(color_idx);
+					}
+				}
 			}
 
 			/* Set geometry for RAHTOctree */
@@ -178,11 +183,10 @@ namespace patch {
 
 				/* Quantization */
 				for (int j = 0; j < RAHT_data->size(); ++j) {
-					RAHT_quant_result->at(j)                         = static_cast<common::FIX_DATA_INT>(std::ceil(RAHT_data->at(j).y / QP));
-					RAHT_quant_result->at(j + RAHT_data->size())     = static_cast<common::FIX_DATA_INT>(std::ceil(RAHT_data->at(j).u / QP));
-					RAHT_quant_result->at(j + 2 * RAHT_data->size()) = static_cast<common::FIX_DATA_INT>(std::ceil(RAHT_data->at(j).v / QP));
+					RAHT_quant_result->at(j)                         = static_cast<common::FIX_DATA_INT>(std::round(RAHT_data->at(j).y / QP));
+					RAHT_quant_result->at(j + RAHT_data->size())     = static_cast<common::FIX_DATA_INT>(std::round(RAHT_data->at(j).u / QP));
+					RAHT_quant_result->at(j + 2 * RAHT_data->size()) = static_cast<common::FIX_DATA_INT>(std::round(RAHT_data->at(j).v / QP));
 				}
-
 				/* RLGR encoding */
 				common::RLGREncoder enc;
 				enc.Encode(RAHT_quant_result);
@@ -206,7 +210,7 @@ namespace patch {
 		}
 	}
 
-	std::vector<common::Slice> GoPEncoding::GetResults() const {
+	std::vector<common::Slice> GoPEncoding::GetResults() {
 		return this->results_;
 	}
 }  // namespace patch

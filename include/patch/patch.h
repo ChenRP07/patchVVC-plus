@@ -200,7 +200,7 @@ namespace patch {
 		 * @param  : {}
 		 * @return : {std::vector<common::Slice>}
 		 * */
-		std::vector<common::Slice> GetResults() const;
+		std::vector<common::Slice> GetResults();
 
         using Ptr = std::shared_ptr<patch::GoPEncoding>;
 	};

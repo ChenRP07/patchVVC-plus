@@ -22,6 +22,7 @@
 
 #include <Eigen/Dense>
 
+#include <fstream>
 #include <sys/time.h>
 #include <sys/types.h>
 
@@ -51,7 +52,7 @@ namespace common {
 	static uint8_t PVVC_SLICE_TYPE_DEFAULT_PREDICT = 0b00000011;
 
 	inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
-		return _type & PVVC_SLICE_TYPE_MASK[_MASK];
+		return (_type & PVVC_SLICE_TYPE_MASK[_MASK]) == 0 ? false : true;
 	}
 
 	inline void SetSliceType(uint8_t& _type, PVVC_SLICE_TYPE_CONFIG _MASK) {
@@ -108,6 +109,11 @@ namespace common {
 		/* Add data with _x relative channel */
 		ColorYUV& operator+=(const ColorYUV& _x) {
 			this->y += _x.y, this->u += _x.u, this->v += _x.v;
+			return *this;
+		}
+
+		ColorYUV& operator-=(const ColorYUV& _x) {
+			this->y -= _x.y, this->u -= _x.u, this->v -= _x.v;
 			return *this;
 		}
 

@@ -173,7 +173,7 @@ namespace octree {
             * */
             for (int i = 0; i < 8; ++i) {
                 if (node.index[i] != -1) {
-                    node.weight[i + 8] = this->tree_[_height + 1].nodes[node.index[i]].weight[0];
+                    node.weight[i + 8] = this->tree_[_height + 1].nodes[node.index[i]].weight[1];
                 }
             }
 

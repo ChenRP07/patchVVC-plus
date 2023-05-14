@@ -27,7 +27,7 @@ namespace octree {
 			}
 
 			/* _slice should have data */
-			if (!_slice.geometry || !_slice.color) {
+			if (!_slice.geometry && !_slice.color) {
 				throw __EXCEPT__(BAD_SLICE);
 			}
 
@@ -39,7 +39,6 @@ namespace octree {
 				}
 			}
 			this->slice_ = _slice;
-
 			/* Optional Zstd decoding */
 			if (common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_GEO_ZSTD)) {
 				common::ZstdDecoder dec;
@@ -239,7 +238,7 @@ namespace octree {
 				 * */
 				for (int i = 0; i < 8; ++i) {
 					if (node.index[i] != -1) {
-						node.weight[i + 8] = this->tree_[_height + 1][node.index[i]].weight[0];
+						node.weight[i + 8] = this->tree_[_height + 1][node.index[i]].weight[1];
 					}
 				}
 
@@ -265,21 +264,24 @@ namespace octree {
 			if (!this->coefficients_ || this->coefficients_->size() != this->source_cloud_->size()) {
 				throw __EXCEPT__(UNMATCHED_COLOR_SIZE);
 			}
-			/* Reverse iterator */
-			auto iter = this->coefficients_->rbegin();
+			std::reverse(this->coefficients_->begin(), this->coefficients_->end());
+			/* Iterator */
+			auto iter = this->coefficients_->begin();
 
 			/* Set g_DC */
 			this->tree_.front().front().raht[0] = *iter;
 
-			iter = std::next(iter, 1);
+			// iter = std::next(iter, 1);
+			++iter;
 
 			for (int i = 0; i < this->tree_height_ - 1; ++i) {
 				for (auto& node : this->tree_[i]) {
 					/* Set h_ACs */
 					for (int idx = 1; idx < 8; ++idx) {
-						if (node.weight[NodeWeight[idx][0]] != 0 && node.weight[NodeWeight[idx][0]] != 0) {
+						if (node.weight[NodeWeight[idx][0]] != 0 && node.weight[NodeWeight[idx][1]] != 0) {
 							node.raht[idx] = *iter;
-							iter           = std::next(iter, 1);
+							// iter           = std::next(iter, 1);
+							++iter;
 						}
 					}
 					/* Compute g_DC */

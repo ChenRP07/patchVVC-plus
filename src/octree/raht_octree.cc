@@ -166,7 +166,7 @@ namespace octree {
 				/* 8 subnode weight, i.e., weight[8] to weight[15] */
 				for (int i = 0; i < 8; ++i) {
 					if (node.index[i] != -1) {
-						node.weight[i + 8] = this->tree_[_height + 1][node.index[i]].weight[0];
+						node.weight[i + 8] = this->tree_[_height + 1][node.index[i]].weight[1];
 					}
 				}
 				/* Compute weight[1] to weight[7] */
@@ -212,7 +212,7 @@ namespace octree {
 					/* Collect subnodes' g_DC */
 					for (int idx = 0; idx < 8; ++idx) {
 						if (node.index[idx] != -1) {
-							node.raht[idx + 8] = this->tree_[i][node.index[idx]].raht[0];
+							node.raht[idx + 8] = this->tree_[i + 1][node.index[idx]].raht[0];
 						}
 					}
 					/* Do region-adaptive hierarchical transform */

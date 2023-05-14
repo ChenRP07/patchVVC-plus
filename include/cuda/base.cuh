@@ -30,14 +30,14 @@ typedef unsigned long      uint64_t;
 
 namespace vvc {
 namespace common {
-        static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
+        __device__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
         /*
         * From low to high : valid 1 | I 0 P 1 | none 0 skip 1 | none 0 zstd 1 | none 0 zstd 1
         * */
         enum PVVC_SLICE_TYPE { PVVC_SLICE_TYPE_VALID, PVVC_SLICE_TYPE_PREDICT, PVVC_SLICE_TYPE_SKIP, PVVC_SLICE_TYPE_GEO_ZSTD, PVVC_SLICE_TYPE_COLOR_ZSTD };
 
-        inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
+        __device__ inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
 		    return _type & PVVC_SLICE_TYPE_MASK[_MASK];
 	    }
 
@@ -61,10 +61,10 @@ namespace common {
 		float y, u, v; /* Channels */
 
 		/* Default constructor */
-		ColorYUV() : y{}, u{}, v{} {}
+		__device__ ColorYUV() : y{}, u{}, v{} {}
 
 		/* Copy constructor */
-		ColorYUV(const ColorYUV& _x) : y{_x.y}, u{_x.u}, v{_x.v} {}
+		__device__ ColorYUV(const ColorYUV& _x) : y{_x.y}, u{_x.u}, v{_x.v} {}
 
             /* Assign constructor */
             __device__ ColorYUV& operator=(const ColorYUV& _x) {
@@ -73,7 +73,7 @@ namespace common {
             }
 
 		/* Construct by data of three channels */
-		ColorYUV(float _r, float _g, float _b, bool _type = true) {
+		__device__ ColorYUV(float _r, float _g, float _b, bool _type = true) {
 			if (_type) {
 				this->y = _r, this->u = _g, this->v = _b;
 			}
@@ -85,32 +85,32 @@ namespace common {
 		}
 
 		/* Add data with _x relative channel */
-		ColorYUV& operator+=(const ColorYUV& _x) {
+		__device__ ColorYUV& operator+=(const ColorYUV& _x) {
 			this->y += _x.y, this->u += _x.u, this->v += _x.v;
 			return *this;
 		}
 
 		/* Divide data by _x */
-		ColorYUV& operator/=(const int _x) {
+		__device__ ColorYUV& operator/=(const int _x) {
 			this->y /= _x, this->u /= _x, this->v /= _x;
 			return *this;
 		}
 
 		/* Multiple data by _x */
-		ColorYUV& operator*=(const float _x) {
+		__device__ ColorYUV& operator*=(const float _x) {
 			this->y *= _x, this->u *= _x, this->v *= _x;
 			return *this;
 		}
 
 		/* Add _x to this, return result */
-		ColorYUV operator+(const ColorYUV& _x) const {
+		__device__ ColorYUV operator+(const ColorYUV& _x) const {
 			ColorYUV result;
 			result.y = this->y + _x.y, result.u = this->u + _x.u, result.v = this->v + _x.v;
 			return result;
 		}
 
 		/* Multiple this by _x, return result */
-		ColorYUV operator*(const float _x) const {
+		__device__ ColorYUV operator*(const float _x) const {
 			ColorYUV result;
 			result.y = this->y * _x, result.u = this->u * _x, result.v = this->v * _x;
 			return result;
@@ -127,22 +127,22 @@ namespace common {
 	struct MotionVector {
 		float data[16];
 
-		MotionVector() : data{} {}
+		__device__ MotionVector() : data{} {}
 
-		MotionVector(const MotionVector& _x) {
+		__device__ MotionVector(const MotionVector& _x) {
 			for (int i = 0; i < 16; ++i) {
 				this->data[i] = _x.data[i];
 			}
 		}
 
-		MotionVector& operator=(const MotionVector& _x) {
+		__device__ MotionVector& operator=(const MotionVector& _x) {
 			for (int i = 0; i < 16; ++i) {
 				this->data[i] = _x.data[i];
 			}
 			return *this;
 		}
 
-		float& operator()(uint32_t _x, uint32_t _y) {
+		__device__ float& operator()(uint32_t _x, uint32_t _y) {
 			return this->data[_x * 4 + _y];
 		}
 	};
@@ -161,7 +161,7 @@ namespace common {
 
 		Slice_t() = default;
 
-		Slice_t(const Slice_t& _x) {
+		__device__ Slice_t(const Slice_t& _x) {
 			this->timestamp     = _x.timestamp;
 			this->index         = _x.index;
 			this->type          = _x.type;
@@ -175,7 +175,7 @@ namespace common {
 			this->color_size = _x.color_size;
 		}
 
-		Slice_t& operator=(const Slice_t& _x) {
+		__device__ Slice_t& operator=(const Slice_t& _x) {
 			this->timestamp     = _x.timestamp;
 			this->index         = _x.index;
 			this->type          = _x.type;

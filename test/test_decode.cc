@@ -34,6 +34,22 @@ void Decode() {
 	std::cout << gcp.first << " " << gcp.second << '\n';
 	vvc::io::SavePatch(resi, "./data/decode_1_100.patch");
 	vvc::io::SavePatch(resp, "./data/decode_2_100.patch");
+	std::ofstream outi("./data/result_1.txt");
+	outi << "Index : " << resi.index << "\n"
+	     << "Timestamp : " << resi.timestamp << '\n';
+	outi << "Motion Vector : " << resi.mv << '\n';
+	outi << "Points number : " << resi.cloud->size() << '\n';
+	for (auto p : *resi.cloud) {
+		outi << p << '\n';
+	}
+	std::ofstream outp("./data/result_2.txt");
+	outp << "Index : " << resp.index << "\n"
+	     << "Timestamp : " << resp.timestamp << '\n';
+	outp << "Motion Vector : " << resp.mv << '\n';
+	outp << "Points number : " << resp.cloud->size() << '\n';
+	for (auto p : *resp.cloud) {
+		outp << p << '\n';
+	}
 }
 
 int main() {

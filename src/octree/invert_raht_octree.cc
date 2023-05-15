@@ -153,7 +153,12 @@ namespace octree {
 				}
 			}
 
+			for (auto i : tree_attr) {
+				printf("%02x ", i);
+			}
+			printf("\n");
 			LoadTreeCore(this->tree_center_, this->tree_range_, this->tree_height_, tree_attr);
+			std::cout << this->tree_center_ << '\n' << this->tree_range_ << '\n' << this->tree_height_ << '\n';
 
 			this->tree_.resize(this->tree_height_);
 			int curr_layer_node_count = 1;

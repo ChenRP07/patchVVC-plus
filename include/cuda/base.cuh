@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string>
 #include <regex>
+#include <zstd.h>
 
 typedef unsigned char      uint8_t;
 typedef unsigned short int uint16_t;
@@ -34,7 +35,7 @@ namespace vvc {
 namespace client{
 namespace common {
 	/* 1-bit in uint8_t 0-7 */
-	__host__ __device__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
+	__device__ __managed__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
 	/*
 	 * From low to high : valid 1 | I 0 P 1 | none 0 skip 1 | none 0 zstd 1 | none 0 zstd 1

@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 namespace vvc {
+namespace client{
 namespace octree {
 
     __device__ void LoadTreeCore(common::PointXYZ& _center, common::PointXYZ& _range, int& _height, uint8_t (&_p)[25]) {
@@ -232,4 +233,5 @@ namespace octree {
     }
 
 }  // namespace octree
+}
 }  // namespace vvc

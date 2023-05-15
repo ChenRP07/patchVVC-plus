@@ -18,6 +18,7 @@ typedef unsigned int       uint32_t;
 typedef unsigned long      uint64_t;
 
 namespace vvc {
+namespace client{
 namespace common {
 	/* Unsigned integer */
 	typedef uint64_t FIX_INT;
@@ -155,4 +156,5 @@ namespace common {
 		__device__ FIX_DATA_INT* GetResult();
 	};
 }  // namespace common
+}
 }  // namespace vvc

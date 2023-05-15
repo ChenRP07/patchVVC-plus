@@ -18,6 +18,7 @@
 #define _PVVC_CUDA_OCTREE_CUH_
 
 namespace vvc {
+namespace client{
 namespace octree {
 
     /* Used to check if some bit of uint8_t is 0 or 1 */
@@ -168,6 +169,7 @@ namespace octree {
             /* Create common octree */
             __device__  void MakeTree();
     };
+}
 }
 }
 #endif

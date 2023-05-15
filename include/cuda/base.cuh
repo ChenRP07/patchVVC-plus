@@ -29,6 +29,7 @@ typedef unsigned long      uint64_t;
 // typedef long int64_t;
 
 namespace vvc {
+namespace client{
 namespace common {
 	/* 1-bit in uint8_t 0-7 */
 	__device__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
@@ -204,5 +205,6 @@ namespace common {
 		}
 	};
 }  // namespace common
+}  // namespace client
 }  // namespace vvc
 #endif

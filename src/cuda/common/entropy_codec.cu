@@ -14,6 +14,7 @@
 #include "cuda/entropy_codec.cuh"
 
 namespace vvc {
+namespace client{
 namespace common {
 
 	__device__ void RLGRDecoder::Fill() {
@@ -142,4 +143,5 @@ namespace common {
 		return this->result_;
 	}
 }  // namespace common
+}
 }  // namespace vvc

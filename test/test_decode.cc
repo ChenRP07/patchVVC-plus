@@ -8,14 +8,14 @@ vvc::common::Patch            p1, p2;
 
 void Decode() {
 	vvc::common::Slice si, sp;
-	vvc::io::LoadSlice(si, "./data/result_1_100.slice");
+	vvc::io::LoadSlice(si, "/home/lixin/vvc/test/data/result_1_100.slice");
 	vvc::io::LoadSlice(sp, "./data/result_2_100.slice");
 	vvc::octree::InvertRAHTOctree dec;
 	dec.SetParams(param);
 	dec.SetSlice(si);
 	auto resi = dec.GetPatch();
 	dec.SetSlice(sp);
-	auto resp = dec.GetPatch();
+	auto             resp   = dec.GetPatch();
 	auto             cloudi = vvc::io::LoadColorPlyFile("./data/result_fit_1_100.ply");
 	auto             cloudp = vvc::io::LoadColorPlyFile("./data/result_fit_2_100.ply");
 	vvc::common::MSE m1;
@@ -32,8 +32,8 @@ void Decode() {
 	std::cout << gp.first << " " << gp.second << '\n';
 	auto gcp = m2.GetYMSEs();
 	std::cout << gcp.first << " " << gcp.second << '\n';
-    vvc::io::SavePatch(resi, "./data/decode_1_100.patch");
-    vvc::io::SavePatch(resp, "./data/decode_2_100.patch");
+	vvc::io::SavePatch(resi, "./data/decode_1_100.patch");
+	vvc::io::SavePatch(resp, "./data/decode_2_100.patch");
 }
 
 int main() {

@@ -74,6 +74,5 @@ int main()
    // // func<<<1,1>>>(size_GPU);
    // // cudaDeviceSynchronize();
 
-
     return 0;
 }

@@ -17,6 +17,8 @@
 
 #include <cuda_runtime.h>
 #include <stdlib.h>
+#include <string>
+#include <regex>
 
 typedef unsigned char      uint8_t;
 typedef unsigned short int uint16_t;
@@ -32,7 +34,7 @@ namespace vvc {
 namespace client{
 namespace common {
 	/* 1-bit in uint8_t 0-7 */
-	__device__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
+	__host__ __device__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
 	/*
 	 * From low to high : valid 1 | I 0 P 1 | none 0 skip 1 | none 0 zstd 1 | none 0 zstd 1
@@ -45,7 +47,7 @@ namespace common {
      * @param  : {PVVC_SLICE_TYPE _MASK}
      * @return : {bool}
      * */
-	__device__ inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
+	__host__ __device__ inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
 		return _type & PVVC_SLICE_TYPE_MASK[_MASK];
 	}
 
@@ -205,6 +207,10 @@ namespace common {
 		}
 	};
 }  // namespace common
+
+namespace io {
+    extern int LoadSlice(common::Slice_t& _slice, const std::string& _name);
+}
 }  // namespace client
 }  // namespace vvc
 #endif

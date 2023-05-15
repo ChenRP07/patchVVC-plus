@@ -101,7 +101,8 @@ namespace octree {
         common::RLGRDecoder rlgr_dec;
         rlgr_dec.Decode(temp_color, this->slice_.color_size, 3 * this->slice_.size);
         auto rlgr_res       = rlgr_dec.GetResult();
-        this->coefficients_ = (common::ColorYUV*)malloc(this->slice_.size);
+        free(this->coefficients_);
+        this->coefficients_ = (common::ColorYUV*)malloc(sizeof(common::ColorYUV) * this->slice_.size);
         /* Reconstruct coefficients */
         for (int i = 0; i < this->slice_.size; ++i) {
             this->coefficients_[i].y = static_cast<float>(rlgr_res[i] * this->slice_.qp);
@@ -116,6 +117,10 @@ namespace octree {
             this->source_cloud_index_ = 0;
             free(this->reference_colors_);
             free(this->source_colors_);
+
+            this->source_cloud_ = (common::PointXYZ*)malloc(sizeof(common::PointXYZ) * this->slice_.size);
+            this->reference_colors_ = (common::ColorYUV*)malloc(sizeof(common::ColorYUV) * this->slice_.size);
+            this->source_colors_ = (common::ColorYUV*)malloc(sizeof(common::ColorYUV) * this->slice_.size);
             this->MakeTree();
         }
         this->InvertRAHT();
@@ -132,7 +137,10 @@ namespace octree {
             printf("\n");
         }
         for(int i=0; i<source_cloud_index_; i++){
-            printf("%.2f %.2f %.2f %.2f %.2f %.2f\n", this->source_cloud_[i].x, this->source_cloud_[i].y, this->source_cloud_[i].z, this->source_colors_[i].y, this->source_colors_[i].u, this->source_colors_[i].v);
+            float r = ((this->source_colors_[i].y + 1.4020f * (this->source_colors_[i].v - 128.0f)));
+			float g = ((this->source_colors_[i].y - 0.3441f * (this->source_colors_[i].u - 128.0f) - 0.7141f * (this->source_colors_[i].v - 128.0f)));
+			float b = ((this->source_colors_[i].y + 1.7720f * (this->source_colors_[i].u - 128.0f)));
+            printf("(%.3f,%.3f,%.3f - %.0f,%.0f,%.0f)\n", this->source_cloud_[i].x, this->source_cloud_[i].y, this->source_cloud_[i].z, r, g, b);
         }
 	}
 
@@ -156,7 +164,7 @@ namespace octree {
             /* Count how many nodes next layer has */
             int next_layer_node_count = 0;
             /* Assign nodes in current layer */
-            this->tree_[idx].nodes = (OctreeNode_t *)malloc(sizeof(OctreeNode_t *) * curr_layer_node_count);
+            this->tree_[idx].nodes = (OctreeNode_t *)malloc(sizeof(OctreeNode_t) * curr_layer_node_count);
             this->tree_[idx].length = curr_layer_node_count;
             for (int cnt = 0; cnt < curr_layer_node_count; ++cnt) {
                 /* Set value */
@@ -177,7 +185,7 @@ namespace octree {
         }
 
         /* Malloc space for last layer */
-        this->tree_[this->tree_height_ - 1].nodes = (OctreeNode_t *)malloc(sizeof(OctreeNode_t *) * curr_layer_node_count);
+        this->tree_[this->tree_height_ - 1].nodes = (OctreeNode_t *)malloc(sizeof(OctreeNode_t) * curr_layer_node_count);
         this->tree_[this->tree_height_ - 1].length = curr_layer_node_count;
         
         /* Update center and range for each node */
@@ -202,8 +210,8 @@ namespace octree {
             node.value = 0xff;
             node.weight[1] = 1;
             this->source_cloud_[this->source_cloud_index_] = node.center;
-            this->source_cloud_index_++;
             node.index[0] = this->source_cloud_index_;
+            this->source_cloud_index_++;
         }
 
         /* Reversely update weight for each node */
@@ -271,6 +279,7 @@ namespace octree {
 
         /* Set g_DC */
         this->tree_[0].nodes[0].raht[0] = this->coefficients_[coefficients_index];
+        coefficients_index--;
 
         for (int i = 0; i < this->tree_height_ - 1; ++i) {
             for(int j = 0; j < this->tree_[i].length; j++){

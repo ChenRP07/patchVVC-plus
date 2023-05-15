@@ -84,16 +84,10 @@ namespace octree {
 		this->raht[1] = H[0];
 		/* Invert X/Y/Z merge */
 		for (int i = 1; i < 8; ++i) {
-            
-
 			// std::pair<common::ColorYUV, common::ColorYUV> g(this->raht[i], H[i]), res;
 			// std::pair<int, int>                           w(this->weight[NodeWeight[i][0]], this->weight[NodeWeight[i][1]]);
 			/* Inver haar wavelet transform */
-            common::ColorYUV _res0;
-            common::ColorYUV _res1;
-			InvertHaarTransform(this->weight[NodeWeight[i][0]], this->weight[NodeWeight[i][1]], this->raht[i], H[i], _res0, _res1);
-			this->raht[NodeWeight[i][0]] = _res0;
-			this->raht[NodeWeight[i][1]] = _res1;
+			InvertHaarTransform(this->weight[NodeWeight[i][0]], this->weight[NodeWeight[i][1]], this->raht[i], H[i], this->raht[NodeWeight[i][0]], this->raht[NodeWeight[i][1]]);
 		}
 	}
 
@@ -186,9 +180,48 @@ namespace octree {
         this->tree_[this->tree_height_ - 1].nodes = (OctreeNode_t *)malloc(sizeof(OctreeNode_t *) * curr_layer_node_count);
         this->tree_[this->tree_height_ - 1].length = curr_layer_node_count;
         
+        /* Update center and range for each node */
+        this->tree_[0].nodes[0].center = this->tree_center_;
+        this->tree_[0].nodes[0].range  = this->tree_range_;
+        for (int layer = 0; layer < this->tree_height_ - 1; ++layer) {
+            for (int idx = 0; idx < this->tree_[layer].length; ++idx) { 
+                auto& node = this->tree_[layer].nodes[idx];
+                common::PointXYZ subrange(node.range.x / 2.0f, node.range.y / 2.0f, node.range.z / 2.0f);
+                for (int i = 0; i < 8; ++i) {
+                    if (node.index[i] != -1) {
+                        this->tree_[layer + 1].nodes[node.index[i]].center = SubSpaceCenter(node.center, subrange, i);
+                        this->tree_[layer + 1].nodes[node.index[i]].range = subrange;
+                    }     
+                }
+            }
+        }
+        
+        /* Collect last layer centers and update weight for last layer */
+        for (int idx = 0; idx < this->tree_[this->tree_height_ - 1].length; ++idx) {
+            auto& node = this->tree_[this->tree_height_ - 1].nodes[idx];
+            node.value = 0xff;
+            node.weight[1] = 1;
+            this->source_cloud_[this->source_cloud_index_] = node.center;
+            this->source_cloud_index_++;
+            node.index[0] = this->source_cloud_index_;
+        }
 
+        /* Reversely update weight for each node */
+        for (int layer = this->tree_height_ - 2; layer >= 0; --layer) {
+            for (int idx = 0; idx < this->tree_[layer].length; ++idx) {
+                auto& node = this->tree_[layer].nodes[idx];
+                for (int i = 0; i < 8; ++i) {
+                    if (node.index[i] != -1) {
+                        node.weight[i + 8] = this->tree_[layer + 1].nodes[node.index[i]].weight[1];
+                    }
+                }
+                for (int i = 7; i > 0; --i) {
+                    node.weight[i] = node.weight[NodeWeight[i][0]] + node.weight[NodeWeight[i][1]];
+                }
+            }
+        }
         /* Update weight and add point into cloud */
-        this->AddPoints(0, 0, this->tree_center_, this->tree_range_);
+        // this->AddPoints(0, 0, this->tree_center_, this->tree_range_);
 	}
 
     __device__ void InvertRAHTOctree::AddPoints(const int _height, const int _index, const common::PointXYZ _center, const common::PointXYZ _range) {

@@ -13,6 +13,7 @@
  */
 
 #include "cuda/base.cuh"
+#include <math.h>
 
 #ifndef _PVVC_CUDA_OCTREE_CUH_
 #define _PVVC_CUDA_OCTREE_CUH_
@@ -20,6 +21,14 @@
 namespace vvc {
 namespace client{
 namespace octree {
+
+    /*
+	 * @description : Invert haar transform
+	 * @param  : {std::pair<int, int>& _w} weights
+	 * @param  : {std::pair<common::ColorYUV, common::ColorYUV>& _g} signals
+	 * @return : {std::pair<common::ColorYUV, common::ColorYUV>}
+	 * */
+	extern __device__ void InvertHaarTransform(int _w0, int _w1, const common::ColorYUV& _g0, const common::ColorYUV& _g1, common::ColorYUV& _res0, common::ColorYUV& _res1);
 
     /* Used to check if some bit of uint8_t is 0 or 1 */
     __device__ static uint8_t NodeValue[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
@@ -84,10 +93,10 @@ namespace octree {
             return *this;
         }
 
-        /* Do RAHT in this node, need signals in raht[8] to raht[15], generate signal in raht[0] and coefficients in raht[1] to raht[7]
-        * NOTE: Coefficient of raht[idx] is valid only if both NodeWeight[idx][0] and NodeWeight[idx][1] are not zero.
-        * */
-        __device__ void HierarchicalTransform();
+        // /* Do RAHT in this node, need signals in raht[8] to raht[15], generate signal in raht[0] and coefficients in raht[1] to raht[7]
+        // * NOTE: Coefficient of raht[idx] is valid only if both NodeWeight[idx][0] and NodeWeight[idx][1] are not zero.
+        // * */
+        // __device__ void HierarchicalTransform();
 
         /* Do InvertRAHT in this node, need signal in raht[0] and coefficients in raht[1] to raht[7], genreate signals in raht[8] to raht[15]
         * NOTE: Signals of raht[idx] is valid only if value & NodeValue[idx - 8] is not zero, i.e., this child node has weight > 0
@@ -144,9 +153,9 @@ namespace octree {
 
 	    public:
             /* Default constructor and deconstructor */
-            InvertRAHTOctree()  = default;
+            __device__ InvertRAHTOctree(){};
             
-            ~InvertRAHTOctree() = default;
+            // __device__ ~InvertRAHTOctree();
 
             /*
             * @description : Set decoded Slice

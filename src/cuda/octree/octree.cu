@@ -18,6 +18,31 @@
 namespace vvc {
 namespace client{
 namespace octree {
+    extern __device__ void InvertHaarTransform(int _w0, int _w1, const common::ColorYUV& _g0, const common::ColorYUV& _g1, common::ColorYUV& _res0, common::ColorYUV& _res1) {
+		common::ColorYUV G, H;
+		if (_w0 == 0 && _w1 == 0) {
+            _res0 = G;
+            _res1 = H;
+			return ;
+		}
+
+		/*
+		 *        [ √w0 -√w1]
+		 *        [ √w1 √w0 ]
+		 * T^-1 = -----------
+		 *        √(w0 + w1)
+		 *
+		 * */
+		float base    = sqrtf(static_cast<float>(_w0 + _w1));
+		float T[2][2] = {{sqrtf(static_cast<float>(_w0)) / base, -sqrt(static_cast<float>(_w1)) / base},
+		                 {sqrtf(static_cast<float>(_w1)) / base, sqrt(static_cast<float>(_w0)) / base}};
+
+		G = _g0 * T[0][0] + _g1 * T[0][1];
+		H = _g0 * T[1][0] + _g1 * T[1][1];
+        _res0 = G;
+        _res1 = H;
+		return ;
+	}
 
     __device__ void LoadTreeCore(common::PointXYZ& _center, common::PointXYZ& _range, int& _height, uint8_t (&_p)[25]) {
 		float data[6] = {};
@@ -48,6 +73,28 @@ namespace octree {
             case 7: return common::PointXYZ(_center.x - _range.x / 2.0f, _center.y - _range.y / 2.0f, _center.z - _range.z / 2.0f);
             default: printf("SubSpaceCenter ERROR\n"); return common::PointXYZ();
         }
+	}
+
+    __device__ void OctreeNode_t::InvertHierarchicalTransform() {
+		common::ColorYUV H[8];
+		for (int i = 0; i < 8; ++i) {
+			H[i] = this->raht[i];
+		}
+		/* g_DC */
+		this->raht[1] = H[0];
+		/* Invert X/Y/Z merge */
+		for (int i = 1; i < 8; ++i) {
+            
+
+			// std::pair<common::ColorYUV, common::ColorYUV> g(this->raht[i], H[i]), res;
+			// std::pair<int, int>                           w(this->weight[NodeWeight[i][0]], this->weight[NodeWeight[i][1]]);
+			/* Inver haar wavelet transform */
+            common::ColorYUV _res0;
+            common::ColorYUV _res1;
+			InvertHaarTransform(this->weight[NodeWeight[i][0]], this->weight[NodeWeight[i][1]], this->raht[i], H[i], _res0, _res1);
+			this->raht[NodeWeight[i][0]] = _res0;
+			this->raht[NodeWeight[i][1]] = _res1;
+		}
 	}
 
     __device__ void InvertRAHTOctree::SetSlice(const common::Slice_t& _slice) {

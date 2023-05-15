@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string>
 #include <regex>
+#include <zstd.h>
 
 typedef unsigned char      uint8_t;
 typedef unsigned short int uint16_t;
@@ -34,7 +35,7 @@ namespace vvc {
 namespace client{
 namespace common {
 	/* 1-bit in uint8_t 0-7 */
-	__host__ __device__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
+	__device__ __managed__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
 	/*
 	 * From low to high : valid 1 | I 0 P 1 | none 0 skip 1 | none 0 zstd 1 | none 0 zstd 1
@@ -175,7 +176,13 @@ namespace common {
 		uint32_t     color_size; /* Size of color info*/
 
         /* Constructor */
-		Slice_t() = default;
+		__host__ __device__ Slice_t() : timestamp{}, index{}, type{}, mv{}, size{}, qp{}, geometry{}, geometry_size{}, color{}, color_size{} {}
+
+		__device__ Slice_t(int _timestamp, int _index, uint8_t _type, float* _mv, uint32_t _size, uint8_t _qp, uint8_t* _geometry, uint32_t _geometry_size, uint8_t* _color, uint32_t _color_size): timestamp{_timestamp}, index{_index}, type{_type}, size{_size}, qp{_qp}, geometry{_geometry}, geometry_size{_geometry_size}, color{_color}, color_size{_color_size} {
+			for(int i=0; i<16; i++){
+				this->mv.data[i] = _mv[i];
+			}
+		}
 
 		__device__ Slice_t(const Slice_t& _x) {
 			this->timestamp     = _x.timestamp;
@@ -202,7 +209,7 @@ namespace common {
 			this->color_size    = _x.color_size;
 
 			this->geometry   = _x.geometry;
-			this->color_size = _x.color_size;
+			this->color = _x.color;
 			return *this;
 		}
 	};

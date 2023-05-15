@@ -73,7 +73,7 @@ namespace client {
 				return 5;
 			}
 
-			if (fread(_slice.mv.data, sizeof(float), 16, fp) != 1) {
+			if (fread(_slice.mv.data, sizeof(float), 16, fp) != 16) {
 				printf("Load %s failed, read error.\n", _name.c_str());
 				fclose(fp);
 				return 5;

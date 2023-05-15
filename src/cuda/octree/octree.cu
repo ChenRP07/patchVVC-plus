@@ -196,7 +196,7 @@ namespace octree {
                 auto &node = this->tree_[i].nodes[j];
                 /* Set h_ACs */
                 for (int idx = 1; idx < 8; ++idx) {
-                    if (node.weight[NodeWeight[idx][0]] != 0 && node.weight[NodeWeight[idx][0]] != 0) {
+                    if (node.weight[NodeWeight[idx][0]] != 0 && node.weight[NodeWeight[idx][1]] != 0) {
                         node.raht[idx] = this->coefficients_[coefficients_index];
                         coefficients_index --;
                     }

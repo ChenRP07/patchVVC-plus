@@ -50,6 +50,11 @@ namespace octree {
         */
         uint8_t value;
 
+        /* Node center */
+        common::PointXYZ center;
+        /* Node range */
+        common::PointXYZ range;
+
         /* Children indexes in next layer or in real point cloud */
         int index[8];
 

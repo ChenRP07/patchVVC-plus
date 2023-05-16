@@ -34,6 +34,13 @@ typedef unsigned long      uint64_t;
 namespace vvc {
 namespace client{
 namespace common {
+
+	struct Points   //点云数据的结构体
+	{
+		float x, y, z;  //三维坐标值
+		float r, g, b;  //颜色信息
+	};
+
 	/* 1-bit in uint8_t 0-7 */
 	__device__ __managed__ static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 

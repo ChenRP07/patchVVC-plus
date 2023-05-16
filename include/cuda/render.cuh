@@ -1,10 +1,11 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-05 16:04:08
- * @LastEditTime: 2023-05-16 11:01:57
+ * @LastEditTime: 2023-05-16 20:35:25
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
+#pragma once
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 // GLM
@@ -18,9 +19,9 @@
 #include <helper_cuda.h>
 #include <helper_functions.h>
 #include <rendercheck_gl.h>
-// // OpenGL Graphics includes
-// #include "helper_gl.h"
-// #include<GL/freeglut.h>
+// OpenGL Graphics includes
+#include "helper_gl.h"
+#include<GL/freeglut.h>
 // 基础数据结构
 #include "cuda/base.cuh"
 
@@ -34,12 +35,14 @@ namespace vvc {
 namespace client{
 namespace render {
 
-        #define BUFFER_SIZE 10              // 设置 VBO 是十帧的缓冲区
+        extern "C" void launch_cudaProcess(int grid, int block, struct vvc::client::common::Points* cudaData, size_t numBytes, int frame_number);
+
+        #define BUFFER_SIZE 2              // 设置 VBO 是 BUFFER_SIZE 帧的缓冲区
         #define ES_FRAM_SIZE 900000         // 设置 每帧的最大大小为 9e5 个点
 
         #pragma region 窗口参数
             // CUDA与OpenGL协同操作共享内存
-            // cudaGraphicsResource_t cudaGraphicsResourcePtr;      // CUDA 指向 OpenGL 内存的指针
+            cudaGraphicsResource_t cudaGraphicsResourcePtr;      // CUDA 指向 OpenGL 内存的指针
             // 窗口参数
             const unsigned int SCR_WIDTH = 800;                     // 窗口宽度
             const unsigned int SCR_HEIGHT = 600;                    // 窗口高度
@@ -57,6 +60,9 @@ namespace render {
             float fov = 45.0f;                                      //视野(Field of View)，定义可以看到场景中的多大范围
             float yaw = -90.0f;                                     // 偏航角初始化为-90.0度，若为0.0会导致方向向量指向右侧，所以最初会向左旋转一点
             float pitch = 0.0f;
+
+            vvc::client::common::Points *cudaData = nullptr;                                // CUDA 映射到 VBO 的地址
+            size_t numBytes = 0;                                    // CUDA 映射的内存的大小
         #pragma endregion
 
         #pragma region 窗口函数
@@ -202,6 +208,8 @@ namespace render {
                 unsigned int VAO = 0;                       // 顶点数组对象
                 unsigned int VBO = 0;                       // 顶点缓冲对象
                 std::vector<int> bufferFrameSize;           // 每帧的大小
+                float begin_time;
+                float currentFrame;
             public:
                 Render(){
                     bufferFrameSize = std::vector<int>(BUFFER_SIZE);
@@ -252,20 +260,6 @@ namespace render {
                     glGenBuffers(1, &VBO);
                     glBindBuffer(GL_ARRAY_BUFFER, VBO);  //绑定VBO为顶点缓冲类型
 
-                    // // 注册OpenGL缓冲区对象到CUDA
-                    // cudaGraphicsGLRegisterBuffer(&cudaGraphicsResourcePtr, VBO, cudaGraphicsMapFlagsNone);
-                    
-                    // // 将OpenGL缓冲区对象映射到CUDA
-                    // cudaGraphicsMapResources(1, &cudaGraphicsResourcePtr, 0);
-                    // int* cudaData = nullptr;
-                    // size_t numBytes = 0;
-                    // cudaGraphicsResourceGetMappedPointer((void**)&cudaData, &numBytes, cudaGraphicsResourcePtr);
-
-                    // // 设置 CUDA 相关参数
-                    // int numElements = vertices.size();
-                    // int blockSize = 256;
-                    // int numBlocks = (numElements + blockSize - 1) / blockSize;
-
                     unsigned int vertexShader = CompileShader(GL_VERTEX_SHADER, vertexShaderSource); //顶点着色器对象
                     unsigned int fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fragmentShaderSource); //片段着色器对象
 
@@ -290,6 +284,13 @@ namespace render {
                     //设置顶点属性指针，存放点的(r g b)，解析顶点数据用
                     glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(vvc::client::common::Points), (void*)(3 * sizeof(float)));//1、顶点属性的位置值；2、顶点属性的大小；3、数据类型；4、是否要标准化；5、步长，指顶点属性每组之间的间隔；6、位置数据在缓冲中起始位置的偏移量
                     glEnableVertexAttribArray(1);//启用顶点属性
+
+                    // 注册OpenGL缓冲区对象到CUDA
+                    cudaGraphicsGLRegisterBuffer(&cudaGraphicsResourcePtr, VBO, cudaGraphicsMapFlagsNone);
+                    
+                    // 将OpenGL缓冲区对象映射到CUDA
+                    cudaGraphicsMapResources(1, &cudaGraphicsResourcePtr, 0);
+                    cudaGraphicsResourceGetMappedPointer((void**)&(cudaData), &numBytes, cudaGraphicsResourcePtr);
                 }
 
 
@@ -298,81 +299,81 @@ namespace render {
                  * @param {std::vector<vvc::client::common::Points} _vertices  待渲染的点云数据
                  * @return {*}
                  */
-                void InputData(std::vector<vvc::client::common::Points> _vertices[BUFFER_SIZE]){
-
+                void InputData(std::vector<std::vector<vvc::client::common::Points>>& _vertices, int start, int end){
                     int offset = 0;
-                    for(int i=0; i<BUFFER_SIZE; i++){
+                    for(int i=start; i<end; i++){
                         bufferFrameSize[i] = _vertices[i].size();
                         // 顶点数据存储到缓冲区
                         glBufferSubData(GL_ARRAY_BUFFER, offset, bufferFrameSize[i] * sizeof(vvc::client::common::Points), &_vertices[i][0]);
                         offset += bufferFrameSize[i] * sizeof(vvc::client::common::Points);
                     }
-                    
+                    begin_time = glfwGetTime();
                 }
 
                 /**
                  * @description: 渲染内容
                  * @return {*}
                  */
-                void Rendering(){
-                    int offset = 0;   
-                    for(int i=0; i<BUFFER_SIZE; i++){
-                        int frame_size = bufferFrameSize[i];
-                        /*渲染设置*/
-                        glClearColor(0, 0, 0, 1.0f);
-                        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
-                        glfwSwapInterval(1);//设置前后缓冲区交换间隔为1，使得每帧更新一次
+                void Rendering(int offset, int frame_size){
+                    /*渲染设置*/
+                    glClearColor(0, 0, 0, 1.0f);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+                    glfwSwapInterval(1);//设置前后缓冲区交换间隔为1，使得每帧更新一次
 
-                        // 时间差计算
-                        float currentFrame = glfwGetTime();
-                        deltaTime = currentFrame - lastTime;
-                        lastTime = currentFrame;
-                        // 键盘输入
-                        float cameraSpeed = 200.0f * deltaTime;//摄像机移动速度
-                        // WASD
-                        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-                            cameraPos += cameraSpeed * cameraFront;
-                        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-                            cameraPos -= cameraSpeed * cameraFront;
-                        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-                            cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-                        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-                            cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-                        if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-                            sleep(100);
-                        // Ese退出
-                        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-                            glfwSetWindowShouldClose(window, true);
+                    // 时间差计算
+                    currentFrame = glfwGetTime();
+                    deltaTime = currentFrame - lastTime;
+                    lastTime = currentFrame;
+                    // 键盘输入
+                    float cameraSpeed = 200.0f * deltaTime;//摄像机移动速度
+                    // WASD
+                    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+                        cameraPos += cameraSpeed * cameraFront;
+                    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+                        cameraPos -= cameraSpeed * cameraFront;
+                    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+                        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+                    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+                        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+                    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+                        sleep(100);
+                    // Ese退出
+                    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+                        glfwSetWindowShouldClose(window, true);
 
-                        /*渲染命令*/
-                        ///矩阵设置
-                        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);//观察矩阵
-                        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));//把矩阵数据发送给着色器。1、查询uniform变量的地址值；2、要发送多少个矩阵；3、是否置换矩阵（交换我们矩阵的行和列）；4、GLM的矩阵数据转为OpenGL所能接受的数据
-                        glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 40000.0f);//投影矩阵,创建可视空间的大平截头体（任何在平截头体以外的东西不会出现在裁剪空间体积内，并且将会受到裁剪）。1、视野，设定观察空间大小；2、宽高比；2、平截头的近平面；4、平截头的远平面
-                        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-                        glDepthMask(GL_TRUE);
-                        glEnable(GL_DEPTH_TEST);
-                        ///绘制顶点
-                        glUseProgram(shaderProgram);//激活着色器程序对象，之后每个着色器调用和渲染调用都会使用这个程序对象
-                        glBindVertexArray(VAO);//绑定VAO
-                        glPointSize(1.0);//设置点的大小
-                        glUniform3f(glGetUniformLocation(shaderProgram, "myColor"), 0.1, 3.0, 0.8);
-                        glDrawArrays(GL_POINTS, offset, frame_size);//顺序绘制/有序渲染。1、指定点的拓扑结构，GL_POINTS 意味着顶点缓冲区中的每一个顶点都被绘制成一个点；2、第一个顶点的索引值；3、用于绘制的顶点数量
-                        glfwSwapBuffers(window);//检测有没有触发事件
-                        glfwPollEvents();//交换颜色缓冲，避免图像闪烁
-
-                        // // 利用 CUDA 更新缓冲区内的数值
-                        // launch_cudaProcess(numBlocks, blockSize, cudaData, numElements, frame_number);
-                        // // 同步CUDA
-                        // cudaDeviceSynchronize();
-                        // // 将结果从CUDA复制回OpenGL缓冲区
-                        // cudaGraphicsUnmapResources(1, &cudaGraphicsResourcePtr, 0);
-                        
-                        offset += frame_size;
-                        std::cout << i <<"frame 渲染完成" << std::endl;
-                    }
+                    /*渲染命令*/
+                    ///矩阵设置
+                    glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);//观察矩阵
+                    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));//把矩阵数据发送给着色器。1、查询uniform变量的地址值；2、要发送多少个矩阵；3、是否置换矩阵（交换我们矩阵的行和列）；4、GLM的矩阵数据转为OpenGL所能接受的数据
+                    glm::mat4 projection = glm::perspective(glm::radians(fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 40000.0f);//投影矩阵,创建可视空间的大平截头体（任何在平截头体以外的东西不会出现在裁剪空间体积内，并且将会受到裁剪）。1、视野，设定观察空间大小；2、宽高比；2、平截头的近平面；4、平截头的远平面
+                    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+                    glDepthMask(GL_TRUE);
+                    glEnable(GL_DEPTH_TEST);
+                    ///绘制顶点
+                    glUseProgram(shaderProgram);//激活着色器程序对象，之后每个着色器调用和渲染调用都会使用这个程序对象
+                    glBindVertexArray(VAO);//绑定VAO
+                    glPointSize(1.0);//设置点的大小
+                    glUniform3f(glGetUniformLocation(shaderProgram, "myColor"), 0.1, 3.0, 0.8);
+                    glDrawArrays(GL_POINTS, offset, frame_size);//顺序绘制/有序渲染。1、指定点的拓扑结构，GL_POINTS 意味着顶点缓冲区中的每一个顶点都被绘制成一个点；2、第一个顶点的索引值；3、用于绘制的顶点数量
+                    glfwSwapBuffers(window);//检测有没有触发事件
+                    glfwPollEvents();//交换颜色缓冲，避免图像闪烁
                 }
 
+                /**
+                 * @description: 利用CUDA解码更新缓冲区
+                 * @return {*}
+                 */
+                void CUDADecode(int offset, size_t numBytes, int frame_number){
+                    int numElements = numBytes;
+                    int blockSize = 256;
+                    int numBlocks = (numElements + blockSize - 1) / blockSize;
+                    // 利用 CUDA 更新缓冲区内的数值
+                    launch_cudaProcess(numBlocks, blockSize, cudaData+offset, numBytes, frame_number);
+                    // 同步CUDA
+                    cudaDeviceSynchronize();
+                    // 将结果从CUDA复制回OpenGL缓冲区
+                    cudaGraphicsUnmapResources(1, &cudaGraphicsResourcePtr, 0);
+                }
                 ~Render(){
                     // 解绑 VBO
 	                glBindBuffer(GL_ARRAY_BUFFER, 0);

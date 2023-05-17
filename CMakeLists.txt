@@ -15,7 +15,7 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS)
 endif()
 
 enable_language(CUDA)
-find_package(PCL 1.10 REQUIRED)
+find_package(PCL 1.10 REQUIRED COMPONENTS common search registration)
 if( NOT PCL_FOUND )
     message(FATAL_ERROR "Cannot find PCL in this machine!")
 endif()

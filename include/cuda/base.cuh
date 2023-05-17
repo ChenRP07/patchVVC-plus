@@ -223,25 +223,44 @@ namespace client {
 		};
 
 		struct Frame_t {
-			int           timestamp;
-			uint32_t      slice_cnt;
-			int*          index;
-			uint8_t*      type;
-			MotionVector* mv;
-			uint32_t*     size;
-			uint8_t*      qp;
-			uint32_t*     geometry_size;
-			uint8_t**     geometry;
-			uint32_t*     color_size;
-			uint8_t**     color;
+			int       timestamp;
+			uint32_t  slice_cnt;
+			int*      index;
+			uint8_t*  type;
+			float**   mv;
+			uint32_t* size;
+			uint8_t*  qp;
+			uint32_t* geometry_size;
+			uint8_t** geometry;
+			uint32_t* color_size;
+			uint8_t** color;
 
 			Frame_t() : timestamp{}, slice_cnt{}, index{}, type{}, mv{}, size{}, qp{}, geometry_size{}, geometry{}, color_size{}, color{} {}
+			void Reset() {
+				this->timestamp = -1;
+				free(this->index);
+				free(this->type);
+				for (int i = 0; i < this->slice_cnt; ++i) {
+					free(this->mv[i]);
+					free(this->geometry[i]);
+					free(this->color[i]);
+				}
+				free(this->mv);
+				free(this->size);
+				free(this->qp);
+				free(this->geometry_size);
+				free(this->geometry);
+				free(this->color_size);
+				free(this->color);
+				this->slice_cnt = 0;
+			}
 		};
 	}  // namespace common
 
 	namespace io {
-		extern int LoadSlice(common::Slice_t& _slice, const std::string& _name);
-	}
+		extern int               LoadSlice(common::Slice_t& _slice, const std::string& _name);
+		[[nodiscard]] extern int LoadFrame(common::Frame_t& _frame, const std::string& _name);
+	}  // namespace io
 }  // namespace client
 }  // namespace vvc
 #endif

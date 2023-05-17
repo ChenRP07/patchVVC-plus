@@ -1,7 +1,7 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-05 16:04:08
- * @LastEditTime: 2023-05-16 20:35:25
+ * @LastEditTime: 2023-05-16 22:13:46
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -23,7 +23,7 @@
 #include "helper_gl.h"
 #include<GL/freeglut.h>
 // 基础数据结构
-#include "cuda/base.cuh"
+#include "cuda/octree.cuh"
 
 #include <string>
 #include <cstdio>
@@ -35,7 +35,7 @@ namespace vvc {
 namespace client{
 namespace render {
 
-        extern "C" void launch_cudaProcess(int grid, int block, struct vvc::client::common::Points* cudaData, size_t numBytes, int frame_number);
+        extern "C" void launch_cudaProcess(int grid, int block, common::Points* cudaData, int timestamp, int index, uint8_t type, float* mv, uint32_t size, uint8_t qp, uint8_t* geometry, uint32_t geometry_size, uint8_t* color, uint32_t color_size, octree::InvertRAHTOctree* invertRAHTOctree_gpu);
 
         #define BUFFER_SIZE 2              // 设置 VBO 是 BUFFER_SIZE 帧的缓冲区
         #define ES_FRAM_SIZE 900000         // 设置 每帧的最大大小为 9e5 个点
@@ -316,7 +316,7 @@ namespace render {
                  */
                 void Rendering(int offset, int frame_size){
                     /*渲染设置*/
-                    glClearColor(0, 0, 0, 1.0f);
+                    glClearColor(1.0, 1.0, 1.0, 1.0f);
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
                     glfwSwapInterval(1);//设置前后缓冲区交换间隔为1，使得每帧更新一次
 
@@ -363,13 +363,12 @@ namespace render {
                  * @description: 利用CUDA解码更新缓冲区
                  * @return {*}
                  */
-                void CUDADecode(int offset, size_t numBytes, int frame_number){
-                    int numElements = numBytes;
+                void CUDADecode(int offset, int timestamp, int index, uint8_t type, float* mv, uint32_t size, uint8_t qp, uint8_t* geometry, uint32_t geometry_size, uint8_t* color, uint32_t color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu){
+                    int numElements = size;
                     int blockSize = 256;
                     int numBlocks = (numElements + blockSize - 1) / blockSize;
                     // 利用 CUDA 更新缓冲区内的数值
-                    launch_cudaProcess(numBlocks, blockSize, cudaData+offset, numBytes, frame_number);
-                    // 同步CUDA
+                    launch_cudaProcess(numBlocks, blockSize, cudaData+offset, timestamp, index, type, mv, size, qp, geometry, geometry_size, color, color_size, invertRAHTOctree_gpu);
                     cudaDeviceSynchronize();
                     // 将结果从CUDA复制回OpenGL缓冲区
                     cudaGraphicsUnmapResources(1, &cudaGraphicsResourcePtr, 0);

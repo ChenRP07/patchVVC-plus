@@ -23,5 +23,8 @@ target_link_libraries(mult_decode_exe pvvc pvvc_cu)
 
 # find_package(glfw3 REQUIRED)
 # add_library(decoderlib STATIC CUDA2OpenGL.cu)
-add_executable(render.exe test_render.cc)
-target_link_libraries(render.exe pvvc_cu)
+# add_executable(render.exe test_render.cc)
+# target_link_libraries(render.exe pvvc_cu)
+
+add_executable(player_exe test_decoder_render.cc)
+target_link_libraries(player_exe pvvc_cu)

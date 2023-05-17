@@ -19,6 +19,7 @@
 
 #include <cstdio>
 #include <regex>
+#include <filesystem>
 
 namespace vvc {
 namespace io {
@@ -37,6 +38,14 @@ namespace io {
 	 * @return : {}
 	 * */
 	extern void LoadSlice(common::Slice& _slice, const std::string& _name);
+
+    /*
+     * @description : Load slices from _input_dir and save a stream file in _ouput_name
+     * @param  : {const std::string& _input_dir}
+     * @param  : {const std::string& _output_name}
+     * @return : {}
+     * */
+	extern void ChangeSliceToFrame(const std::filesystem::path& _input_dir, const std::string& _output_name);
 }  // namespace io
 }  // namespace vvc
 #endif

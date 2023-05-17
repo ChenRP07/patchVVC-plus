@@ -352,12 +352,56 @@ namespace common {
 	};
 
 	struct Frame {
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
-		int                                    timestamp;
-		std::string                            name;
-		uint8_t                                check_point_type;
+		int                                                timestamp;
+		size_t                                             slice_cnt;
+		std::vector<int>                                   index;
+		std::vector<uint8_t>                               type;
+		std::vector<size_t>                                size;
+		std::vector<size_t>                                geometry_size;
+		std::vector<size_t>                                color_size;
+		std::vector<uint8_t>                               qp;
+		std::vector<Eigen::Matrix4f>                       mv;
+		std::vector<std::shared_ptr<std::vector<uint8_t>>> geometry;
+		std::vector<std::shared_ptr<std::vector<uint8_t>>> color;
 
-		Frame() : cloud{nullptr}, timestamp{-1}, name{""}, check_point_type{0x00} {}
+		Frame() : timestamp{-1}, slice_cnt{}, index{}, type{}, size{}, geometry_size{}, color_size{}, qp{}, mv{}, geometry{}, color{} {}
+		~Frame() = default;
+
+		Frame(const std::vector<common::Slice>& _slices) {
+			if (_slices.empty()) {
+				throw __EXCEPT__(EMPTY_RESULT);
+			}
+			this->timestamp = _slices.front().timestamp;
+			for (auto& i : _slices) {
+				if (i.timestamp != this->timestamp) {
+					std::cout << __YELLOWT__([Warning]) << " slice timestamps are inconsistent, set frame timestamp to first slice.\n";
+					break;
+				}
+			}
+
+			this->slice_cnt = _slices.size();
+			for (auto& i : _slices) {
+				this->index.emplace_back(i.index);
+				this->type.emplace_back(i.type);
+				this->size.emplace_back(i.size);
+				if (!i.geometry) {
+					this->geometry_size.emplace_back(0);
+				}
+				else {
+					this->geometry_size.emplace_back(i.geometry->size());
+				}
+				if (!i.color) {
+					this->color_size.emplace_back(0);
+				}
+				else {
+					this->color_size.emplace_back(i.color->size());
+				}
+				this->qp.emplace_back(i.qp);
+				this->mv.emplace_back(i.mv);
+				this->geometry.emplace_back(i.geometry);
+				this->color.emplace_back(i.color);
+			}
+		}
 	};
 
 }  // namespace common

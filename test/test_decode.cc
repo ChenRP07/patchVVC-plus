@@ -50,6 +50,7 @@ void Decode() {
 	for (auto p : *resp.cloud) {
 		outp << p << '\n';
 	}
+	vvc::io::SaveColorPlyFile("./data/result_1_100.ply", resi.cloud);
 }
 
 int main() {

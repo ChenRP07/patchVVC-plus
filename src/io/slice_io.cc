@@ -204,5 +204,101 @@ namespace io {
 			throw __EXCEPT__(ERROR_OCCURED);
 		}
 	}
+
+	void ChangeSliceToFrame(const std::filesystem::path& _input_dir, const std::string& _output_name) {
+		try {
+			/* Check directiory */
+			if (!std::filesystem::is_directory(_input_dir)) {
+				throw __EXCEPT__(INVALID_DIR);
+			}
+
+			/* Check output file format */
+			std::regex format{"^.*_[0-9]+_[0-9]+\\.slice$"};
+			std::regex output_format{"^.*\\.frame"};
+			if (!std::regex_match(_output_name, output_format)) {
+				throw __EXCEPT__(WRONG_FILE_FORMAT);
+			}
+
+			/* Search directory to find matching file name */
+			std::filesystem::directory_iterator files{_input_dir};
+			std::vector<std::string>            slice_names;
+			for (const auto& i : files) {
+				std::string file_name{i.path().c_str()};
+				if (std::regex_match(file_name, format)) {
+					slice_names.emplace_back(file_name);
+				}
+			}
+
+			/* No matching file */
+			if (slice_names.empty()) {
+				throw __EXCEPT__(FILE_NOT_EXIST);
+			}
+			/* Load slice from matching file */
+			std::vector<common::Slice> slices(slice_names.size());
+			for (int i = 0; i < slice_names.size(); ++i) {
+				LoadSlice(slices[i], slice_names[i]);
+			}
+
+			/* Frame time stamp */
+			common::Frame frame(slices);
+
+			FILE* fp = fopen(_output_name.c_str(), "wb");
+
+			if (fp == nullptr) {
+				switch (errno) {
+					case ENOENT: throw __EXCEPT__(FILE_NOT_EXIST); break;
+					case EACCES: throw __EXCEPT__(PERMISSION_DENIED); break;
+					default: throw __EXCEPT__(UNEXPECTED_FILE_ERROR); break;
+				}
+			}
+
+			if (fwrite(&frame.timestamp, sizeof(int), 1, fp) != 1) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+
+			if (fwrite(&frame.slice_cnt, sizeof(size_t), 1, fp) != 1) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+
+			if (fwrite(frame.index.data(), sizeof(int), frame.slice_cnt, fp) != frame.slice_cnt) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+
+			if (fwrite(frame.size.data(), sizeof(size_t), frame.slice_cnt, fp) != frame.slice_cnt) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+
+			if (fwrite(frame.qp.data(), sizeof(uint8_t), frame.slice_cnt, fp) != frame.slice_cnt) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+
+			if (fwrite(frame.mv.data(), sizeof(Eigen::Matrix4f), frame.slice_cnt, fp) != frame.slice_cnt) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+
+			for (auto& i : frame.geometry) {
+				if (!i) {
+					continue;
+				}
+				if (fwrite(i->data(), sizeof(uint8_t), i->size(), fp) != i->size()) {
+					throw __EXCEPT__(FILE_WRITE_ERROR);
+				}
+			}
+
+			for (auto& i : frame.color) {
+				if (!i) {
+					continue;
+				}
+				if (fwrite(i->data(), sizeof(uint8_t), i->size(), fp) != i->size()) {
+					throw __EXCEPT__(FILE_WRITE_ERROR);
+				}
+			}
+			fclose(fp);
+		}
+		catch (const common::Exception& e) {
+			e.Log();
+			throw __EXCEPT__(ERROR_OCCURED);
+		}
+	}
 }  // namespace io
 }  // namespace vvc

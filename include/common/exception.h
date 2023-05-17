@@ -114,6 +114,7 @@ namespace common {
 		EMPTY_GOP,             /* error occured when try to encode a GoP whose size is zero */
 		BAD_SLICE,             /* error occured when the type of one slice is invalid */
 		EMPTY_REFERENCE,       /* error occured when try to decode a predictive slice without intra slice */
+		INVALID_DIR,         /* error occured when try to access a invalid directory or directory path actually is a file */
 	};
 
 	static std::string ErrorMessage[100] = {
@@ -140,6 +141,7 @@ namespace common {
 	    "cannot encode a GoP with size zero",
 	    "invalid slice type",
 	    "no reference for predictive slice",
+        "invalid directory, path maybe not exist or actually a file",
 	};
 
 }  // namespace common

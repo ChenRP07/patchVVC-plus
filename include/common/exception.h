@@ -65,7 +65,7 @@
 namespace vvc {
 namespace common {
 	/* Mutex to output message to terminal, should be called in multi cout or printf, thread safe in single printf and cout */
-	static std::mutex    PVVCLog_Mutex = std::mutex();
+	static std::mutex    PVVCLog_Mutex;
 	static boost::format color_cmd("\033[%dm%s\033[0m");
 	class Exception {
 	  private:

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10.0)
 project(vvc
     VERSION 1.0.0
-    LANGUAGES CXX CUDA)
+    LANGUAGES CUDA CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 14)
@@ -28,9 +28,13 @@ find_package(ZSTD)
 
 find_package(libconfig++)
 
+find_package(glfw3 REQUIRED)
+
 include_directories(${PCL_INCLUDE_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${ZSTD_INCLUDE_DIRS})
+include_directories(/usr/local/cuda/samples/common/inc)
+include_directories(/usr/local/cuda/include/)
 
 link_directories(${PCL_LIBRARY_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})

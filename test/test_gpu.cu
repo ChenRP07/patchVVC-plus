@@ -1,14 +1,13 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-10 11:28:12
- * @LastEditTime: 2023-05-15 10:51:19
+ * @LastEditTime: 2023-05-15 21:06:50
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
 #include<iostream>
 #include<cstdio>
 #include <cuda_runtime.h>
-#include "io/slice_io.h"
 #include "cuda/octree.cuh"
 #include "cuda/entropy_codec.cuh"
 #include <string>
@@ -23,56 +22,58 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
    }
 }
 
-__global__ void func(uint8_t* data, int e_size, int d_size){
-   vvc::client::common::RLGRDecoder dec;
-   dec.Decode(data, e_size, d_size);
-   vvc::client::common::FIX_DATA_INT* res = dec.GetResult();
-   for(int i=0; i<d_size; i++){
-      printf("%ld,", res[i]);
+__global__ void cudaSigDecodeFunction(int timestamp, int index, uint8_t type, float* mv, uint32_t size, uint8_t qp, uint8_t* geometry, uint32_t geometry_size, uint8_t* color, uint32_t color_size){
+   vvc::client::common::Slice_t slice(timestamp, index, type, mv, size, qp, geometry, geometry_size, color, color_size);
+
+   printf("GPU: slice.timestamp = %d\n", slice.timestamp);
+   printf("GPU: slice.index = %d\n", slice.index);
+   printf("GPU: slice.type = %02x\n", slice.type);
+   printf("GPU: slice.size = %d\n", slice.size);
+   printf("GPU: slice.qp = %d\n", slice.qp);
+   printf("GPU: slice.geometry_size = %d\n", slice.geometry_size);
+   printf("GPU: slice.color_size = %d\n", slice.color_size);
+
+   printf("slice.color = %p\n", slice.color);
+   for(int i=0; i<slice.color_size; i++){
+      printf("%02x ", slice.color[i]);
    }
-   printf("\ne_size = %d, d_size = %d\n", e_size, d_size);
+   printf("\n");
+
+   for(int i=0; i<4; i++){
+      for(int j=0; j<4; j++){
+         printf("%.2f ",slice.mv.data[i*4+j]);
+      }
+      printf("\n");
+   }
+
+   vvc::client::octree::InvertRAHTOctree invertRAHTOctree_gpu;
+   printf("SetSlice\n");
+   invertRAHTOctree_gpu.SetSlice(slice);
+
+   printf("GetPatch\n");
+   invertRAHTOctree_gpu.GetPatch();
 }
+
 
 int main()
 {
-   vvc::common::Slice slice;
-   vvc::io::LoadSlice(slice, "/home/lixin/vvc/test/data/result_1_100.slice");
+   vvc::client::common::Slice_t slice;
+   vvc::client::io::LoadSlice(slice, "/home/lixin/vvc/test/data/result_1_100.slice");
 
-   std::cout<< slice.timestamp <<std::endl;
-   std::cout<< slice.index <<std::endl;
-   printf("%02x\n", slice.type);
-   std::cout<< slice.mv <<std::endl;
-   std::cout<< slice.size <<std::endl;
-   printf("%d\n", slice.qp );
-   std::cout<< slice.geometry->size() <<std::endl;
-   std::cout<< slice.color->size() <<std::endl;
+   float* mv_gpu;
+   cudaMalloc((void**)&(mv_gpu), sizeof(float) * 16);
+   cudaMemcpy(mv_gpu, slice.mv.data, sizeof(float) * 16, cudaMemcpyHostToDevice);
 
-   // for(int i=0; i<4; i++){
-   //    for(int j=0; j<4; j++){
-   //       std::cout<<slice.mv(i)(j)<<" ";
-   //    }
-   //    std::cout<<std::endl;
-   // }
+   uint8_t* geometry_gpu;
+   cudaMalloc((void**)&(geometry_gpu), sizeof(uint8_t) * slice.geometry_size);
+   cudaMemcpy(geometry_gpu, slice.geometry, sizeof(uint8_t) * slice.geometry_size, cudaMemcpyHostToDevice);
 
-   std::string str ="123";
-   std::cout<<str<<std::endl;
+   uint8_t* color_gpu;
+   cudaMalloc((void**)&(color_gpu), sizeof(uint8_t) * slice.color_size);
+   cudaMemcpy(color_gpu, slice.color, sizeof(uint8_t) * slice.color_size, cudaMemcpyHostToDevice);
 
-   // int e_size = 16;
-   // uint8_t cpu_data[16] = {0x06, 0x91, 0x87, 0xfd, 0x10, 0xbf, 0xff, 0xff, 0xff, 0xc0, 0x00, 0x00, 0x32, 0x00, 0x25, 0x70};
-   // uint8_t *gpu_data;
-   // cudaMalloc((void **)&gpu_data, sizeof(uint8_t)*e_size);
-   // cudaMemcpy(gpu_data, cpu_data, sizeof(uint8_t)*e_size, cudaMemcpyHostToDevice);
-   // int d_size = 20;
-   // func<<<1,1>>>(gpu_data, e_size, d_size);
-   // cudaDeviceSynchronize();
-
-   // // int size = 10;
-   // // // scanf("%d", &size);
-   // // int* size_GPU;
-   // // cudaMalloc((void **)&size_GPU, sizeof(int) );
-   // // cudaMemcpy(size_GPU, &size, sizeof(int),cudaMemcpyHostToDevice);
-   // // func<<<1,1>>>(size_GPU);
-   // // cudaDeviceSynchronize();
+   cudaSigDecodeFunction<<<1,1>>>(slice.timestamp, slice.index, slice.type, mv_gpu, slice.size, slice.qp, geometry_gpu, slice.geometry_size, color_gpu, slice.color_size);
+   cudaDeviceSynchronize();
 
     return 0;
 }

@@ -15,19 +15,76 @@
 #ifndef _PVVC_CUDA_MANAGER_H_
 #define _PVVC_CUDA_MANAGER_H_
 
+#include "cuda/render.cuh"
 #include <mutex>
 #include <queue>
 #include <thread>
 
 namespace vvc {
 namespace client {
-	constexpr int FRMAME_POINT_CNT{1'000'000};
+
+	struct VBOMemZone {
+		int start;
+		int size;
+		int type; /* -1 if is little garbage memory, 1 if is frame memory, 0 if is unused */
+		VBOMemZone() : start{}, size{}, type{} {}
+		~VBOMemZone() = default;
+	};
+
+	extern float**        temp_mv;
+	extern uint8_t**      temp_geo;
+	extern uint8_t**      temp_color;
+	extern render::Render Renderer;
+
+	extern void FrameCpu2Gpu(vvc::client::common::Frame_t& _frame);
+
+	/*
+	 * How to use?
+	 * auto& p = Manager::Init();
+	 * p->Start(patch_size, frame_name_prev);
+	 * */
 	class Manager {
 	  private:
-		const static int MAX_VBO_SIZE;
+		/* Parameters */
+		const static int   MAX_VBO_SIZE;
+		static int         RENDERED_FRAME_CNT;
+		static int         DECODED_FRAME_CNT;
+		static int         LOADED_FRAME_CNT;
+		static std::string frame_name_prev;
+		static int         PATCH_SIZE;
+		/* VBO decoded frames zone */
+	  private:
+		std::queue<VBOMemZone> frames_;
+		std::mutex             frames_queue_mutex_;
+
+		void       AddVBOMem(VBOMemZone _mem);
+		VBOMemZone AllocVBOMem(int _size);
+		/* Render zone */
+	  private:
+		std::thread render_;
+		VBOMemZone  GetVBOMem();
+		void        ReleaseRender(VBOMemZone _mem);
+		/* render task function */
+		void StartRender();
 
 	  private:
-		Manager() {}
+		int        unused_start_;
+		int        unused_size_;
+		std::mutex unused_memory_mutex;
+
+	  private:
+		std::thread decoder_;
+
+		void StartDecoder();
+
+	  private:
+		std::queue<std::shared_ptr<common::Frame_t>> stream_;
+		std::mutex                                   stream_queue_mutex;
+		std::thread                                  frame_loader_;
+		void                                         StartFrameLoader();
+
+	  private:
+		Manager() : unused_size_{FRAME_POINT_CNT * MAX_VBO_FRAME_CNT}, frames_{}, unused_start_{}, stream_{} {}
 		~Manager() {}
 
 	  public:
@@ -42,8 +99,10 @@ namespace client {
 		}
 
 		/* Start task */
-		void Start();
+		void Start(int _patch_size, const std::string& _name_prev);
 	};
+
+	const int Manager::MAX_VBO_SIZE{FRAME_POINT_CNT * MAX_VBO_FRAME_CNT};
 }  // namespace client
 }  // namespace vvc
 #endif

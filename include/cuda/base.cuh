@@ -66,7 +66,7 @@ namespace client {
 
 			/* Constructor */
 			__device__ PointXYZ() : x{}, y{}, z{} {}
-			__device__ PointXYZ(float _x, float _y, float _z) : x{_x}, y{_y}, z{_z} {} 
+			__device__ PointXYZ(float _x, float _y, float _z) : x{_x}, y{_y}, z{_z} {}
 		};
 
 		/* Three channels color implementation, Y/Cb/Cr or Y/U/V */
@@ -229,6 +229,22 @@ namespace client {
 			uint8_t** color;
 
 			Frame_t() : timestamp{}, slice_cnt{}, index{}, type{}, mv{}, size{}, qp{}, geometry_size{}, geometry{}, color_size{}, color{} {}
+			~Frame_t() {
+				free(this->index);
+				free(this->type);
+				for (int i = 0; i < this->slice_cnt; ++i) {
+					free(this->mv[i]);
+					free(this->geometry[i]);
+					free(this->color[i]);
+				}
+				free(this->size);
+				free(this->qp);
+				free(this->geometry_size);
+				free(this->color_size);
+				free(this->mv);
+				free(this->geometry);
+				free(this->color);
+			}
 			void Reset() {
 				this->timestamp = -1;
 				free(this->index);
@@ -254,6 +270,32 @@ namespace client {
 		extern int               LoadSlice(common::Slice_t& _slice, const std::string& _name);
 		[[nodiscard]] extern int LoadFrame(common::Frame_t& _frame, const std::string& _name);
 	}  // namespace io
+
+	constexpr int FRAME_POINT_CNT{1'000'000};
+	constexpr int POINT_BYTE{sizeof(common::Points)};
+	constexpr int TOTAL_FRAME_CNT{300};
+	constexpr int MAX_LOAD_FRAME_CNT{30};
+	constexpr int MAX_VBO_FRAME_CNT{30};
+	constexpr int RAW_POINT_SIZE{15};
+	constexpr int MAX_SLICE_POINT{10'000};
+	constexpr int MAX_SLICE_SIZE{RAW_POINT_SIZE * MAX_SLICE_POINT};
+
+	struct CudaFrame_t {
+		int*      inner_offset_gpu;
+		int*      index_gpu;
+		uint8_t*  type_gpu;
+		uint32_t* size_gpu;
+		uint8_t*  qp_gpu;
+		uint32_t* geometry_size_gpu;
+		uint32_t* color_size_gpu;
+
+		float**   mv_gpu;
+		uint8_t** geometry_gpu;
+		uint8_t** color_gpu;
+        CudaFrame_t() : index_gpu{}, inner_offset_gpu{}, type_gpu{}, size_gpu{}, qp_gpu{}, geometry_size_gpu{}, color_size_gpu{}, mv_gpu{}, geometry_gpu{}, color_gpu{} {}
+	};
+    extern CudaFrame_t CUDAFrame;
+
 }  // namespace client
 }  // namespace vvc
 #endif

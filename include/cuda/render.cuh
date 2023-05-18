@@ -42,12 +42,12 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 
 namespace vvc {
 namespace client{
+
+    extern octree::InvertRAHTOctree* Decoders;
+
 namespace render {
 
         extern "C" void launch_cudaProcess(int grid, int block, common::Points* cudaData, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size);
-
-        #define BUFFER_SIZE 2              // 设置 VBO 是 BUFFER_SIZE 帧的缓冲区
-        #define ES_FRAM_SIZE 900000         // 设置 每帧的最大大小为 9e5 个点
 
         #pragma region 窗口参数
             // CUDA与OpenGL协同操作共享内存
@@ -64,8 +64,8 @@ namespace render {
             float lastTime = 0.0f;                                  //上一帧的时间
             //鼠标/方向参数
             bool firstMouse = true;                                 //判断用户是否第一次进行鼠标输入
-            float lastX = SCR_WIDTH / 2;                            //鼠标位置初始X值
-            float lastY = SCR_HEIGHT / 2;                           //鼠标位置初始Y值
+            float lastX = SCR_WIDTH / 2.0f;                            //鼠标位置初始X值
+            float lastY = SCR_HEIGHT / 2.0f;                           //鼠标位置初始Y值
             float fov = 45.0f;                                      //视野(Field of View)，定义可以看到场景中的多大范围
             float yaw = -90.0f;                                     // 偏航角初始化为-90.0度，若为0.0会导致方向向量指向右侧，所以最初会向左旋转一点
             float pitch = 0.0f;
@@ -220,9 +220,7 @@ namespace render {
                 float begin_time;
                 float currentFrame;
             public:
-                Render(){
-                    bufferFrameSize = std::vector<int>(BUFFER_SIZE);
-                }
+                Render() : bufferFrameSize(MAX_VBO_FRAME_CNT) {}
 
                 /**
                  * @description: 窗口初始化
@@ -285,13 +283,13 @@ namespace render {
                     glDeleteShader(vertexShader);
                     glDeleteShader(fragmentShader);
 
-                    glBufferData(GL_ARRAY_BUFFER, BUFFER_SIZE * ES_FRAM_SIZE * sizeof(vvc::client::common::Points), nullptr, GL_DYNAMIC_DRAW);// 1、缓存区将用于存储顶点数组；2、数据的总字节数；3、顶点数组的地址；4、告诉编译器所绘制的数据几乎不变
+                    glBufferData(GL_ARRAY_BUFFER, MAX_VBO_FRAME_CNT * FRAME_POINT_CNT * sizeof(common::Points), nullptr, GL_DYNAMIC_DRAW);// 1、缓存区将用于存储顶点数组；2、数据的总字节数；3、顶点数组的地址；4、告诉编译器所绘制的数据几乎不变
                     //设置顶点属性指针，存放点的(x y z)，解析顶点数据用
-                    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vvc::client::common::Points), (void*)0);//1、顶点属性的位置值；2、顶点属性的大小；3、数据类型；4、是否要标准化；5、步长，指顶点属性每组之间的间隔；6、位置数据在缓冲中起始位置的偏移量
+                    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(common::Points), (void*)0);//1、顶点属性的位置值；2、顶点属性的大小；3、数据类型；4、是否要标准化；5、步长，指顶点属性每组之间的间隔；6、位置数据在缓冲中起始位置的偏移量
                     glEnableVertexAttribArray(0);//启用顶点属性
 
                     //设置顶点属性指针，存放点的(r g b)，解析顶点数据用
-                    glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(vvc::client::common::Points), (void*)(3 * sizeof(float)));//1、顶点属性的位置值；2、顶点属性的大小；3、数据类型；4、是否要标准化；5、步长，指顶点属性每组之间的间隔；6、位置数据在缓冲中起始位置的偏移量
+                    glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, sizeof(common::Points), (void*)(3 * sizeof(float)));//1、顶点属性的位置值；2、顶点属性的大小；3、数据类型；4、是否要标准化；5、步长，指顶点属性每组之间的间隔；6、位置数据在缓冲中起始位置的偏移量
                     glEnableVertexAttribArray(1);//启用顶点属性
 
                     // 注册OpenGL缓冲区对象到CUDA
@@ -368,7 +366,7 @@ namespace render {
                  * @description: 利用CUDA解码更新缓冲区
                  * @return {*}
                  */
-                void CUDADecode(int offset, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size){
+                void CUDADecode(int offset, int timestamp, int patch_size){
                     int numElements = patch_size;
                     int blockSize = 256;
                     int numBlocks = (numElements + blockSize - 1) / blockSize;
@@ -377,7 +375,19 @@ namespace render {
                     gpuErrchk(cudaGraphicsMapResources(1, &cudaGraphicsResourcePtr, 0));
                     gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&(cudaData), &numBytes, cudaGraphicsResourcePtr));
                     // 启动kernel
-                    launch_cudaProcess(numBlocks, blockSize, cudaData+offset, timestamp, inner_offset, index, type, mv, size, qp, geometry, geometry_size, color, color_size, invertRAHTOctree_gpu, patch_size);
+                    launch_cudaProcess(numBlocks, blockSize, cudaData + offset, timestamp, 
+                                       CUDAFrame.inner_offset_gpu,
+                                       CUDAFrame.index_gpu,
+                                       CUDAFrame.type_gpu,
+                                       CUDAFrame.mv_gpu,
+                                       CUDAFrame.size_gpu,
+                                       CUDAFrame.qp_gpu,
+                                       CUDAFrame.geometry_gpu,
+                                       CUDAFrame.geometry_size_gpu,
+                                       CUDAFrame.color_gpu,
+                                       CUDAFrame.color_size_gpu, 
+                                       Decoders, 
+                                       patch_size);
                     gpuErrchk(cudaDeviceSynchronize());
                     // 将结果从CUDA复制回OpenGL缓冲区
                     gpuErrchk(cudaGraphicsUnmapResources(1, &cudaGraphicsResourcePtr, 0));

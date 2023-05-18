@@ -273,6 +273,8 @@ namespace client {
 			fclose(fp);
 			return 0;
 		}
+
+		
 	}  // namespace io
 }  // namespace client
 }  // namespace vvc

@@ -13,7 +13,7 @@ target_link_libraries(mult_decode_exe pvvc)
 # target_link_libraries(io_exe pvvc)
 
 add_executable(param_exe test_param.cc)
-target_link_libraries(param_exe pvvc)
+target_link_libraries(param_exe pvvc pvvc_cu)
 # add_executable(encode_exe test_encode.cc)
 
 set(CMAKE_CUDA_FLAGS "--relocatable-device-code=true -gencode arch=compute_86,code=sm_86")

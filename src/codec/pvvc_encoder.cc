@@ -97,6 +97,7 @@ namespace codec {
 					/* Parallel icp, segment predictive frames */
 					registration::ParallelICP p_icp;
 					p_icp.SetParams(this->params_);
+					p_icp.SetSourceClouds(this->patches_[i / this->params_->max_keyframe]);
 					// p_icp.SetSourceClouds(this->patches_[i / this->params_->max_keyframe]);
 					// p_icp.SetTargetCloud(this->frames_[i].cloud);
 					this->patches_[i] = p_icp.GetResultClouds();

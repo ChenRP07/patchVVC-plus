@@ -256,7 +256,7 @@ namespace io {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
 
-			if (fwrite(&frame.slice_cnt, sizeof(size_t), 1, fp) != 1) {
+			if (fwrite(&frame.slice_cnt, sizeof(uint32_t), 1, fp) != 1) {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
 
@@ -264,7 +264,11 @@ namespace io {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
 
-			if (fwrite(frame.size.data(), sizeof(size_t), frame.slice_cnt, fp) != frame.slice_cnt) {
+			if (fwrite(frame.type.data(), sizeof(uint8_t), frame.slice_cnt, fp) != frame.slice_cnt) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+
+			if (fwrite(frame.size.data(), sizeof(uint32_t), frame.slice_cnt, fp) != frame.slice_cnt) {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
 
@@ -276,6 +280,9 @@ namespace io {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
 
+			if (fwrite(frame.geometry_size.data(), sizeof(uint32_t), frame.slice_cnt, fp) != frame.slice_cnt) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
 			for (auto& i : frame.geometry) {
 				if (!i) {
 					continue;
@@ -283,6 +290,10 @@ namespace io {
 				if (fwrite(i->data(), sizeof(uint8_t), i->size(), fp) != i->size()) {
 					throw __EXCEPT__(FILE_WRITE_ERROR);
 				}
+			}
+
+			if (fwrite(frame.color_size.data(), sizeof(uint32_t), frame.slice_cnt, fp) != frame.slice_cnt) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
 
 			for (auto& i : frame.color) {

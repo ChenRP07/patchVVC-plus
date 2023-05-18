@@ -58,7 +58,8 @@ namespace octree {
 		}
 		_center.x = data[0], _center.y = data[1], _center.z = data[2];
 		_range.x = data[3], _range.y = data[4], _range.z = data[5];
-		_height = _p[24];
+        uint8_t temp = _p[24];
+		_height = static_cast<int>(temp);
 	}
 
     __device__ common::PointXYZ SubSpaceCenter(common::PointXYZ _center, common::PointXYZ _range, int _pos) {
@@ -109,9 +110,12 @@ namespace octree {
             this->coefficients_[i].u = static_cast<float>(rlgr_res[i + this->slice_.size] * this->slice_.qp);
             this->coefficients_[i].v = static_cast<float>(rlgr_res[i + 2 * this->slice_.size] * this->slice_.qp);
         }
-
+        free(rlgr_res);
         /* If intra slice, clear tree and related container */
         if (!common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_PREDICT)) {
+            for (int height = 0; height < this->tree_height_; ++height) {
+                free(this->tree_[height].nodes);
+            }
             free(this->tree_);
             free(this->source_cloud_);
             this->source_cloud_index_ = 0;
@@ -145,7 +149,6 @@ namespace octree {
 	}
 
     __device__ void InvertRAHTOctree::MakeTree() {
-
         /* Load center, range and height from geometry */
         uint8_t tree_attr[25]{};
 
@@ -155,7 +158,7 @@ namespace octree {
         }
 
         LoadTreeCore(this->tree_center_, this->tree_range_, this->tree_height_, tree_attr);
-
+        
         this->tree_ = (OctreeLayer_t *)malloc(sizeof(OctreeLayer_t) * this->tree_height_);
         int curr_layer_node_count = 1;
 
@@ -230,46 +233,6 @@ namespace octree {
         }
         /* Update weight and add point into cloud */
         // this->AddPoints(0, 0, this->tree_center_, this->tree_range_);
-	}
-
-    __device__ void InvertRAHTOctree::AddPoints(const int _height, const int _index, const common::PointXYZ _center, const common::PointXYZ _range) {
-        auto& node = this->tree_[_height].nodes[_index];
-        /* Leaf layer */
-        if (_height == this->tree_height_ - 1) {
-            node.value     = 0xff;
-            node.weight[1] = 1;
-            this->source_cloud_[this->source_cloud_index_] = _center;
-            this->source_cloud_index_ ++;
-            node.index[0] = this->source_cloud_index_;
-        }
-        else {
-            /* Subrange : half of _range */
-            common::PointXYZ subrange(_range.x / 2.0f, _range.y / 2.0f, _range.z / 2.0f);
-
-            /* For each subnode */
-            for (int i = 0; i < 8; ++i) {
-                /* If subnode is not empty */
-                if (node.index[i] != -1) {
-                    /* Compute subnode center */
-                    common::PointXYZ subcenter = SubSpaceCenter(_center, subrange, i);
-                    /* Iteratively traversal */
-                    this->AddPoints(_height + 1, node.index[i], subcenter, subrange);
-                }
-            }
-
-            /* Update weight
-            * Note the weights of children of node are already computed
-            * */
-            for (int i = 0; i < 8; ++i) {
-                if (node.index[i] != -1) {
-                    node.weight[i + 8] = this->tree_[_height + 1].nodes[node.index[i]].weight[1];
-                }
-            }
-
-            for (int i = 7; i > 0; --i) {
-                node.weight[i] = node.weight[NodeWeight[i][0]] + node.weight[NodeWeight[i][1]];
-            }
-        }
 	}
 
     __device__ void InvertRAHTOctree::InvertRAHT() {

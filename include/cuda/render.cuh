@@ -1,7 +1,7 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-05 16:04:08
- * @LastEditTime: 2023-05-17 15:07:10
+ * @LastEditTime: 2023-05-18 11:40:25
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -30,11 +30,21 @@
 #include <vector>
 #include <unistd.h>
 
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess)
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
 namespace vvc {
 namespace client{
 namespace render {
 
-        extern "C" void launch_cudaProcess(int grid, int block, common::Points* cudaData, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size);
+        extern "C" void launch_cudaProcess(int grid, int block, common::Points* cudaData, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size, int unuse);
 
         #define BUFFER_SIZE 2              // 设置 VBO 是 BUFFER_SIZE 帧的缓冲区
         #define ES_FRAM_SIZE 900000         // 设置 每帧的最大大小为 9e5 个点
@@ -285,11 +295,7 @@ namespace render {
                     glEnableVertexAttribArray(1);//启用顶点属性
 
                     // 注册OpenGL缓冲区对象到CUDA
-                    cudaGraphicsGLRegisterBuffer(&cudaGraphicsResourcePtr, VBO, cudaGraphicsMapFlagsNone);
-                    
-                    // 将OpenGL缓冲区对象映射到CUDA
-                    cudaGraphicsMapResources(1, &cudaGraphicsResourcePtr, 0);
-                    cudaGraphicsResourceGetMappedPointer((void**)&(cudaData), &numBytes, cudaGraphicsResourcePtr);
+                    gpuErrchk(cudaGraphicsGLRegisterBuffer(&cudaGraphicsResourcePtr, VBO, cudaGraphicsMapFlagsNone));
                 }
 
 
@@ -362,15 +368,19 @@ namespace render {
                  * @description: 利用CUDA解码更新缓冲区
                  * @return {*}
                  */
-                void CUDADecode(int offset, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size){
+                void CUDADecode(int offset, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size, int unuse){
                     int numElements = patch_size;
                     int blockSize = 256;
                     int numBlocks = (numElements + blockSize - 1) / blockSize;
                     // 利用 CUDA 更新缓冲区内的数值
-                    launch_cudaProcess(numBlocks, blockSize, cudaData+offset, timestamp, inner_offset, index, type, mv, size, qp, geometry, geometry_size, color, color_size, invertRAHTOctree_gpu, patch_size);
-                    cudaDeviceSynchronize();
+                    // 将OpenGL缓冲区对象映射到CUDA
+                    gpuErrchk(cudaGraphicsMapResources(1, &cudaGraphicsResourcePtr, 0));
+                    gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&(cudaData), &numBytes, cudaGraphicsResourcePtr));
+                    // 启动kernel
+                    launch_cudaProcess(numBlocks, blockSize, cudaData+offset, timestamp, inner_offset, index, type, mv, size, qp, geometry, geometry_size, color, color_size, invertRAHTOctree_gpu, patch_size, unuse);
+                    gpuErrchk(cudaDeviceSynchronize());
                     // 将结果从CUDA复制回OpenGL缓冲区
-                    cudaGraphicsUnmapResources(1, &cudaGraphicsResourcePtr, 0);
+                    gpuErrchk(cudaGraphicsUnmapResources(1, &cudaGraphicsResourcePtr, 0));
                 }
                 ~Render(){
                     // 解绑 VBO

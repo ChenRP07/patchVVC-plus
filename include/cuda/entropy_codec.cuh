@@ -128,18 +128,19 @@ namespace common {
 		 * @description : Reset decoder
 		 * */
 		__device__ inline void Reset(int _size) {
-			this->result_ = new FIX_DATA_INT[_size];
+			this->result_ = (FIX_DATA_INT *) malloc (sizeof(FIX_DATA_INT) * _size);
 			this->cnt_    = 0;
 			this->buffer_ = 0;
+			this->result_index_ = 0;
 		}
 
 	  public:
 		/*
 		 * @description : Default constructor and deconstructor
 		 * */
-		RLGRDecoder() = default;
+		__device__ RLGRDecoder() : buffer_{}, cnt_{}, result_{}, now_{}, end_{}, result_index_{} {}
 
-		~RLGRDecoder() = default;
+		__device__ ~RLGRDecoder() {}
 
 		/*
 		 * @description : Decode data, should generate _size decoding result

@@ -1,7 +1,7 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-16 11:47:17
- * @LastEditTime: 2023-05-18 15:13:23
+ * @LastEditTime: 2023-05-18 16:10:57
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -60,18 +60,11 @@ __global__ void processCUDA(Points* cudaData, int timestamp, int* inner_offset, 
 			cudaData[offset + i].g = ((invertRAHTOctree_gpu[index[idx]].source_colors_[i].y - 0.3441f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].u - 128.0f) - 0.7141f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].v - 128.0f))) / 255;
 			cudaData[offset + i].b = ((invertRAHTOctree_gpu[index[idx]].source_colors_[i].y + 1.7720f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].u - 128.0f))) / 255;
 		}
-		// printf("mb[7] = %.2f\n", mv[idx][7]);
 		// if(idx == 1){
-		// 	// 	printf("offset = %d\n",offset);
 		// 	// 	invertRAHTOctree_gpu[index[1]].GetPatch();
 		// 	for(int i=0; i<size[idx]; i++){
 		// 		cudaData[offset + i].x += 100;
 		// 	}
-		// 	printf("\tindex[idx] = %d x = %.3f\n", index[idx], cudaData[offset].x);
-		// 	// }
-		// }
-		// else{
-		// 	printf("index[idx] = %d x = %.3f\n", index[idx], cudaData[offset].x);
 		// }
 	}
 }

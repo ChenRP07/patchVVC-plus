@@ -154,11 +154,11 @@ namespace octree {
 		 * @param  : {const pcl::PointXYZ _range}
 		 * @return : {}
 		 * */
-		__device__ void AddPoints(const int _height, const int _index, const common::PointXYZ _center, const common::PointXYZ _range);
+		// [[discarded]] __device__ void AddPoints(const int _height, const int _index, const common::PointXYZ _center, const common::PointXYZ _range);
 
 	    public:
             /* Default constructor and deconstructor */
-            __device__ InvertRAHTOctree(){};
+            __device__ InvertRAHTOctree() : tree_center_{}, tree_range_{}, tree_height_{}, tree_{}, source_cloud_{}, source_cloud_index_{}, node_values_{}, coefficients_{}, reference_colors_{}, source_colors_{}, slice_{} {}
             
             // __device__ ~InvertRAHTOctree();
 

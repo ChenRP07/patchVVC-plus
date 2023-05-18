@@ -39,6 +39,7 @@ namespace client {
 		{
 			float x, y, z;  // 三维坐标值
 			float r, g, b;  // 颜色信息
+			Points() : x{}, y{}, z{}, r{}, g{}, b{} {}
 		};
 
 		/* 1-bit in uint8_t 0-7 */
@@ -64,16 +65,8 @@ namespace client {
 			float x, y, z;
 
 			/* Constructor */
-			__device__ PointXYZ() {
-				this->x = 0.0f;
-				this->y = 0.0f;
-				this->z = 0.0f;
-			}
-			__device__ PointXYZ(float _x, float _y, float _z) {
-				this->x = _x;
-				this->y = _y;
-				this->z = _z;
-			}
+			__device__ PointXYZ() : x{}, y{}, z{} {}
+			__device__ PointXYZ(float _x, float _y, float _z) : x{_x}, y{_y}, z{_z} {} 
 		};
 
 		/* Three channels color implementation, Y/Cb/Cr or Y/U/V */

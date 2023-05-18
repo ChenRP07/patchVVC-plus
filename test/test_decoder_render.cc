@@ -1,7 +1,7 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-16 21:12:20
- * @LastEditTime: 2023-05-17 16:16:32
+ * @LastEditTime: 2023-05-18 11:38:00
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -14,10 +14,6 @@
 #define VBOSIZE BUFFER_SIZE                 // GPU的缓冲区大小 (VBO缓冲区大小)
 #define BUFFSIZE (BUFFER_SIZE*2)            // CPU的缓冲区大小 (将CPU的数据依次拷贝到VBO中进行渲染)
 
-// 将 slice 拷贝到对应指针中
-void sliceCpu2Gpu(){
-    
-}
 
 int main()
 {
@@ -32,7 +28,9 @@ int main()
     vvc::client::common::Slice_t slice[patch_size];
     vvc::client::io::LoadSlice(slice[0], "/home/lixin/vvc/test/data/result_1_100.slice");
     vvc::client::io::LoadSlice(slice[1], "/home/lixin/vvc/test/data/result_1_100.slice");
-
+    // vvc::client::io::LoadSlice(slice[2], "/home/lixin/vvc/test/data/result_1_100.slice");
+    slice[0].index = 0;
+    slice[1].index = 0;
     // 全局内存 因为 P 帧参考 I 帧
     vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu;
     cudaMalloc((void**)&(invertRAHTOctree_gpu), sizeof(vvc::client::octree::InvertRAHTOctree) * patch_size);
@@ -128,7 +126,9 @@ int main()
     cudaMemcpy(geometry_gpu, mid_geometry, sizeof(uint8_t *) * patch_size, cudaMemcpyHostToDevice);
     cudaMemcpy(color_gpu, mid_color, sizeof(uint8_t *) * patch_size, cudaMemcpyHostToDevice);
 
-    
+    for (int i = 0; i < patch_size; ++i) {
+        printf("cpu %d\n", index_cpu[i]);
+    }
     // 声明对象
     vvc::client::render::Render renderer;
     renderer.InitWindow();
@@ -138,9 +138,17 @@ int main()
     std::cout<<"InitOpenGL"<<std::endl;
 
     int i=0;
+    int j=0;
     while (!glfwWindowShouldClose(renderer.window)){
-        renderer.CUDADecode(0, slice[i].timestamp, inner_offset_gpu, index_gpu, type_gpu, mv_gpu, size_gpu, qp_gpu, geometry_gpu, geometry_size_gpu, color_gpu, color_size_gpu, invertRAHTOctree_gpu, patch_size);
-        renderer.Rendering(0, slice[0].size + slice[1].size);
+        j++;
+        j = j % 10;
+        renderer.CUDADecode(0, slice[i].timestamp, inner_offset_gpu, index_gpu, type_gpu, mv_gpu, size_gpu, qp_gpu, geometry_gpu, geometry_size_gpu, color_gpu, color_size_gpu, invertRAHTOctree_gpu, 1, j);
+        renderer.Rendering(0, slice[0].size);
+        // cudaError_t err = cudaGetLastError();
+        // if (err != cudaSuccess) {
+        //     printf("153::CUDA Error: %s\n", cudaGetErrorString(err));
+        //     exit(1);
+        // } 
     }
 
     return 0;

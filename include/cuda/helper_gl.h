@@ -1,7 +1,7 @@
 /* 
  * Author: lixin
  * Date: 2023-05-16 10:28:33
- * LastEditTime: 2023-05-16 10:28:37
+ * LastEditTime: 2023-05-18 10:49:57
  * Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -26,7 +26,7 @@
 #else
  
 /* On Linux, include the system's copy of glut.h, glext.h, and glx.h */
-#include <GL/glut.h>
+// #include <GL/glut.h>
 #include <GL/glext.h>
 #include <GL/glx.h>
  

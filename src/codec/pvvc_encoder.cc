@@ -85,7 +85,7 @@ namespace codec {
 					segment::DenseSegment seg;
 					seg.SetParams(this->params_);
 					seg.SetTimeStamp(this->params_->start_timestamp + this->params_->time_interval * i);
-					seg.SetSourcePointCloud(this->frames_[i].cloud);
+					// seg.SetSourcePointCloud(this->frames_[i].cloud);
 					this->patches_[i] = seg.GetResultPatches();
 				}
 				else {
@@ -98,7 +98,7 @@ namespace codec {
 					registration::ParallelICP p_icp;
 					p_icp.SetParams(this->params_);
 					p_icp.SetSourceClouds(this->patches_[i / this->params_->max_keyframe]);
-					p_icp.SetTargetCloud(this->frames_[i].cloud);
+					// p_icp.SetTargetCloud(this->frames_[i].cloud);
 					this->patches_[i] = p_icp.GetResultClouds();
 				}
 			}

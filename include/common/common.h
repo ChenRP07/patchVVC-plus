@@ -353,12 +353,12 @@ namespace common {
 
 	struct Frame {
 		int                                                timestamp;
-		size_t                                             slice_cnt;
+		uint32_t                                             slice_cnt;
 		std::vector<int>                                   index;
 		std::vector<uint8_t>                               type;
-		std::vector<size_t>                                size;
-		std::vector<size_t>                                geometry_size;
-		std::vector<size_t>                                color_size;
+		std::vector<uint32_t>                                size;
+		std::vector<uint32_t>                                geometry_size;
+		std::vector<uint32_t>                                color_size;
 		std::vector<uint8_t>                               qp;
 		std::vector<Eigen::Matrix4f>                       mv;
 		std::vector<std::shared_ptr<std::vector<uint8_t>>> geometry;

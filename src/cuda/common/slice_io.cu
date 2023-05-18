@@ -241,7 +241,7 @@ namespace client {
 				}
 			}
 
-			if (fread(_frame.color_size, sizeof(uint8_t), _frame.slice_cnt, fp) != _frame.slice_cnt) {
+			if (fread(_frame.color_size, sizeof(uint32_t), _frame.slice_cnt, fp) != _frame.slice_cnt) {
 				printf("Load %s failed, read error.\n", _name.c_str());
 				fclose(fp);
 				return 5;
@@ -271,6 +271,7 @@ namespace client {
 				printf("Warning, %s seem to have extra data.\n", _name.c_str());
 			}
 			fclose(fp);
+			return 0;
 		}
 	}  // namespace io
 }  // namespace client

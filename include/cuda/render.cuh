@@ -21,7 +21,6 @@
 #include <rendercheck_gl.h>
 // OpenGL Graphics includes
 #include "helper_gl.h"
-#include<GL/freeglut.h>
 // 基础数据结构
 #include "cuda/octree.cuh"
 

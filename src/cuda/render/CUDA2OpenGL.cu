@@ -1,13 +1,14 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-16 11:47:17
- * @LastEditTime: 2023-05-18 11:05:13
+ * @LastEditTime: 2023-05-18 15:13:23
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
 #include "device_launch_parameters.h"
 #include <helper_cuda.h>
 #include "cuda/octree.cuh"
+
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
 {
@@ -17,6 +18,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
    }
 }
+
 struct Points
 {
 	float x, y, z;
@@ -42,7 +44,7 @@ struct Points
  * @param {InvertRAHTOctree*} invertRAHTOctree_gpu
  * @return {*}
  */
-__global__ void processCUDA(Points* cudaData, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size, int unuse)
+__global__ void processCUDA(Points* cudaData, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	if (idx < patch_size){
@@ -51,24 +53,29 @@ __global__ void processCUDA(Points* cudaData, int timestamp, int* inner_offset, 
 		// 找到帧内偏移
 		int offset = inner_offset[idx];
 		for(int i=0; i<size[idx]; i++){
-			cudaData[offset + i].x = invertRAHTOctree_gpu[index[idx]].source_cloud_[i].x + unuse*100;
-			cudaData[offset + i].y = invertRAHTOctree_gpu[index[idx]].source_cloud_[i].y;
-			cudaData[offset + i].z = invertRAHTOctree_gpu[index[idx]].source_cloud_[i].z;
+			cudaData[offset + i].x = invertRAHTOctree_gpu[index[idx]].source_cloud_[i].x * mv[idx][0] + invertRAHTOctree_gpu[index[idx]].source_cloud_[i].y * mv[idx][1] + invertRAHTOctree_gpu[index[idx]].source_cloud_[i].z * mv[idx][2] + mv[idx][3];
+			cudaData[offset + i].y = invertRAHTOctree_gpu[index[idx]].source_cloud_[i].x * mv[idx][4] + invertRAHTOctree_gpu[index[idx]].source_cloud_[i].y * mv[idx][5] + invertRAHTOctree_gpu[index[idx]].source_cloud_[i].z * mv[idx][6] + mv[idx][7];
+			cudaData[offset + i].z = invertRAHTOctree_gpu[index[idx]].source_cloud_[i].x * mv[idx][8] + invertRAHTOctree_gpu[index[idx]].source_cloud_[i].y * mv[idx][9] + invertRAHTOctree_gpu[index[idx]].source_cloud_[i].z * mv[idx][10] + mv[idx][11];
 			cudaData[offset + i].r = ((invertRAHTOctree_gpu[index[idx]].source_colors_[i].y + 1.4020f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].v - 128.0f))) / 255;
 			cudaData[offset + i].g = ((invertRAHTOctree_gpu[index[idx]].source_colors_[i].y - 0.3441f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].u - 128.0f) - 0.7141f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].v - 128.0f))) / 255;
 			cudaData[offset + i].b = ((invertRAHTOctree_gpu[index[idx]].source_colors_[i].y + 1.7720f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].u - 128.0f))) / 255;
 		}
-
+		// printf("mb[7] = %.2f\n", mv[idx][7]);
 		// if(idx == 1){
-		// 	printf("offset = %d\n",offset);
-		// 	// invertRAHTOctree_gpu[index[1]].GetPatch();
+		// 	// 	printf("offset = %d\n",offset);
+		// 	// 	invertRAHTOctree_gpu[index[1]].GetPatch();
 		// 	for(int i=0; i<size[idx]; i++){
 		// 		cudaData[offset + i].x += 100;
 		// 	}
+		// 	printf("\tindex[idx] = %d x = %.3f\n", index[idx], cudaData[offset].x);
+		// 	// }
+		// }
+		// else{
+		// 	printf("index[idx] = %d x = %.3f\n", index[idx], cudaData[offset].x);
 		// }
 	}
 }
 
-extern "C" void launch_cudaProcess(int grid, int block, Points * cudaData, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size, int unuse){
-	processCUDA <<<1, 1 >>> (cudaData, timestamp, inner_offset, index, type, mv, size, qp, geometry, geometry_size, color, color_size, invertRAHTOctree_gpu, patch_size, unuse);
+extern "C" void launch_cudaProcess(int grid, int block, Points * cudaData, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size){
+	processCUDA <<<grid, block >>> (cudaData, timestamp, inner_offset, index, type, mv, size, qp, geometry, geometry_size, color, color_size, invertRAHTOctree_gpu, patch_size);
 }

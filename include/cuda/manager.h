@@ -20,6 +20,30 @@
 #include <thread>
 
 namespace vvc {
-namespace client {}
+namespace client {
+	constexpr int FRMAME_POINT_CNT{1'000'000};
+	class Manager {
+	  private:
+		const static int MAX_VBO_SIZE;
+
+	  private:
+		Manager() {}
+		~Manager() {}
+
+	  public:
+		/*
+		 * @description : Get single instance of Manager.
+		 * @param  : {}
+		 * @return : {Manager&}
+		 * */
+		static Manager& Init() {
+			static Manager instance{};
+			return instance;
+		}
+
+		/* Start task */
+		void Start();
+	};
+}  // namespace client
 }  // namespace vvc
 #endif

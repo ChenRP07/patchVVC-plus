@@ -164,7 +164,7 @@ namespace client {
 			shareWindow = glfwCreateWindow(1, 1, "shareWindow", NULL, window);
 
 			// glfw窗口上下文设置为当前线程的上下文
-			glfwMakeContextCurrent(window);
+			MakeContextWindow();
 			// 向glfw注册回调函数
 			glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);  // 调整视口
 			glfwSetScrollCallback(window, scroll_callback);                     // 向GLFW注册了回调函数，当鼠标滚动时调用

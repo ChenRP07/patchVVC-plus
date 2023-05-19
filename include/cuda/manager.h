@@ -61,11 +61,11 @@ namespace client {
 		VBOMemZone AllocVBOMem(int _size);
 		/* Render zone */
 	  private:
-		std::thread render_;
+		// [[deprecated]] std::thread render_;
 		VBOMemZone  GetVBOMem();
 		void        ReleaseRender(VBOMemZone _mem);
 		/* render task function */
-		void StartRender();
+		// [[deprecated]] void StartRender();
 
 	  private:
 		int        unused_start_;

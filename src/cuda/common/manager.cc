@@ -116,23 +116,40 @@ namespace client {
 	void Manager::Start(int _patch_size, const std::string& _name_prev) {
 		Manager::PATCH_SIZE      = _patch_size;
 		Manager::frame_name_prev = _name_prev;
+
 		printf("Client start, frame from %s, max patch number %d.\n", Manager::frame_name_prev.c_str(), Manager::PATCH_SIZE);
+
+		printf("Launch thread to load frame ......\n");
+		this->frame_loader_ = std::thread(&Manager::StartFrameLoader, this);
+
 		printf("Initializing Window ...... \n");
 		Renderer.InitWindow();
 		printf("Initializing Window success.\n");
+
 		printf("Initializing OpenGL ...... \n");
 		Renderer.InitOpenGL();
 		printf("Initializing OpenGL success.\n");
-		printf("Launch thread to load frame ......\n");
-		this->frame_loader_ = std::thread(&Manager::StartFrameLoader, this);
+
 		printf("Launch thread to decode frame ......\n");
 		this->decoder_ = std::thread(&Manager::StartDecoder, this);
-		printf("Launch thread to render frame ......\n");
-		this->render_ = std::thread(&Manager::StartRender, this);
+
+		printf("Main thread to render frame ......\n");
 		printf("Client working ......\n");
+
+		Manager::RENDERED_FRAME_CNT = 0;
+		while (Manager::RENDERED_FRAME_CNT < TOTAL_FRAME_CNT) {
+			VBOMemZone mem = this->GetVBOMem();
+			if (mem.type != 1) {
+				printf("Unknown error, get a VBO memory type %d [%d , %d]\n", mem.type, mem.start, mem.start + mem.size);
+				exit(1);
+			}
+			printf("OpenGL will render frame #%d in VBO [%d , %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
+			Renderer.Rendering(mem.start, mem.size);
+			printf("OpenGL successfully render frame #%d in VBO [%d, %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
+			Manager::RENDERED_FRAME_CNT++;
+		}
 		this->frame_loader_.join();
 		this->decoder_.join();
-		this->render_.join();
 		printf("Client exit successfully.\n");
 	}
 
@@ -173,6 +190,9 @@ namespace client {
 	void Manager::StartDecoder() {
 		printf("Lauch thread to decode frame successfully.\n");
 		Manager::DECODED_FRAME_CNT = 0;
+
+		printf("Make OpenGL sharing context.\n");
+		Renderer.MakeContextShareWindow();
 
 		octree::InvertRAHTOctree* temp_Decoders = new octree::InvertRAHTOctree[Manager::PATCH_SIZE];
 		printf("Malloc GPU memory ......\n");
@@ -281,22 +301,6 @@ namespace client {
 				exit(1);
 			}
 		}
-	}
-	void Manager::StartRender() {
-		printf("Launch thread to render frames successfully.\n");
-		Manager::RENDERED_FRAME_CNT = 0;
-		while (Manager::RENDERED_FRAME_CNT < TOTAL_FRAME_CNT) {
-			VBOMemZone mem = this->GetVBOMem();
-			if (mem.type != 1) {
-				printf("Unknown error, get a VBO memory type %d [%d , %d]\n", mem.type, mem.start, mem.start + mem.size);
-				exit(1);
-			}
-			printf("OpenGL will render frame #%d in VBO [%d , %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
-			Renderer.Rendering(mem.start, mem.size);
-			printf("OpenGL successfully render frame #%d in VBO [%d, %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
-			Manager::RENDERED_FRAME_CNT++;
-		}
-		printf("Thread to render frames exit successfully.\n");
 	}
 }  // namespace client
 }  // namespace vvc

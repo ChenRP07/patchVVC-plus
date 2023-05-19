@@ -194,9 +194,9 @@ namespace client {
 		gpuErrchk(cudaMalloc((void***)&(CUDAFrame.geometry_gpu), sizeof(uint8_t*) * Manager::PATCH_SIZE));
 		gpuErrchk(cudaMalloc((void***)&(CUDAFrame.color_gpu), sizeof(uint8_t*) * Manager::PATCH_SIZE));
 
-		float**   temp_mv    = (float**)malloc(sizeof(float*) * Manager::PATCH_SIZE);
-		uint8_t** temp_geo   = (uint8_t**)malloc(sizeof(uint8_t*) * Manager::PATCH_SIZE);
-		uint8_t** temp_color = (uint8_t**)malloc(sizeof(uint8_t*) * Manager::PATCH_SIZE);
+		temp_mv    = (float**)malloc(sizeof(float*) * Manager::PATCH_SIZE);
+		temp_geo   = (uint8_t**)malloc(sizeof(uint8_t*) * Manager::PATCH_SIZE);
+		temp_color = (uint8_t**)malloc(sizeof(uint8_t*) * Manager::PATCH_SIZE);
 
 		for (int i = 0; i < Manager::PATCH_SIZE; ++i) {
 			gpuErrchk(cudaMalloc((void**)&(temp_mv[i]), sizeof(float) * 16));
@@ -206,7 +206,7 @@ namespace client {
 
 		printf("Malloc GPU memory successfully.\n");
 		while (Manager::DECODED_FRAME_CNT < TOTAL_FRAME_CNT) {
-			std::shared_ptr<common::Frame_t> frame_ptr = nullptr;
+			std::shared_ptr<common::Frame_t> frame_ptr{};
 			this->stream_queue_mutex.lock();
 			if (!this->stream_.empty()) {
 				frame_ptr = this->stream_.front();

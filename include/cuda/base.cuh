@@ -245,8 +245,12 @@ namespace client {
 				free(this->type);
 				for (int i = 0; i < this->slice_cnt; ++i) {
 					free(this->mv[i]);
-					free(this->geometry[i]);
-					free(this->color[i]);
+					if (this->geometry_size[i] != 0) {
+						free(this->geometry[i]);
+					}
+					if (this->color_size[i] != 0) {
+						free(this->color[i]);
+					}
 				}
 				free(this->size);
 				free(this->qp);
@@ -284,7 +288,7 @@ namespace client {
 
 	constexpr int FRAME_POINT_CNT{1'000'000};
 	constexpr int POINT_BYTE{sizeof(common::Points)};
-	constexpr int TOTAL_FRAME_CNT{300};
+	constexpr int TOTAL_FRAME_CNT{2};
 	constexpr int MAX_LOAD_FRAME_CNT{30};
 	constexpr int MAX_VBO_FRAME_CNT{30};
 	constexpr int RAW_POINT_SIZE{15};

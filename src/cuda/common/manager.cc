@@ -157,8 +157,11 @@ namespace client {
 		printf("Lauch thread to decode frame successfully.\n");
 		Manager::DECODED_FRAME_CNT = 0;
 
+		octree::InvertRAHTOctree* temp_Decoders = new octree::InvertRAHTOctree[Manager::PATCH_SIZE];
 		printf("Malloc GPU memory ......\n");
 		gpuErrchk(cudaMalloc((void**)&(Decoders), sizeof(octree::InvertRAHTOctree) * Manager::PATCH_SIZE));
+		gpuErrchk(cudaMemcpy(Decoders, temp_Decoders, sizeof(octree::InvertRAHTOctree) * Manager::PATCH_SIZE, cudaMemcpyHostToDevice));
+		delete temp_Decoders;
 
 		/* GPU 申请一维数组空间 */
 		gpuErrchk(cudaMalloc((void**)&(CUDAFrame.inner_offset_gpu), sizeof(int) * Manager::PATCH_SIZE));

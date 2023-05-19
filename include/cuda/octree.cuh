@@ -158,7 +158,7 @@ namespace octree {
 
 	    public:
             /* Default constructor and deconstructor */
-            __device__ InvertRAHTOctree() : tree_center_{}, tree_range_{}, tree_height_{}, tree_{}, source_cloud_{}, source_cloud_index_{}, node_values_{}, coefficients_{}, reference_colors_{}, source_colors_{}, slice_{} {}
+            __host__ __device__ InvertRAHTOctree() : tree_center_{}, tree_range_{}, tree_height_{}, tree_{}, source_cloud_{}, source_cloud_index_{}, node_values_{}, coefficients_{}, reference_colors_{}, source_colors_{}, slice_{} {}
             
             // __device__ ~InvertRAHTOctree();
 

@@ -31,3 +31,6 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/test)
 
 add_executable(frame_render_exe test_frame_render.cc)
 target_link_libraries(frame_render_exe pvvc_cu)
+
+add_executable(data_exe test_data.cc)
+target_link_libraries(data_exe pvvc pvvc_cu)

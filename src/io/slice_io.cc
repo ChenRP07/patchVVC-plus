@@ -239,6 +239,15 @@ namespace io {
 				LoadSlice(slices[i], slice_names[i]);
 			}
 
+			auto slice_cmp = [](const common::Slice& _x, const common::Slice& _y) -> bool { return _x.index < _y.index; };
+			std::sort(slices.begin(), slices.end(), slice_cmp);
+
+			/* NOTE: Just for test here */
+			slices[0].index = 0;
+			for (int i = 1; i < slices.size(); ++i) {
+				slices[i].index = slices[0].index + i;
+				slices[i].mv(2, 3) += i * 20.0f;
+			}
 			/* Frame time stamp */
 			common::Frame frame(slices);
 

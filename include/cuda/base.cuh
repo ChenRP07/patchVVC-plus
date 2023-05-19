@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string>
 #include <zstd.h>
+#include <stdio.h>
 
 typedef unsigned char      uint8_t;
 typedef unsigned short int uint16_t;
@@ -30,6 +31,16 @@ typedef unsigned long      uint64_t;
 // typedef short int16_t;
 // typedef int int32_t;
 // typedef long int64_t;
+
+#define gpuErrchk(ans)                                                                                                                                                                                 \
+	{ gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort = true) {
+	if (code != cudaSuccess) {
+		fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+		if (abort)
+			exit(code);
+	}
+}
 
 namespace vvc {
 namespace client {
@@ -292,9 +303,9 @@ namespace client {
 		float**   mv_gpu;
 		uint8_t** geometry_gpu;
 		uint8_t** color_gpu;
-        CudaFrame_t() : index_gpu{}, inner_offset_gpu{}, type_gpu{}, size_gpu{}, qp_gpu{}, geometry_size_gpu{}, color_size_gpu{}, mv_gpu{}, geometry_gpu{}, color_gpu{} {}
+		CudaFrame_t() : index_gpu{}, inner_offset_gpu{}, type_gpu{}, size_gpu{}, qp_gpu{}, geometry_size_gpu{}, color_size_gpu{}, mv_gpu{}, geometry_gpu{}, color_gpu{} {}
 	};
-    extern CudaFrame_t CUDAFrame;
+	extern CudaFrame_t CUDAFrame;
 
 }  // namespace client
 }  // namespace vvc

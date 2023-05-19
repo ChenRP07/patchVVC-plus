@@ -46,7 +46,7 @@ namespace client {
 	class Manager {
 	  private:
 		/* Parameters */
-		const static int   MAX_VBO_SIZE;
+		const static int   MAX_VBO_SIZE{FRAME_POINT_CNT * MAX_VBO_FRAME_CNT};
 		static int         RENDERED_FRAME_CNT;
 		static int         DECODED_FRAME_CNT;
 		static int         LOADED_FRAME_CNT;
@@ -101,8 +101,6 @@ namespace client {
 		/* Start task */
 		void Start(int _patch_size, const std::string& _name_prev);
 	};
-
-	const int Manager::MAX_VBO_SIZE{FRAME_POINT_CNT * MAX_VBO_FRAME_CNT};
 }  // namespace client
 }  // namespace vvc
 #endif

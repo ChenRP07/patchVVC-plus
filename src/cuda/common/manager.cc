@@ -8,7 +8,7 @@
  * Author        : ChenRP07
  * Description   :
  * Create Time   : 2023/05/18 17:11
- * Last Modified : 2023/05/18 17:11
+ * Last Modified : 2023/05/19 11:00
  *
  */
 
@@ -16,12 +16,29 @@
 
 namespace vvc {
 namespace client {
-    CudaFrame_t CUDAFrame{};
-    octree::InvertRAHTOctree* Decoders{};
-	float**        temp_mv{};
-	uint8_t**      temp_geo{};
-	uint8_t**      temp_color{};
+	/* Global GPU memory for decoding */
+	CudaFrame_t CUDAFrame{};
+
+	/* Global GPU memory for decoders */
+	octree::InvertRAHTOctree* Decoders{};
+
+	/* Global memory for copying 2-dim array to GPU */
+	float**   temp_mv{};
+	uint8_t** temp_geo{};
+	uint8_t** temp_color{};
+
+	/* Global renderer */
 	render::Render Renderer{};
+
+	/* Static counter for manager */
+	int Manager::LOADED_FRAME_CNT{};
+	int Manager::DECODED_FRAME_CNT{};
+	int Manager::RENDERED_FRAME_CNT{};
+	int Manager::PATCH_SIZE{};
+
+	/* Frame name prev, like "/data/where/name_" */
+	std::string Manager::frame_name_prev{};
+
 	void FrameCpu2Gpu(vvc::client::common::Frame_t& _frame) {
 		gpuErrchk(cudaMemcpy(CUDAFrame.index_gpu, _frame.index, sizeof(int) * _frame.slice_cnt, cudaMemcpyHostToDevice));
 		gpuErrchk(cudaMemcpy(CUDAFrame.type_gpu, _frame.type, sizeof(uint8_t) * _frame.slice_cnt, cudaMemcpyHostToDevice));
@@ -161,7 +178,7 @@ namespace client {
 		printf("Malloc GPU memory ......\n");
 		gpuErrchk(cudaMalloc((void**)&(Decoders), sizeof(octree::InvertRAHTOctree) * Manager::PATCH_SIZE));
 		gpuErrchk(cudaMemcpy(Decoders, temp_Decoders, sizeof(octree::InvertRAHTOctree) * Manager::PATCH_SIZE, cudaMemcpyHostToDevice));
-		delete temp_Decoders;
+		delete[] temp_Decoders;
 
 		/* GPU 申请一维数组空间 */
 		gpuErrchk(cudaMalloc((void**)&(CUDAFrame.inner_offset_gpu), sizeof(int) * Manager::PATCH_SIZE));
@@ -218,7 +235,7 @@ namespace client {
 				Manager::DECODED_FRAME_CNT++;
 			}
 		}
-        printf("Thread to decode frame exit successfully.\n");
+		printf("Thread to decode frame exit successfully.\n");
 	}
 
 	void Manager::ReleaseRender(VBOMemZone _mem) {
@@ -266,7 +283,7 @@ namespace client {
 		}
 	}
 	void Manager::StartRender() {
-        printf("Launch thread to render frames successfully.\n");
+		printf("Launch thread to render frames successfully.\n");
 		Manager::RENDERED_FRAME_CNT = 0;
 		while (Manager::RENDERED_FRAME_CNT < TOTAL_FRAME_CNT) {
 			VBOMemZone mem = this->GetVBOMem();
@@ -279,7 +296,7 @@ namespace client {
 			printf("OpenGL successfully render frame #%d in VBO [%d, %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
 			Manager::RENDERED_FRAME_CNT++;
 		}
-        printf("Thread to render frames exit successfully.\n");
+		printf("Thread to render frames exit successfully.\n");
 	}
 }  // namespace client
 }  // namespace vvc

@@ -160,9 +160,6 @@ namespace client {
 				exit(0);
 			}
 
-			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-			shareWindow = glfwCreateWindow(1, 1, "shareWindow", NULL, window);
-
 			// glfw窗口上下文设置为当前线程的上下文
 			MakeContextWindow();
 			// 向glfw注册回调函数

@@ -164,6 +164,8 @@ namespace client {
 			}
 
 			inline void MakeContextShareWindow() {
+				glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+				shareWindow = glfwCreateWindow(1, 1, "shareWindow", NULL, window);
 				glfwMakeContextCurrent(shareWindow);
 			}
 		};

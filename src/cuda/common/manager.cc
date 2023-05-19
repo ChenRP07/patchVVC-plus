@@ -107,7 +107,7 @@ namespace client {
 			}
 			this->unused_memory_mutex.unlock();
 			if (mem.type == 1 && mem.size == _size) {
-				printf("Allocl VBO memory for decoding [%d , %d]\n", mem.start, mem.start + mem.size);
+				printf("Alloc VBO memory for decoding [%d , %d]\n", mem.start, mem.start + mem.size);
 				return mem;
 			}
 		}
@@ -136,6 +136,7 @@ namespace client {
 		printf("Main thread to render frame ......\n");
 		printf("Client working ......\n");
 
+		Renderer.Rendering(0, 0);
 		Manager::RENDERED_FRAME_CNT = 0;
 		while (Manager::RENDERED_FRAME_CNT < TOTAL_FRAME_CNT) {
 			VBOMemZone mem = this->GetVBOMem();
@@ -147,7 +148,12 @@ namespace client {
 			Renderer.Rendering(mem.start, mem.size);
 			printf("OpenGL successfully render frame #%d in VBO [%d, %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
 			Manager::RENDERED_FRAME_CNT++;
+			/* XXX: should only be used in testing */
+			sleep(1);
 		}
+		/* XXX: should only be used in testing */
+		sleep(2);
+		printf("Successfully rendered all frames.\n");
 		this->frame_loader_.join();
 		this->decoder_.join();
 		printf("Client exit successfully.\n");

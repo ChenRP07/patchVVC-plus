@@ -41,7 +41,7 @@ namespace client {
 	/*
 	 * How to use?
 	 * auto& p = Manager::Init();
-	 * p->Start(patch_size, frame_name_prev);
+	 * p.Start(patch_size, frame_name_prev);
 	 * */
 	class Manager {
 	  private:

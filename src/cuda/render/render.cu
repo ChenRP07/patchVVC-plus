@@ -153,12 +153,16 @@ namespace client {
 			glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);  // 设置OpenGL渲染上下文的次版本号
 			glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 			// 创建窗口对象
-			window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Learn OpenGL_3DPoint", NULL, NULL);
+			window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "patchVVC", NULL, NULL);
 			if (!window) {
 				std::cout << "创建窗口失败！\n" << std::endl;
 				glfwTerminate();  // 释放资源
 				exit(0);
 			}
+
+			glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+			shareWindow = glfwCreateWindow(1, 1, "shareWindow", NULL, window);
+
 			// glfw窗口上下文设置为当前线程的上下文
 			glfwMakeContextCurrent(window);
 			// 向glfw注册回调函数

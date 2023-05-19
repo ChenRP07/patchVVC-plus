@@ -29,8 +29,8 @@
 
 #include "cuda/octree.cuh"
 
-#include <string>
 #include <iostream>
+#include <string>
 #include <unistd.h>
 
 namespace vvc {
@@ -82,7 +82,7 @@ namespace client {
 
 		/* Memory pointer and size */
 		extern common::Points* cudaData;
-		extern size_t     numBytes;
+		extern size_t          numBytes;
 
 		/**
 		 * @description: 回调函数_监听鼠标滚轮事件
@@ -127,7 +127,8 @@ namespace client {
 
 		class Render {
 		  private:
-			GLFWwindow*  window;         // 窗口信息
+			GLFWwindow*  window;  // 窗口信息
+			GLFWwindow*  shareWindow;
 			unsigned int shaderProgram;  // 顶点着色器
 			unsigned int VAO;            // 顶点数组对象
 			unsigned int VBO;            // 顶点缓冲对象
@@ -157,6 +158,14 @@ namespace client {
 
 			/* @description: 利用CUDA解码更新缓冲区 */
 			void CUDADecode(int offset, int timestamp, int patch_size);
+
+			inline void MakeContextWindow() {
+				glfwMakeContextCurrent(window);
+			}
+
+			inline void MakeContextShareWindow() {
+				glfwMakeContextCurrent(shareWindow);
+			}
 		};
 	}  // namespace render
 }  // namespace client

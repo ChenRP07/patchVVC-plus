@@ -25,6 +25,24 @@
 
 namespace vvc {
 namespace codec {
+	enum RAWFRAMETYPE {
+		FORCE_KEY_FRAME,
+		PREDICTIVE_FRAME,
+	};
+
+	struct RawFrame {
+		/* Frame data */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud;
+		/* Timestamp */
+		int timestamp;
+		/* Frame type */
+		RAWFRAMETYPE type;
+	};
+
+	class PVVCCompensation {
+	  private:
+		std::vector<RawFrame> frames_; /* Raw frames data */
+	};
 	class PVVCEncoder {
 	  private:
 		std::vector<common::Frame>              frames_;       /* Clouds to be encoded */

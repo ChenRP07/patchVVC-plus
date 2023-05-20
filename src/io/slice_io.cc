@@ -246,7 +246,7 @@ namespace io {
 			slices[0].index = 0;
 			for (int i = 1; i < slices.size(); ++i) {
 				slices[i].index = slices[0].index + i;
-				slices[i].mv(2, 3) += i * 20.0f;
+				slices[i].mv(1, 3) += i * 20.0f;
 			}
 			/* Frame time stamp */
 			common::Frame frame(slices);

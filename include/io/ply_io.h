@@ -28,8 +28,7 @@ namespace io {
 	/*
 	 * @description: load cololed point cloud from a ply format file
 	 * @param  : {const string&} file_name
-	 * @param  : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr} point_cloud
-	 * @return : {}
+	 * @return : {pcl::PointCloud<pcl::PointXYZRGB>::Ptr} point_cloud
 	 */
 	extern pcl::PointCloud<pcl::PointXYZRGB>::Ptr LoadColorPlyFile(const std::string& file_name);
 

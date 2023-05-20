@@ -34,3 +34,6 @@ target_link_libraries(frame_render_exe pvvc_cu)
 
 add_executable(data_exe test_data.cc)
 target_link_libraries(data_exe pvvc pvvc_cu)
+
+add_executable(pvvc_exe test_pvvc.cc)
+target_link_libraries(pvvc_exe pvvc)

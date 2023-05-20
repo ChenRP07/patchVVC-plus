@@ -19,6 +19,8 @@
 #include "common/parameter.h"
 #include "common/statistic.h"
 
+#include "io/ply_io.h"
+
 #include "segment/segment.h"
 
 #include "patch/patch.h"
@@ -26,23 +28,48 @@
 namespace vvc {
 namespace codec {
 	enum RAWFRAMETYPE {
+		EMPTY_FRAME,
 		FORCE_KEY_FRAME,
 		PREDICTIVE_FRAME,
 	};
 
 	struct RawFrame {
 		/* Frame data */
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud;
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
 		/* Timestamp */
 		int timestamp;
 		/* Frame type */
 		RAWFRAMETYPE type;
+
+		RawFrame() : cloud{}, timestamp{-1}, type{RAWFRAMETYPE::EMPTY_FRAME} {}
 	};
 
+	struct PVVCCompensationStat_t {};
+
 	class PVVCCompensation {
+		/* Common module */
+	  private:
+		common::PVVCParam_t::Ptr params_;
+		PVVCCompensationStat_t   stat_;
+
+	  public:
+		/*
+		 * @description : Set parameters.
+		 * @param  : {common::PVVCParam_t::Ptr _param}
+		 * @return : {}
+		 * */
+		void SetParams(common::PVVCParam_t::Ptr _param);
+
+		/* Log statistic infomation */
+		void Log();
+
 	  private:
 		std::vector<RawFrame> frames_; /* Raw frames data */
+
+	  public:
+		void LoadFrames();
 	};
+
 	class PVVCEncoder {
 	  private:
 		std::vector<common::Frame>              frames_;       /* Clouds to be encoded */

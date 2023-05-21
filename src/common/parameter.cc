@@ -153,16 +153,26 @@ namespace common {
 				p.frames = 300;
 			}
 
+			if (!this->cfg_.lookupValue("io.sequence_name", p.io.sequence_name)) {
+				std::cout << __REDT__([Error]) << " Missing key parameter sequence_name.\n";
+				throw __EXCEPT__(EMPTY_PARAMS);
+			}
+
 			if (!this->cfg_.lookupValue("io.source_file", p.io.source_file)) {
 				std::cout << __REDT__([Error]) << " Missing key parameter source_file.\n";
 				throw __EXCEPT__(EMPTY_PARAMS);
 			}
 
-			if (!this->cfg_.lookupValue("io.buffer_file", p.io.buffer_file)) {
+			if (!this->cfg_.lookupValue("io.segment_file", p.io.segment_file)) {
 				if (p.check_point & 0x01) {
-					std::cout << __REDT__([Error]) << " Missing key parameter buffer_file when check_point is not none.\n";
+					std::cout << __REDT__([Error]) << " Missing key parameter segment_file when check_point is not none.\n";
 					throw __EXCEPT__(EMPTY_PARAMS);
 				}
+			}
+			
+            if (!this->cfg_.lookupValue("io.deform_file", p.io.deform_file)) {
+				std::cout << __REDT__([Error]) << " Missing key parameter result_file.\n";
+				throw __EXCEPT__(EMPTY_PARAMS);
 			}
 
 			if (!this->cfg_.lookupValue("io.result_file", p.io.result_file)) {
@@ -349,8 +359,9 @@ namespace common {
         printf("Start frame timestamp : %d\n", this->start_timestamp);
         printf("Frames timestamp interval : %d\n", this->time_interval);
         printf("Total frames : %d\n", this->frames);
+        printf("Sequence name : %s\n", this->io.sequence_name.c_str());
         printf("Source file path : %s\n", this->io.source_file.c_str());
-        printf("Buffer file path : %s\n", this->io.buffer_file.c_str());
+        printf("Buffer file path : %s\n", this->io.segment_file.c_str());
         printf("Result file path : %s\n", this->io.result_file.c_str());
         printf("Avg patch point number : %d\n", this->segment.num);
         printf("KNN neighbors : %d\n", this->segment.nn);

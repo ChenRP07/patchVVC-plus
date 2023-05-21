@@ -95,9 +95,6 @@ namespace segment {
 				throw __EXCEPT__(INVALID_PARAM_SEGMENT);
 			}
 
-			std::cout << __GREENT__(Start dense segmentation.) << std::endl;
-			this->clock_.SetTimeBegin();
-
 			/* patch number and point per patch */
 			const int kPointPerPatch = this->params_->segment.num;
 			const int kClusterNum    = std::ceil(static_cast<float>(this->source_cloud_->size()) / static_cast<float>(kPointPerPatch));
@@ -206,14 +203,7 @@ namespace segment {
 				temp_result[index[0]].emplace_back(i);
 			}
 
-			this->stat_.expect_.clear();
-			for (auto& i : temp_result) {
-				this->stat_.expect_.emplace_back(i.size());
-			}
-
-			std::cout << __GREENT__(Check the patches size.) << std::endl;
-			/* TODO: delete patch whose size less than 1/10 average size */
-			/* NOTE: TODO above has been solved */
+			/* XXX: Points in patches whose size is less than 1/10 kPP will be move to another patch */
 			std::vector<int>                       changed_point;
 			std::vector<std::vector<int>>          result_index;
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_centroids(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -246,14 +236,6 @@ namespace segment {
 					this->results_.back()->emplace_back(this->source_cloud_->at(p));
 				}
 			}
-
-			this->stat_.fact_.clear();
-			for (auto i : this->results_) {
-				this->stat_.fact_.emplace_back(i->size());
-			}
-			this->clock_.SetTimeEnd();
-			std::cout << __GREENT__(Dense segmentation done.) << std::endl;
-			this->Log();
 		}
 		catch (const common::Exception& e) {
 			e.Log();

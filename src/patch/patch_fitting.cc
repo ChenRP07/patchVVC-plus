@@ -16,7 +16,7 @@
 
 namespace vvc {
 namespace patch {
-	PatchFitting::PatchFitting() : fitting_cloud_{nullptr}, source_patches_{}, params_{nullptr}, stat_{}, clock_{}, max_height_{0} {}
+	PatchFitting::PatchFitting() : fitting_cloud_{nullptr}, source_patches_{}, params_{nullptr}, stat_{}, max_height_{0} {}
 
 	void PatchFitting::SetParams(vvc::common::PVVCParam_t::Ptr _param) {
 		try {
@@ -41,47 +41,18 @@ namespace patch {
 				throw __EXCEPT__(EMPTY_POINT_CLOUD);
 			}
 
-			this->clock_.SetTimeBegin();
 			this->stat_.iters.clear();
 			/* First patch in a GOP, save as fitting_cloud_ */
 			if (!fitting_cloud_ || this->source_patches_.empty()) {
 				this->source_patches_.emplace_back(_patch);
 				this->fitting_cloud_.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
 				*(this->fitting_cloud_) += *(this->source_patches_.front());
-				this->clock_.SetTimeEnd();
-				this->stat_.costs.emplace_back(this->clock_.GetTimeMs());
 				return true;
 			}
 
 			/* Otherwise, use ICP to calcualte MSE between new patch and fitting patch, if MSE is less than a threshold, add this patch into GOP and regenerate fitting patch */
 			registration::ICPBase::Ptr icp;
-			if (this->params_->icp.type == common::NORMAL_ICP) {
-				if (this->params_->icp.radius_search_ths <= 0) {
-					throw __EXCEPT__(BAD_PARAMETERS);
-				}
-				pcl::PointCloud<pcl::Normal>                         normal_fit, normal_res;
-				pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> est_x, est_y;
-				pcl::search::KdTree<pcl::PointXYZRGB>::Ptr           kdtree_x, kdtree_y;
-
-				kdtree_x->setInputCloud(this->fitting_cloud_);
-				est_x.setInputCloud(this->fitting_cloud_);
-				est_x.setSearchMethod(kdtree_x);
-				est_x.setRadiusSearch(this->params_->icp.radius_search_ths);
-				est_x.compute(normal_fit);
-
-				kdtree_y->setInputCloud(_patch.cloud);
-				est_y.setInputCloud(_patch.cloud);
-				est_y.setSearchMethod(kdtree_y);
-				est_y.setRadiusSearch(this->params_->icp.radius_search_ths);
-				est_y.compute(normal_res);
-
-				icp.reset(new registration::NICP());
-				icp->SetSourceNormal(normal_fit.makeShared());
-				icp->SetTargetNormal(normal_res.makeShared());
-			}
-			else {
-				icp.reset(new registration::ICP());
-			}
+			icp.reset(new registration::ICP());
 
 			icp->SetParams(this->params_);
 			icp->SetSourceCloud(_patch.cloud);
@@ -98,18 +69,13 @@ namespace patch {
 					/* Compute fitting patch */
 					this->Compute();
 					this->stat_.score.emplace_back(icp->GetMSE());
-					this->clock_.SetTimeEnd();
-					this->stat_.costs.emplace_back(this->clock_.GetTimeMs());
 					int   ans = std::accumulate(this->stat_.iters.begin(), this->stat_.iters.end(), 0);
 					float avg = static_cast<float>(ans) / static_cast<float>(this->stat_.iters.size());
 					this->stat_.avg_iters.emplace_back(avg);
-					this->LogPatch();
 					return true;
 				}
 			}
 
-			this->clock_.SetTimeEnd();
-			this->stat_.score.emplace_back(this->clock_.GetTimeMs());
 			/* Can not add this patch into GOP */
 			return false;
 		}
@@ -471,84 +437,27 @@ namespace patch {
 	}
 
 	std::vector<common::Patch> PatchFitting::GetSourcePatches() {
-		this->Log();
 		return std::move(this->source_patches_);
 	}
 
-	// clang-format off
-	void PatchFitting::LogPatch() const {
-        try {
-            if (!this->params_) {
-                throw __EXCEPT__(EMPTY_PARAMS);
-            }
-            if (!this->fitting_cloud_ || this->fitting_cloud_->empty()) {
-                throw __EXCEPT__(EMPTY_POINT_CLOUD);
-            }
-            if (this->source_patches_.empty()) {
-                throw __EXCEPT__(EMPTY_RESULT);
-            }
-            if (this->params_->log_level & 0x20) {
-                common::PVVCLog_Mutex.lock();
-		        std::cout << __AZURET__(===================================================) << std::endl;
-                std::cout << __BLUET__(Update fitting point cloud);
-                printf(" No.%d / No.%d\n", this->source_patches_.back().timestamp, this->source_patches_.back().index);
-                std::cout << __BLUET__(Fitting cloud size : ) << " " << this->fitting_cloud_->size() << std::endl;
-                std::cout << __BLUET__(Registration error : ) << " ";
-                printf("%.3f\n", this->stat_.score.back());
-                std::cout << __BLUET__(Avg clustering iter : ) << " ";
-                printf("%.3f\n", this->stat_.avg_iters.back());
-                std::cout << __BLUET__(Time consuming : );
-                printf("%.3f  %.3f\n", this->stat_.costs.back() / 1000.0f, this->stat_.costs.back());
-                common::PVVCLog_Mutex.unlock();
-            }
-        }
-        catch(const common::Exception& e) {
-            e.Log();
-            throw __EXCEPT__(ERROR_OCCURED);
-        }
+	void PatchFitting::Clear() {
+		this->fitting_cloud_.reset();
+		this->source_patches_.clear();
+		this->stat_.iters.clear(), this->stat_.score.clear(), this->stat_.avg_iters.clear();
 	}
 
-    void PatchFitting::Log() const {
-        try {
-            if (!this->params_) {
-                throw __EXCEPT__(EMPTY_PARAMS);
-            }
-            if (!this->fitting_cloud_ || this->fitting_cloud_->empty()) {
-                throw __EXCEPT__(EMPTY_POINT_CLOUD);
-            }
-            if (this->source_patches_.empty()) {
-                throw __EXCEPT__(EMPTY_RESULT);
-            }
-            if (this->params_->log_level & 0x10) {
-                common::PVVCLog_Mutex.lock();
-		        std::cout << __AZURET__(===================================================) << std::endl;
-                std::cout << __BLUET__(Generate fitting point cloud) << '\n';
-                std::cout << __BLUET__(Timestamp / index : ) << ' ';
-                printf(" No.%d / No.%d - No.%d\n", this->source_patches_.back().timestamp, this->source_patches_.front().index, this->source_patches_.back().index);
-                std::cout << __BLUET__(Fitting cloud size : ) << " " << this->fitting_cloud_->size() << std::endl;
-                std::cout << __BLUET__(Avg registration error : ) << " ";
-                float avg = static_cast<float>(std::accumulate(this->stat_.score.begin(), this->stat_.score.end(), 0)) / static_cast<float>(this->stat_.score.size());
-                printf("%.3lf\n", avg);
-                std::cout << __BLUET__(Avg clustering iter : ) << " ";
-                avg = std::accumulate(this->stat_.avg_iters.begin(), this->stat_.avg_iters.end(), 0.0f) / static_cast<float>(this->stat_.score.size());
-                printf("%.3f\n", avg);
-                std::cout << __BLUET__(Time consuming : );
-                float sum = std::accumulate(this->stat_.costs.begin(), this->stat_.costs.end(), 0.0f);
-                printf("%.3f  %.3f\n", sum / 1000.0f, sum);
-                common::PVVCLog_Mutex.unlock();
-            }
-        }
-        catch(const common::Exception& e) {
-            e.Log();
-            throw __EXCEPT__(ERROR_OCCURED);
-        }
-    }
-
-	// clang-format on
-	void PatchFitting::Clear() {
-		this->fitting_cloud_->clear();
-		this->source_patches_.clear();
-		this->stat_.costs.clear(), this->stat_.iters.clear(), this->stat_.score.clear();
+	std::pair<float, float> PatchFitting::GetStat() const {
+		float avg_mse{};
+		for (auto i : this->stat_.score) {
+			avg_mse += i;
+		}
+		avg_mse /= this->stat_.score.size();
+		float avg_iter{};
+		for (auto i : this->stat_.avg_iters) {
+			avg_iter += i;
+		}
+		avg_iter /= this->stat_.avg_iters.size();
+		return std::make_pair(avg_mse, avg_iter);
 	}
 }  // namespace patch
 }  // namespace vvc

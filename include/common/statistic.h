@@ -45,7 +45,6 @@ namespace common {
 	struct FittingPatchStat_t {
 		std::vector<int>   iters;
 		std::vector<float> score;
-		std::vector<float> costs;
 		std::vector<float> avg_iters;
 	};
 

@@ -37,8 +37,10 @@ namespace common {
 
 		/* File path */
 		struct {
-			std::string source_file; /* Souce point clouds */
-			std::string buffer_file; /* Middle results */
+			std::string sequence_name;
+			std::string source_file;  /* Souce point clouds */
+			std::string segment_file; /* Middle results */
+			std::string deform_file;
 			std::string result_file; /* Coding results */
 		} io;
 		/* Parameters of segmentation */
@@ -83,7 +85,7 @@ namespace common {
 
 	class ParameterLoader {
 	  private:
-		std::string cfg_name_;
+		std::string       cfg_name_;
 		libconfig::Config cfg_;
 
 	  public:
@@ -100,14 +102,14 @@ namespace common {
 	 * @param  : {}
 	 * @return : {PVVCParam_t::Ptr}
 	 * */
-	extern PVVCParam_t::Ptr SetDefaultParams();
+	[[deprecated]] extern PVVCParam_t::Ptr SetDefaultParams();
 
 	/*
 	 * @description : Copy parameters and generate a new instance.
 	 * @param  : {PVVCParam_t::Ptr _ptr}
 	 * @return : {PVVCParam_t::Ptr}
 	 * */
-	extern PVVCParam_t::Ptr CopyParams(PVVCParam_t::Ptr _ptr);
+	[[deprecated]] extern PVVCParam_t::Ptr CopyParams(PVVCParam_t::Ptr _ptr);
 }  // namespace common
 }  // namespace vvc
 

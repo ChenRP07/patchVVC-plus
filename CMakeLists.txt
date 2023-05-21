@@ -6,9 +6,8 @@ project(vvc
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_BUILD_TYPE Debug)
-
-set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib)
+# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Release)
 
 if(CMAKE_EXPORT_COMPILE_COMMANDS)
     set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
@@ -41,7 +40,17 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 include_directories(${CMAKE_SOURCE_DIR}/include/)
 
-link_directories(${CMAKE_SOURCE_DIR}/lib/)
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib/debug/)
+    link_directories(${CMAKE_SOURCE_DIR}/lib/debug/)
+    Message("-- Building type is Debug.")
+elseif (CMAKE_BUILD_TYPE MATCHES "Release")
+    set(LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/lib/release/)
+    link_directories(${CMAKE_SOURCE_DIR}/lib/release/)
+    Message("-- Building type is Release.")
+else()
+    message(FATAL_ERROR "Wrong cmake build type, must be Debug or Release.")
+endif()
 
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/io IO_SRC)
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/common COMMON_SRC)
@@ -60,7 +69,6 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/test)
     message("-- Test unavailable.")
 else()
     message("-- Test available.")
-    message("-- Building type is ${CMAKE_BUILD_TYPE}")
     add_subdirectory(${CMAKE_SOURCE_DIR}/test)
 endif()
 

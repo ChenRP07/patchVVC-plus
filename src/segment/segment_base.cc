@@ -53,6 +53,8 @@ namespace segment {
 					cnt++;
 				}
 			}
+			/* release source cloud */
+			this->source_cloud_.reset();
 			return result;
 		}
 		catch (const common::Exception& e) {
@@ -89,40 +91,5 @@ namespace segment {
 		}
 	}
 
-	// clang-format off
-    void SegmentBase::Log() const {
-        std::cout << __AZURET__(===================================================) << std::endl;
-        if (this->params_->log_level & 0x01) {
-            std::cout << __BLUET__(Excepted patch number : ) << " " << this->stat_.expect_.size() << std::endl;
-        }
-        if (this->params_->log_level & 0x02) {
-            std::cout << __BLUET__(Average patch size : ) << " " << this->source_cloud_->size() / this->stat_.expect_.size() << std::endl;
-            std::cout << __BLUET__(Min/Max patch size : ) << " " << *std::min_element(this->stat_.expect_.begin(), this->stat_.expect_.end()) << " / " << *std::max_element(this->stat_.expect_.begin(), this->stat_.expect_.end()) << std::endl;
-        }
-        if (this->params_->log_level & 0x04) {
-            /* TODO : complete log */
-            std::cout << __BLUET__(Standard deviation : ) << " " << common::Deviation(this->stat_.expect_) << std::endl;
-        }
-
-        std::cout << __AZURET__(===================================================) << std::endl;
-        if (this->params_->log_level & 0x01) {
-            std::cout << __BLUET__(Actual patch number : ) << " " << this->stat_.fact_.size() << std::endl;
-        }
-        if (this->params_->log_level & 0x02) {
-            std::cout << __BLUET__(Average patch size : ) << " " << std::accumulate(this->stat_.fact_.begin(), this->stat_.fact_.end(), 0) / this->stat_.fact_.size() << std::endl;
-            std::cout << __BLUET__(Min/Max patch size : ) << " " << *std::min_element(this->stat_.fact_.begin(), this->stat_.fact_.end()) << " / " << *std::max_element(this->stat_.fact_.begin(), this->stat_.fact_.end()) << std::endl;
-        }
-        if (this->params_->log_level & 0x04) {
-            /* TODO : complete log */
-            std::cout << __BLUET__(Standard deviation : )  << " " << common::Deviation(this->stat_.fact_) << std::endl;
-        }
-        std::cout << __AZURET__(===================================================) << std::endl;
-
-        std::cout << __BLUET__(Time consuming : );
-        printf("%.3fs / %.3fms\n", this->clock_.GetTimeS(), this->clock_.GetTimeMs());
-        std::cout << __AZURET__(===================================================) << std::endl;
-    }
-
-	// clang-format on
 }  // namespace segment
 }  // namespace vvc

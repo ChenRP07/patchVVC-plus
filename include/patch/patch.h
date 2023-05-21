@@ -46,7 +46,6 @@ namespace patch {
 		std::vector<vvc::common::Patch>        source_patches_; /* Patches to generate fitting cloud */
 		vvc::common::PVVCParam_t::Ptr          params_;         /* Parameters */
 		vvc::common::FittingPatchStat_t        stat_;           /* Statistic */
-		vvc::common::PVVCTime_t                clock_;
 		int                                    max_height_;
 
 		/*
@@ -84,11 +83,6 @@ namespace patch {
 		 * */
 		int PlanarBisection(std::vector<std::vector<int>>& _points, pcl::PointXYZ _center, std::vector<std::vector<std::vector<int>>>& _result);
 
-		/*
-		 * @description : Log information of single patch.
-		 * */
-		void LogPatch() const;
-
 	  public:
 		/* Default constructor and deconstructor */
 		PatchFitting();
@@ -124,14 +118,11 @@ namespace patch {
 		std::vector<common::Patch> GetSourcePatches();
 
 		/*
-		 * @description : Log information
-		 * */
-		void Log() const;
-
-		/*
 		 * @description : Reset this object
 		 * */
 		void Clear();
+
+        std::pair<float, float> GetStat() const;
 	};
 
 	/*

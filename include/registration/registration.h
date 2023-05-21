@@ -312,28 +312,24 @@ namespace registration {
 	 * Example:
 	 * ParallelICP picp;
 	 * picp.SetParams(param_ptr);
-	 * picp.SetSourceClouds(source_clouds_ptr_vector);
+	 * picp.SetSourcePatches(source_vector);
 	 * picp.SetTargetCloud(target_cloud_ptr)
 	 * picp.Align();
-	 * picp.GetResultClouds(your_result_clouds_ptr_vector);
+	 * res = picp.GetResultPatches();
 	 *
-	 * Make sure SetParams, SetSourceClouds and SetTargetCloud are called before Align;
 	 * */
 	class ParallelICP : public RegistrationBase {
 	  protected:
-		std::vector<common::Patch> source_clouds_; /* source point cloud patches which will be transformed */
-		std::vector<common::Patch> result_clouds_; /* transformed point cloud patches result */
+		std::vector<common::Patch> reference_patches_; /* source point cloud patches which will be transformed */
+		std::vector<common::Patch> result_patches_;    /* transformed point cloud patches result */
 		std::vector<float>         mse_;
 		std::vector<bool>          converged_;
 
-		std::vector<pcl::PointCloud<pcl::Normal>::Ptr> source_normals_; /* point cloud normals */
-		pcl::PointCloud<pcl::Normal>::Ptr              target_normal_;
+		// [[deprecated]] std::vector<pcl::PointCloud<pcl::Normal>::Ptr> source_normals_; /* point cloud normals */
+		// [[deprecated]] pcl::PointCloud<pcl::Normal>::Ptr              target_normal_;
 
 		std::mutex         task_mutex_; /* mutex for atomic procession */
 		std::queue<size_t> task_queue_; /* task queue */
-
-		/* XXX : stat_ is obsolete */
-		// common::ParallelICPStat_t stat_; [> statistic <]
 
 		/*
 		 * @description : do centroid alignment for source_clouds_ to target_cloud_.
@@ -349,13 +345,6 @@ namespace registration {
 		 * */
 		void Task();
 
-		/*
-		 * @description : log statistic.
-		 * @param : {}
-		 * @return : {}
-		 * */
-		void Log();
-
 	  public:
 		/* constructor and default deconstructor */
 		ParallelICP() = default;
@@ -367,21 +356,22 @@ namespace registration {
 		 * @param : {std::vector<common::Patch>}
 		 * @return : {}
 		 * */
-		void SetSourceClouds(std::vector<common::Patch>& _clouds);
+		void SetSourcePatches(std::vector<common::Patch>& _patches);
 
 		/*
-		 * @description : Get result point cloud which is transformed by source_cloud_, should be called after Align().
+		 * @description : Get result point cloud which is split from target_cloud_, should be called after Align().
 		 * It do not use std::move because empty patch should be discarded.
 		 * @param  : {}
 		 * @return : {std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr>}
 		 * */
-		[[nodiscard]] std::vector<common::Patch> GetResultClouds();
+		[[nodiscard]] std::vector<common::Patch> GetResultPatches();
 
-		/*
-		 * @description : Get converged or not, should only be used in debugging of development.
-		 * @
-		 * */
-		[[deprecated]] std::vector<bool> GetConverge() const;
+        /*
+         * @description : Get result mse stat information.
+         * @param  : {}
+         * @return : {std::vector<float>}
+         * */
+		[[nodiscard]] std::vector<float> GetStat() const;
 
 		/*
 		 * @description : do iterative closest point.

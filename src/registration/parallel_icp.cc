@@ -17,37 +17,37 @@
 using namespace vvc;
 namespace vvc {
 namespace registration {
-	void ParallelICP::SetSourceClouds(std::vector<common::Patch>& _clouds) {
+	void ParallelICP::SetSourcePatches(std::vector<common::Patch>& _patches) {
 		try {
 			/* check point cloud is empty */
-			if (_clouds.empty()) {
+			if (_patches.empty()) {
 				throw __EXCEPT__(EMPTY_POINT_CLOUD);
 			}
 
-			for (auto& i : _clouds) {
+			for (auto& i : _patches) {
 				if (!i || i.empty()) {
 					throw __EXCEPT__(EMPTY_POINT_CLOUD);
 				}
 			}
 
 			/* copy to source_clouds_ */
-			this->source_clouds_.clear();
-			this->source_clouds_.assign(_clouds.begin(), _clouds.end());
+			this->reference_patches_.clear();
+			this->reference_patches_.assign(_patches.begin(), _patches.end());
 
 			/* init result_clouds_ */
-			this->result_clouds_.clear();
-			this->result_clouds_.resize(this->source_clouds_.size(), common::Patch());
-			for (int i = 0; i < this->source_clouds_.size(); ++i) {
+			this->result_patches_.clear();
+			this->result_patches_.resize(this->reference_patches_.size(), common::Patch());
+			for (int i = 0; i < this->reference_patches_.size(); ++i) {
 				pcl::PointCloud<pcl::PointXYZRGB>::Ptr p(new pcl::PointCloud<pcl::PointXYZRGB>());
-				*p += *(this->source_clouds_[i].cloud);
-				this->result_clouds_[i].cloud     = p;
-				this->result_clouds_[i].index     = this->source_clouds_[i].index;
-				this->result_clouds_[i].timestamp = this->source_clouds_[i].timestamp + 1;
+				*p += *(this->reference_patches_[i].cloud);
+				this->result_patches_[i].cloud     = p;
+				this->result_patches_[i].index     = this->reference_patches_[i].index;
+				this->result_patches_[i].timestamp = this->reference_patches_[i].timestamp + 1;
 			}
 
 			/* init */
-			this->converged_.resize(this->source_clouds_.size(), false);
-			this->mse_.resize(this->source_clouds_.size(), -1.0f);
+			this->converged_.resize(this->reference_patches_.size(), false);
+			this->mse_.resize(this->reference_patches_.size(), -1.0f);
 		}
 		catch (const common::Exception& e) {
 			e.Log();
@@ -55,14 +55,14 @@ namespace registration {
 		}
 	}
 
-	std::vector<common::Patch> ParallelICP::GetResultClouds() {
+	std::vector<common::Patch> ParallelICP::GetResultPatches() {
 		try {
 			/* check point cloud is empty */
-			if (this->result_clouds_.empty()) {
+			if (this->result_patches_.empty()) {
 				throw __EXCEPT__(EMPTY_POINT_CLOUD);
 			}
 			std::vector<common::Patch> result;
-			for (auto& i : this->result_clouds_) {
+			for (auto& i : this->result_patches_) {
 				if (!i.cloud) {
 					throw __EXCEPT__(EMPTY_POINT_CLOUD);
 				}
@@ -86,7 +86,7 @@ namespace registration {
 		/* calculate centroids */
 		pcl::PointXYZ source_global_centroid(0.0f, 0.0f, 0.0f), target_global_centroid(0.0f, 0.0f, 0.0f);
 		size_t        source_size = 0;
-		for (auto& i : this->result_clouds_) {
+		for (auto& i : this->result_patches_) {
 			for (auto j : *i) {
 				source_global_centroid.x += j.x;
 				source_global_centroid.y += j.y;
@@ -110,8 +110,8 @@ namespace registration {
 		target_global_centroid.z /= this->target_cloud_->size();
 
 		/* move point and fill the result_clouds_ */
-		for (size_t i = 0; i < this->result_clouds_.size(); i++) {
-			for (auto& j : *(this->result_clouds_.at(i))) {
+		for (size_t i = 0; i < this->result_patches_.size(); i++) {
+			for (auto& j : *(this->result_patches_.at(i))) {
 				j.x += target_global_centroid.x - source_global_centroid.x;
 				j.y += target_global_centroid.y - source_global_centroid.y;
 				j.z += target_global_centroid.z - source_global_centroid.z;
@@ -141,7 +141,7 @@ namespace registration {
 			kdtree.setInputCloud(this->target_cloud_);
 
 			pcl::PointXYZ local(0.0f, 0.0f, 0.0f);
-			for (auto i : *(this->result_clouds_[task_idx])) {
+			for (auto i : *(this->result_patches_[task_idx])) {
 				std::vector<int>   idx(1);
 				std::vector<float> dis(1);
 				kdtree.nearestKSearch(i, 1, idx, dis);
@@ -149,37 +149,27 @@ namespace registration {
 				local.y += this->target_cloud_->at(idx[0]).y - i.y;
 				local.z += this->target_cloud_->at(idx[0]).z - i.z;
 			}
-			local.x /= this->result_clouds_[task_idx].size();
-			local.y /= this->result_clouds_[task_idx].size();
-			local.z /= this->result_clouds_[task_idx].size();
+			local.x /= this->result_patches_[task_idx].size();
+			local.y /= this->result_patches_[task_idx].size();
+			local.z /= this->result_patches_[task_idx].size();
 
-			for (auto& i : *(this->result_clouds_[task_idx])) {
+			for (auto& i : *(this->result_patches_[task_idx])) {
 				i.x += local.x;
 				i.y += local.y;
 				i.z += local.z;
 			}
 
 			vvc::registration::ICPBase::Ptr icp;
-			/*
-			 * if (this->params_->icp.type == common::NORMAL_ICP) {
-			    icp.reset(new vvc::registration::NICP());
-			    icp->SetSourceNormal(this->source_normals_[task_idx]);
-			    icp->SetTargetNormal(this->target_normal_);
-			}
-			else {
-			    icp.reset(new vvc::registration::ICP());
-			} */
-
 			icp.reset(new vvc::registration::ICP());
 			icp->SetParams(this->params_);
 			icp->SetTargetCloud(this->target_cloud_);
-			icp->SetSourceCloud(this->result_clouds_[task_idx].cloud);
+			icp->SetSourceCloud(this->result_patches_[task_idx].cloud);
 			icp->Align();
 
 			/* converge or not */
 			if (icp->Converged()) {
 				pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp = icp->GetResultCloud();
-				this->result_clouds_[task_idx].cloud->swap(*temp);
+				this->result_patches_[task_idx].cloud->swap(*temp);
 				this->converged_[task_idx] = 1;
 				this->mse_[task_idx]       = icp->GetMSE();
 			}
@@ -191,27 +181,23 @@ namespace registration {
 
 	void ParallelICP::Align() {
 		try {
-			this->clock_.SetTimeBegin();
-			std::cout << __GREENT__(Start ICP registration.) << std::endl;
-			std::cout << __GREENT__(Check point clouds.) << std::endl;
 			/* check point cloud is empty */
-			if (!this->target_cloud_ || this->source_clouds_.empty() || this->result_clouds_.empty()) {
+			if (!this->target_cloud_ || this->reference_patches_.empty() || this->result_patches_.empty()) {
 				throw __EXCEPT__(EMPTY_POINT_CLOUD);
 			}
 
-			for (auto i : this->source_clouds_) {
+			for (auto i : this->reference_patches_) {
 				if (!i || i.empty()) {
 					throw __EXCEPT__(EMPTY_POINT_CLOUD);
 				}
 			}
 
-			for (auto i : this->result_clouds_) {
+			for (auto i : this->result_patches_) {
 				if (!i) {
 					throw __EXCEPT__(INITIALIZER_ERROR);
 				}
 			}
 
-			std::cout << __GREENT__(Check parameters.) << std::endl;
 			/* check params is empty */
 			if (!this->params_) {
 				throw __EXCEPT__(EMPTY_PARAMS);
@@ -236,62 +222,16 @@ namespace registration {
 
 			/* need to centroid alignment */
 			if (this->params_->icp.centroid_alignment) {
-				std::cout << __GREENT__(Process centroid alignment.) << std::endl;
 				this->CentroidAlignment();
 			}
 
-			/* Recommend to use SIMPLE_ICP here */
-			/*
-			if (this->params_->icp.type == common::NORMAL_ICP) {
-			    if (this->params_->icp.radius_search_ths <= 0) {
-			        throw __EXCEPT__(BAD_PARAMETERS);
-			    }
-
-			    this->target_normal_.reset(new pcl::PointCloud<pcl::Normal>());
-			    pcl::NormalEstimation<pcl::PointXYZRGB, pcl::Normal> est;
-			    pcl::search::KdTree<pcl::PointXYZRGB>::Ptr           kdtree(new pcl::search::KdTree<pcl::PointXYZRGB>());
-			    kdtree->setInputCloud(this->target_cloud_);
-			    est.setInputCloud(this->target_cloud_);
-			    est.setSearchMethod(kdtree);
-			    est.setRadiusSearch(this->params_->icp.radius_search_ths);
-			    est.compute(*(this->target_normal_));
-
-			    pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_source(new pcl::PointCloud<pcl::PointXYZRGB>());
-			    pcl::PointCloud<pcl::Normal>           temp_normal;
-			    for (auto i : this->result_clouds_) {
-			        for (auto j : *(i.cloud)) {
-			            temp_source->emplace_back(j);
-			        }
-			    }
-			    this->source_normals_.clear();
-			    this->source_normals_.resize(this->source_clouds_.size());
-			    kdtree->setInputCloud(temp_source);
-			    est.setInputCloud(temp_source);
-			    est.setSearchMethod(kdtree);
-			    est.setRadiusSearch(this->params_->icp.radius_search_ths);
-			    est.compute(temp_normal);
-
-			    int idx = 0;
-			    for (int i = 0; i < this->result_clouds_.size(); ++i) {
-			        this->source_normals_[i].reset(new pcl::PointCloud<pcl::Normal>());
-			        for (int j = 0; j < this->result_clouds_[i].size(); ++j) {
-			            this->source_normals_[i]->emplace_back(temp_normal[idx]);
-			            idx++;
-			        }
-			    }
-			}
-			*/
-
-			this->params_ = common::CopyParams(this->params_);
+			// this->params_ = common::CopyParams(this->params_);
 
 			/* fill the task_queue_ */
-			for (size_t i = 0; i < this->result_clouds_.size(); ++i) {
+			for (size_t i = 0; i < this->result_patches_.size(); ++i) {
 				this->task_queue_.push(i);
 			}
 
-			// clang-format off
-		    std::cout << __GREENT__(Launch multi-threads.) << std::endl;
-			// clang-format on
 			/* create threads and arrange task */
 			std::vector<std::thread> thread_pool(this->params_->thread_num);
 			for (auto& i : thread_pool) {
@@ -303,14 +243,12 @@ namespace registration {
 				i.join();
 			}
 
-			std::cout << __GREENT__(Registration completed.) << std::endl;
-
 			/* Segment target_cloud_ according to the result_clouds_ */
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr search_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
 			std::vector<int>                       source_index;
 
-			for (int i = 0; i < this->result_clouds_.size(); ++i) {
-				for (auto j : *(this->result_clouds_[i])) {
+			for (int i = 0; i < this->result_patches_.size(); ++i) {
+				for (auto j : *(this->result_patches_[i])) {
 					search_cloud->emplace_back(j);
 					source_index.emplace_back(i);
 				}
@@ -319,7 +257,7 @@ namespace registration {
 			pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
 			kdtree.setInputCloud(search_cloud);
 
-			std::vector<pcl::PointCloud<pcl::PointXYZRGB>> temp_clouds(this->result_clouds_.size(), pcl::PointCloud<pcl::PointXYZRGB>());
+			std::vector<pcl::PointCloud<pcl::PointXYZRGB>> temp_clouds(this->result_patches_.size(), pcl::PointCloud<pcl::PointXYZRGB>());
 			for (auto i : *(this->target_cloud_)) {
 				std::vector<int>   idx(1);
 				std::vector<float> dis(1);
@@ -327,79 +265,25 @@ namespace registration {
 				temp_clouds[source_index[idx[0]]].emplace_back(i);
 			}
 
-			for (int i = 0; i < this->result_clouds_.size(); ++i) {
-				this->result_clouds_[i].cloud->swap(temp_clouds[i]);
+			for (int i = 0; i < this->result_patches_.size(); ++i) {
+				this->result_patches_[i].cloud->swap(temp_clouds[i]);
 			}
 
-			this->clock_.SetTimeEnd();
-			/* log statistic */
-			this->Log();
 		}
 		catch (const common::Exception& e) {
 			e.Log();
 			throw __EXCEPT__(ERROR_OCCURED);
 		}
 	}
-	// clang-format off
-    void registration::ParallelICP::Log() {
-	    size_t converged = 0;
-	    for (auto i : this->converged_) {
-		    if (i == true) {
-		    	converged += 1;
-		    }
-	    }
-        if (this->params_->log_level & 0x01) {
-            std::cout << __BLUET__(Launch threads : ) << " " << this->params_->thread_num << std::endl;
-            std::cout << __BLUET__(Converged / Not patches : ) << " " << converged << " / " << this->converged_.size() - converged << std::endl;
-            std::cout << __BLUET__(Time consuming : );
-            printf(" %.3fs / %.3fms\n", this->clock_.GetTimeS(), this->clock_.GetTimeMs());
-            std::cout << __AZURET__(===================================================) << std::endl;
-        }
-        if (this->params_->log_level & 0x02) {
-            float mean = 0.0f, Max = 0.0f, Min = FLT_MAX;
-            int cnt = 0;
-            std::for_each(this->mse_.begin(), this->mse_.end(), [&mean, &Max, &Min, &cnt] (float x) {
-                    if (x >= 0.0f) {
-                        mean += x, Max = std::max(x, Max), Min = std::min(x, Min);
-                        cnt++;
-                    }
-                });
-            if (cnt != 0) {
-                mean /= static_cast<float>(cnt);
-            }
-            else {
-                mean = -1.0f;
-            }
-            std::cout << __BLUET__(Average  MSE : );
-            printf(" %.3f\n", mean);
-            std::cout << __BLUET__(Mininum  MSE : );
-            printf(" %.3f\n", Min);
-            std::cout << __BLUET__(Maximum  MSE : );
-            printf(" %.3f\n", Max);
-            std::cout << __BLUET__(Standard Err : ); 
-            printf(" %.3f\n", common::Deviation(this->mse_));
-            std::cout << __AZURET__(===================================================) << std::endl;
-        }
 
-        if (this->params_->log_level & 0x04) {
-            for (size_t i = 0; i < this->converged_.size(); i++) {
-                std::cout << __BLUET__(Patch #) << i << " : ";
-                if (this->converged_[i] ==0) {
-                    std::cout << __YELLOWT__(is not converged);
-                }
-                else {
-                    std::cout << __GREENT__(is converged);
-                }
-                std::cout << __BLUET__(~~ MSE : ); 
-                printf(" %.3f\n", this->mse_[i]);
-            }
-            std::cout << __AZURET__(===================================================) << std::endl;
-        }
-    }
-
-	// clang-format on
-	std::vector<bool> registration::ParallelICP::GetConverge() const {
-		return this->converged_;
+	std::vector<float> registration::ParallelICP::GetStat() const {
+		std::vector<float> res(this->mse_.size(), -1.0f);
+		for (int i = 0; i < this->mse_.size(); ++i) {
+			if (this->converged_[i]) {
+				res[i] = this->mse_[i];
+			}
+		}
+		return res;
 	}
 }  // namespace registration
 }  // namespace vvc

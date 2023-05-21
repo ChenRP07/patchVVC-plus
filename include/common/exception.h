@@ -67,6 +67,24 @@ namespace common {
 	/* Mutex to output message to terminal, should be called in multi cout or printf, thread safe in single printf and cout */
 	static std::mutex    PVVCLog_Mutex;
 	static boost::format color_cmd("\033[%dm%s\033[0m");
+	enum BASHCOLOR {
+		BLACK = 30,
+		RED,
+		GREEN,
+		YELLOW,
+		BLUE,
+		PURPLE,
+		AZURE,
+		WHITE,
+		B_BLACK = 90,
+		B_RED,
+		B_GREEN,
+		B_YELLOW,
+		B_BLUE,
+		B_PURPLE,
+		B_AZURE,
+		B_WHITE,
+	};
 	class Exception {
 	  private:
 		unsigned int line_;    /* line index where error occured  */
@@ -114,7 +132,7 @@ namespace common {
 		EMPTY_GOP,             /* error occured when try to encode a GoP whose size is zero */
 		BAD_SLICE,             /* error occured when the type of one slice is invalid */
 		EMPTY_REFERENCE,       /* error occured when try to decode a predictive slice without intra slice */
-		INVALID_DIR,         /* error occured when try to access a invalid directory or directory path actually is a file */
+		INVALID_DIR,           /* error occured when try to access a invalid directory or directory path actually is a file */
 	};
 
 	static std::string ErrorMessage[100] = {
@@ -141,7 +159,7 @@ namespace common {
 	    "cannot encode a GoP with size zero",
 	    "invalid slice type",
 	    "no reference for predictive slice",
-        "invalid directory, path maybe not exist or actually a file",
+	    "invalid directory, path maybe not exist or actually a file",
 	};
 
 }  // namespace common

@@ -34,15 +34,7 @@ namespace segment {
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr              source_cloud_; /* source point cloud to be segmented */
 		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_;      /* segmentation result */
 		common::PVVCParam_t::Ptr                            params_;       /* vvc parameters */
-		common::SegmentStat_t                               stat_;         /* statistics */
 		int                                                 timestamp_;    /* point cloud timestamp */
-		common::PVVCTime_t                                  clock_;        /* clock */
-
-		/*
-		 * @description : log statistics
-		 * @return : {}
-		 * */
-		void Log() const;
 
 	  public:
 		/* default constructor */
@@ -94,8 +86,9 @@ namespace segment {
 	 *      DenseSegment exp;
 	 *      exp.SetSourcePointCloud(_cloud_ptr);
 	 *      exp.SetParams(_params);
+	 *      exp.SetTimeStamp(_time);
 	 *      exp.Segment();
-	 *      exp.GetResultPointClouds(_result_ptrs);
+	 *      auto res = exp.GetResultPointClouds();
 	 *
 	 * It is worth noting that before call Segment, SetSourcePointCloud and SetParams must be called, and
 	 * the expected patches number must be set in a VVCParam_t. Otherwise will generate an exception.

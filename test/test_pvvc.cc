@@ -5,8 +5,9 @@ int main() {
 
 	auto param = p_loader.GetPVVCParam();
 
-	vvc::codec::PVVCCompensation enc;
-
-	enc.SetParams(param);
-	enc.LoadFrames();
+	vvc::codec::PVVCDeformation def;
+	def.SetParams(param);
+	def.LoadPatches();
+	def.Deformation();
+	def.SaveDeformPatches();
 }

@@ -41,8 +41,8 @@ namespace io {
 
 			char file_line[1024];
 			int  file_type = -1;
-			fgets(file_line, 1024, fp);  // read line : "ply"
-			fgets(file_line, 1024, fp);  // read line : "format ..."
+			char* fgets_res = fgets(file_line, 1024, fp);  // read line : "ply"
+			fgets_res = fgets(file_line, 1024, fp);  // read line : "format ..."
 
 			char* format;
 
@@ -61,7 +61,7 @@ namespace io {
 			char* end_header;
 			char* num_line;
 			while (true) {
-				fgets(file_line, 1024, fp);
+				char* temp_res = fgets(file_line, 1024, fp);
 
 				// header end
 				if ((end_header = strstr(file_line, "end_header")) != nullptr) {

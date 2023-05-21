@@ -19,11 +19,16 @@
 #include "common/parameter.h"
 #include "common/statistic.h"
 
+#include "io/patch_io.h"
 #include "io/ply_io.h"
+#include "io/slice_io.h"
 
 #include "segment/segment.h"
 
 #include "patch/patch.h"
+
+#include <sys/stat.h>
+#include <sys/types.h>
 
 namespace vvc {
 namespace codec {
@@ -44,15 +49,34 @@ namespace codec {
 		RawFrame() : cloud{}, timestamp{-1}, type{RAWFRAMETYPE::EMPTY_FRAME} {}
 	};
 
-	struct PVVCCompensationStat_t {};
+	struct GoP {
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
+		std::vector<common::Patch>             patches;
+		int                                    start, end;
+		GoP() : cloud{}, patches{}, start{-1}, end{-1} {}
+	};
 
-	class PVVCCompensation {
+	/*
+	 * Segmentation.
+	 * How to use?
+	 * PVVCSegmentation exp;
+	 * exp.SetParams(_p);
+	 * exp.LoadFrames();
+	 * exp.Segmentation();
+	 * res = exp.GetPatches();
+	 * */
+	class PVVCSegmentation {
 		/* Common module */
 	  private:
 		common::PVVCParam_t::Ptr params_;
-		PVVCCompensationStat_t   stat_;
+		common::PVVCTime_t       clock_;
 
 	  public:
+		/* Constructor and deconstructor */
+		PVVCSegmentation();
+
+		~PVVCSegmentation() = default;
+
 		/*
 		 * @description : Set parameters.
 		 * @param  : {common::PVVCParam_t::Ptr _param}
@@ -60,31 +84,92 @@ namespace codec {
 		 * */
 		void SetParams(common::PVVCParam_t::Ptr _param);
 
-		/* Log statistic infomation */
-		void Log();
-
+		/* Data and main module */
 	  private:
-		std::vector<RawFrame> frames_; /* Raw frames data */
+		/* Raw frames data */
+		std::vector<RawFrame> frames_;
+		/* Frame patches, 1-dim timestamp, 2-dim index */
+		std::shared_ptr<std::vector<std::vector<common::Patch>>> patches_;
+		/* Current handled frame index */
+		int current_frame_idx_;
 
 	  public:
+		/* Load raw frame data from disk. */
 		void LoadFrames();
+
+		/* Dense segmentation for K-frame and icp segmentation for P-frame */
+		void Segmentation();
+
+		/* TODO: Save patches if check_point enable */
+		void SavePatches();
+
+		/* Return results */
+		std::shared_ptr<std::vector<std::vector<common::Patch>>> GetPatches();
 	};
 
-	class PVVCEncoder {
+	class PVVCDeformation {
+		/* Common module */
 	  private:
-		std::vector<common::Frame>              frames_;       /* Clouds to be encoded */
-		std::vector<std::vector<common::Patch>> patches_;      /* All patches, first dimension is timestamp, second is index */
-		common::PVVCTime_t                      clock_;        /* Clocker */
-		common::PVVCParam_t::Ptr                params_;       /* Parameters */
-		common::EncoderStat_t                   stat_;         /* Statistic */
-		std::vector<patch::GoPEncoding::Ptr>    GoP_encoders_; /* Encoders for each GoP */
+		common::PVVCParam_t::Ptr params_;
+		common::PVVCTime_t       clock_;
 
-		std::mutex                      task_mutex_;
-		std::queue<std::pair<int, int>> task_queue_;
+	  public:
+		/* Constructor and deconstructor */
+		PVVCDeformation();
+
+		~PVVCDeformation() = default;
+
+		/*
+		 * @description : Set parameters.
+		 * @param  : {common::PVVCParam_t::Ptr _param}
+		 * @return : {}
+		 * */
+		void SetParams(common::PVVCParam_t::Ptr _param);
+
+		/* Data module */
+	  private:
+		std::shared_ptr<std::vector<std::vector<common::Patch>>>    patches_;
+		std::shared_ptr<std::vector<std::vector<GoP>>>              gops_;
+		std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> results_;
+
+	  public:
+		void SetPatches(std::shared_ptr<std::vector<std::vector<common::Patch>>> _patches);
+
+		/* TODO: Load patches if check_point enable */
+		void LoadPatches();
+
+		/* TODO: Save deform patches if check_point enable */
+		void SaveDeformPatches();
+
+		std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> GetResults();
+
+	  private:
+		std::vector<patch::PatchFitting> handler_;
+		std::vector<std::thread>         threads_;
+		std::vector<bool>                handler_data_;
+		std::queue<int>                  task_queue_;
+		std::mutex                       task_queue_mutex_;
+		std::mutex                       log_mutex_;
+		int                              current_frame_idx_;
 
 		void Task();
 
 	  public:
+		void Deformation();
+	};
+
+	class PVVCCompression {
+		/* Common module */
+	  private:
+		common::PVVCParam_t::Ptr params_;
+		common::PVVCTime_t       clock_;
+
+	  public:
+		/* Constructor and deconstructor */
+		PVVCCompression();
+
+		~PVVCCompression() = default;
+
 		/*
 		 * @description : Set parameters.
 		 * @param  : {common::PVVCParam_t::Ptr _param}
@@ -92,15 +177,31 @@ namespace codec {
 		 * */
 		void SetParams(common::PVVCParam_t::Ptr _param);
 
-		/*
-		 * @description : Load frames from disk.
-		 * */
-		void LoadFrame();
+	  private:
+		std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>>           patches_;
+		std::shared_ptr<std::vector<std::vector<common::Slice>>>              slices_;
+		std::vector<std::shared_ptr<std::vector<std::vector<common::Slice>>>> results_;
 
-		/*
-		 * @description : Encode.
-		 * */
-		void Encode();
+	  public:
+		void SetPatches(std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> _patches);
+
+		void LoadPatches();
+
+		void SaveSlices();
+
+		std::vector<std::shared_ptr<std::vector<std::vector<common::Slice>>>> GetResults();
+
+	  private:
+		std::vector<patch::GoPEncoding> handler_;
+		std::vector<std::thread>        threads_;
+		std::queue<int>                 task_queue_;
+		std::mutex                      task_queue_mutex_;
+		std::mutex                      log_mutex_;
+
+		void Task();
+
+	  public:
+		void Compression();
 	};
 }  // namespace codec
 }  // namespace vvc

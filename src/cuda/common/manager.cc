@@ -13,7 +13,6 @@
  */
 
 #include "cuda/manager.h"
-
 namespace vvc {
 namespace client {
 	/* Global GPU memory for decoding */
@@ -117,7 +116,7 @@ namespace client {
 		Manager::PATCH_SIZE      = _patch_size;
 		Manager::frame_name_prev = _name_prev;
 
-        size_t size{1 * 1024 * 1024 * 1024};
+        size_t size{512 * 1024 * 1024};
         cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
 		printf("Client start, frame from %s, max patch number %d.\n", Manager::frame_name_prev.c_str(), Manager::PATCH_SIZE);
 
@@ -140,6 +139,8 @@ namespace client {
 
 		Renderer.Rendering(0, 0);
 		Manager::RENDERED_FRAME_CNT = 0;
+		timeval t0, t1;
+		gettimeofday(&t0, nullptr);
 		while (Manager::RENDERED_FRAME_CNT < TOTAL_FRAME_CNT) {
 			VBOMemZone mem = this->GetVBOMem();
 			if (mem.type != 1) {
@@ -149,10 +150,14 @@ namespace client {
 			printf("OpenGL will render frame #%d in VBO [%d , %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
 			Renderer.Rendering(mem.start, mem.size);
 			printf("OpenGL successfully render frame #%d in VBO [%d, %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
+			this->ReleaseRender(mem);
 			Manager::RENDERED_FRAME_CNT++;
 			/* XXX: should only be used in testing */
 			// sleep(1);
 		}
+		gettimeofday(&t1, nullptr);
+		printf("render_time = %.2f\n", (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f);
+
 		/* XXX: should only be used in testing */
 		// sleep(2);
 		printf("Successfully rendered all frames.\n");

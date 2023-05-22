@@ -47,3 +47,6 @@ target_link_libraries(${PVVC_TARGET_NAME} pvvc)
 
 add_executable(${PVVC_RENDER_TARGET_NAME} test_frame_render.cc)
 target_link_libraries(${PVVC_RENDER_TARGET_NAME} pvvc_cu)
+
+add_executable(test_exe test_decode_only.cc)
+target_link_libraries(test_exe pvvc_cu)

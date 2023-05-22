@@ -264,7 +264,7 @@ namespace client {
 
 		void Render::CUDADecode(int offset, int timestamp, int patch_size) {
 			int numElements = patch_size;
-			int blockSize   = 256;
+			int blockSize   = 32;
 			int numBlocks   = (numElements + blockSize - 1) / blockSize;
 			// 利用 CUDA 更新缓冲区内的数值
 			// 将OpenGL缓冲区对象映射到CUDA

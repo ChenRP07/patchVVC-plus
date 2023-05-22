@@ -288,7 +288,7 @@ namespace client {
 
 	constexpr int FRAME_POINT_CNT{1'000'000};
 	constexpr int POINT_BYTE{sizeof(common::Points)};
-	constexpr int TOTAL_FRAME_CNT{3};
+	constexpr int TOTAL_FRAME_CNT{30};
 	constexpr int MAX_LOAD_FRAME_CNT{30};
 	constexpr int MAX_VBO_FRAME_CNT{30};
 	constexpr int RAW_POINT_SIZE{15};

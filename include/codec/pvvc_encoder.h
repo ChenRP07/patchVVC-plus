@@ -179,17 +179,16 @@ namespace codec {
 
 	  private:
 		std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>>           patches_;
-		std::shared_ptr<std::vector<std::vector<common::Slice>>>              slices_;
-		std::vector<std::shared_ptr<std::vector<std::vector<common::Slice>>>> results_;
+		std::vector<std::vector<common::Slice>> results_;
 
 	  public:
-		void SetPatches(std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> _patches);
+		void SetGoPs(std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> _patches);
 
-		void LoadPatches();
+		void LoadGoPs();
 
 		void SaveSlices();
 
-		std::vector<std::shared_ptr<std::vector<std::vector<common::Slice>>>> GetResults();
+		std::vector<std::vector<common::Slice>> GetResults();
 
 	  private:
 		std::vector<patch::GoPEncoding> handler_;
@@ -198,11 +197,13 @@ namespace codec {
 		std::mutex                      task_queue_mutex_;
 		std::mutex                      log_mutex_;
 
-		void Task();
+		void Task(int k);
 
 	  public:
 		void Compression();
 	};
+
+    extern void BuildFrames(common::PVVCParam_t::Ptr _param);
 }  // namespace codec
 }  // namespace vvc
 #endif

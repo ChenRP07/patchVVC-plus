@@ -9,6 +9,6 @@
 int main()
 {
     auto &instance  = vvc::client::Manager::Init();
-    instance.Start(5, "/home/lixin/vvc/test/data/test_");
+    instance.Start(383, "/mnt/data/pvvc_data/loot/frame/loot_");
     return 0;
 }

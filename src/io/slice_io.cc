@@ -213,7 +213,7 @@ namespace io {
 			}
 
 			/* Check output file format */
-			std::regex format{"^.*_[0-9]+_[0-9]+\\.slice$"};
+			std::regex format{"^.*_time_[0-9]+_slice_[0-9]+\\.slice$"};
 			std::regex output_format{"^.*\\.frame"};
 			if (!std::regex_match(_output_name, output_format)) {
 				throw __EXCEPT__(WRONG_FILE_FORMAT);

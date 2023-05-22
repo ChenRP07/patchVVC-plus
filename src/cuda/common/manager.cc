@@ -117,6 +117,8 @@ namespace client {
 		Manager::PATCH_SIZE      = _patch_size;
 		Manager::frame_name_prev = _name_prev;
 
+        size_t size{1 * 1024 * 1024 * 1024};
+        cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
 		printf("Client start, frame from %s, max patch number %d.\n", Manager::frame_name_prev.c_str(), Manager::PATCH_SIZE);
 
 		printf("Launch thread to load frame ......\n");
@@ -149,10 +151,10 @@ namespace client {
 			printf("OpenGL successfully render frame #%d in VBO [%d, %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
 			Manager::RENDERED_FRAME_CNT++;
 			/* XXX: should only be used in testing */
-			sleep(1);
+			// sleep(1);
 		}
 		/* XXX: should only be used in testing */
-		sleep(2);
+		// sleep(2);
 		printf("Successfully rendered all frames.\n");
 		this->frame_loader_.join();
 		this->decoder_.join();

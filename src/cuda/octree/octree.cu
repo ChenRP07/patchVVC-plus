@@ -97,7 +97,6 @@ namespace octree {
         /* Optional Zstd decoding */
         this->node_values_ = this->slice_.geometry;
         auto temp_color = this->slice_.color;
-
         /* RLGR decoding */
         common::RLGRDecoder rlgr_dec;
         rlgr_dec.Decode(temp_color, this->slice_.color_size, 3 * this->slice_.size);
@@ -232,7 +231,6 @@ namespace octree {
             }
         }
         /* Update weight and add point into cloud */
-        // this->AddPoints(0, 0, this->tree_center_, this->tree_range_);
 	}
 
     __device__ void InvertRAHTOctree::InvertRAHT() {

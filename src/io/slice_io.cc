@@ -242,12 +242,6 @@ namespace io {
 			auto slice_cmp = [](const common::Slice& _x, const common::Slice& _y) -> bool { return _x.index < _y.index; };
 			std::sort(slices.begin(), slices.end(), slice_cmp);
 
-			/* NOTE: Just for test here */
-			slices[0].index = 0;
-			for (int i = 1; i < slices.size(); ++i) {
-				slices[i].index = slices[0].index + i;
-				slices[i].mv(1, 3) += i * 20.0f;
-			}
 			/* Frame time stamp */
 			common::Frame frame(slices);
 
@@ -285,8 +279,14 @@ namespace io {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
 
-			if (fwrite(frame.mv.data(), sizeof(Eigen::Matrix4f), frame.slice_cnt, fp) != frame.slice_cnt) {
-				throw __EXCEPT__(FILE_WRITE_ERROR);
+			for (auto& i : frame.mv) {
+				for (int row = 0; row < 4; row++) {
+					for (int col = 0; col < 4; col++) {
+						if (fwrite(&i(row, col), sizeof(float), 1, fp) != 1) {
+							throw __EXCEPT__(FILE_WRITE_ERROR);
+						}
+					}
+				}
 			}
 
 			if (fwrite(frame.geometry_size.data(), sizeof(uint32_t), frame.slice_cnt, fp) != frame.slice_cnt) {

@@ -1,7 +1,7 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-22 20:21:44
- * @LastEditTime: 2023-05-23 16:38:57
+ * @LastEditTime: 2023-05-23 16:43:40
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -9,11 +9,15 @@
 using namespace vvc::client;
 int main()
 {
-
-    size_t size{1024 * 1024 * 1024};
-    int patch_size = 383;
+    size_t size{512 * 1024 * 1024};
     cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
+
+    int patch_size = 383;
+    common::Points* tmpCudaData;
     octree::InvertRAHTOctree* tmpDecoders;
+    CudaFrame_t tmpCUDAFrame;
+    gpuErrchk(cudaMalloc((void**)&(tmpCudaData), sizeof(common::Points) * 1000000));
+
     octree::InvertRAHTOctree* temp_Decoders = new octree::InvertRAHTOctree[patch_size];
     // printf("Malloc GPU memory ......\n");
     gpuErrchk(cudaMalloc((void**)&(tmpDecoders), sizeof(octree::InvertRAHTOctree) *patch_size));
@@ -58,7 +62,7 @@ int main()
         }
 
 
-        auto& _frame = frame_p;
+        auto _frame = *frame_ptr;
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.index_gpu, _frame.index, sizeof(int) * _frame.slice_cnt, cudaMemcpyHostToDevice));
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.type_gpu, _frame.type, sizeof(uint8_t) * _frame.slice_cnt, cudaMemcpyHostToDevice));
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.size_gpu, _frame.size, sizeof(uint32_t) * _frame.slice_cnt, cudaMemcpyHostToDevice));
@@ -91,7 +95,7 @@ int main()
 
 
         int numElements =patch_size;
-        int blockSize   = 1;
+        int blockSize   = 32;
         int numBlocks   = (numElements + blockSize - 1) / blockSize;
 
         vvc::client::render::launch_cudaProcess(numBlocks, blockSize, tmpCudaData, 0, 
@@ -118,6 +122,6 @@ int main()
         for(int i=0; i<point_num; i++){
             printf("%.2f %.2f %.2f %.0f %.0f %.0f\n",tmpCudaData_cpu[i].x, tmpCudaData_cpu[i].y, tmpCudaData_cpu[i].z ,tmpCudaData_cpu[i].r*255, tmpCudaData_cpu[i].g*255, tmpCudaData_cpu[i].b*255);
         }
-
     }
+    return 0;
 }

@@ -1,16 +1,14 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-22 20:21:44
- * @LastEditTime: 2023-05-22 21:15:45
+ * @LastEditTime: 2023-05-22 21:35:59
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
 #include "cuda/manager.h"
-#include "cuda/utils.cuh"
 using namespace vvc::client;
 int main()
 {
-
     size_t size{512 * 1024 * 1024};
     cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
 
@@ -114,4 +112,5 @@ int main()
                         patch_size);
 
     gpuErrchk(cudaDeviceSynchronize());
+    printf("GPU done\n");
 }

@@ -1,12 +1,11 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-22 20:21:44
- * @LastEditTime: 2023-05-22 21:35:59
+ * @LastEditTime: 2023-05-23 16:38:57
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
 #include "cuda/manager.h"
-#include "cuda/utils.cuh"
 using namespace vvc::client;
 int main()
 {
@@ -16,11 +15,11 @@ int main()
     cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
     octree::InvertRAHTOctree* tmpDecoders;
     octree::InvertRAHTOctree* temp_Decoders = new octree::InvertRAHTOctree[patch_size];
-        // printf("Malloc GPU memory ......\n");
-        gpuErrchk(cudaMalloc((void**)&(tmpDecoders), sizeof(octree::InvertRAHTOctree) *patch_size));
-        gpuErrchk(cudaMemcpy(tmpDecoders, temp_Decoders, sizeof(octree::InvertRAHTOctree) *patch_size, cudaMemcpyHostToDevice));
-        delete[] temp_Decoders;
-    for (int ttt = 0; ttt < 2; ++ttt) {
+    // printf("Malloc GPU memory ......\n");
+    gpuErrchk(cudaMalloc((void**)&(tmpDecoders), sizeof(octree::InvertRAHTOctree) *patch_size));
+    gpuErrchk(cudaMemcpy(tmpDecoders, temp_Decoders, sizeof(octree::InvertRAHTOctree) *patch_size, cudaMemcpyHostToDevice));
+    delete[] temp_Decoders;
+    for (int ttt = 0; ttt < 30; ++ttt) {
         
         common::Points* tmpCudaData;
         
@@ -51,8 +50,6 @@ int main()
             gpuErrchk(cudaMalloc((void**)&(tmp_color[i]), sizeof(uint8_t) * MAX_SLICE_SIZE));
         }
 
-        printf("hello1\n");
-
         common::Frame_t frame_p;
         io::LoadFrame(frame_p, "/mnt/data/pvvc_data/loot/frame/loot_"+std::to_string(ttt)+".frame");
         int frame_point_cnt{};
@@ -60,7 +57,6 @@ int main()
             frame_point_cnt += frame_p.size[idx];
         }
 
-        printf("hello1.1\n");
 
         auto& _frame = frame_p;
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.index_gpu, _frame.index, sizeof(int) * _frame.slice_cnt, cudaMemcpyHostToDevice));
@@ -70,9 +66,9 @@ int main()
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.geometry_size_gpu, _frame.geometry_size, sizeof(uint32_t) * _frame.slice_cnt, cudaMemcpyHostToDevice));
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.color_size_gpu, _frame.color_size, sizeof(uint32_t) * _frame.slice_cnt, cudaMemcpyHostToDevice));
 
-        printf("hello1.2\n");
         int* inner_offset_cpu = (int*)malloc(sizeof(int) * _frame.slice_cnt);
         int  inner_offset     = 0;
+        int  point_num = 0;
         for (int i = 0; i < _frame.slice_cnt; i++) {
             gpuErrchk(cudaMemcpy(tmp_mv[i], _frame.mv[i], sizeof(float) * 16, cudaMemcpyHostToDevice));
             gpuErrchk(cudaMemcpy(tmp_geo[i], _frame.geometry[i], sizeof(uint8_t) * _frame.geometry_size[i], cudaMemcpyHostToDevice));
@@ -80,20 +76,18 @@ int main()
             inner_offset_cpu[i] = inner_offset;
             inner_offset += _frame.size[i];
         }
+        point_num = inner_offset;
 
-        printf("hello1.3\n");
         // frame_size = inner_offset;
         // 最后统一的将多个 xxx 的地址拷贝到 mv_gpu 中
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.mv_gpu, tmp_mv, sizeof(float*) * _frame.slice_cnt, cudaMemcpyHostToDevice));
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.geometry_gpu, tmp_geo, sizeof(uint8_t*) * _frame.slice_cnt, cudaMemcpyHostToDevice));
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.color_gpu, tmp_color, sizeof(uint8_t*) * _frame.slice_cnt, cudaMemcpyHostToDevice));
 
-        printf("hello1.4\n");
         // 将一维数组进行拷贝
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.inner_offset_gpu, inner_offset_cpu, sizeof(int) * _frame.slice_cnt, cudaMemcpyHostToDevice));
         free(inner_offset_cpu);
         
-        printf("hello2\n");
 
 
         int numElements =patch_size;
@@ -115,7 +109,15 @@ int main()
                             patch_size);
 
         gpuErrchk(cudaDeviceSynchronize());
-    }
 
-    printf("GPU done\n");
+        // 将数据拷贝到 CPU
+        common::Points* tmpCudaData_cpu = (common::Points *)malloc(sizeof(common::Points) * 1000000);
+        gpuErrchk(cudaMemcpy(tmpCudaData_cpu, tmpCudaData, sizeof(common::Points)* point_num, cudaMemcpyDeviceToHost));
+
+        printf("frame = %d num = %d\n",ttt, point_num);
+        for(int i=0; i<point_num; i++){
+            printf("%.2f %.2f %.2f %.0f %.0f %.0f\n",tmpCudaData_cpu[i].x, tmpCudaData_cpu[i].y, tmpCudaData_cpu[i].z ,tmpCudaData_cpu[i].r*255, tmpCudaData_cpu[i].g*255, tmpCudaData_cpu[i].b*255);
+        }
+
+    }
 }

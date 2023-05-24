@@ -150,14 +150,6 @@ namespace registration {
 		Eigen::Matrix4f                        motion_vector_; /* Transformation matrix */
 		float                                  mse_;           /* Mean squared error */
 		bool                                   converged_;     /* Algorithm converged ? */
-
-		/*
-		 * @description : Calculate mse between result_cloud_ and target_cloud_
-		 * @param : {}
-		 * @return : {float}
-		 * */
-		float CloudMSE() const;
-
 	  public:
 		/* Default constructor and deconstructor*/
 		ICPBase();
@@ -193,6 +185,13 @@ namespace registration {
 		 * @return : {float} mse
 		 * */
 		float GetMSE() const;
+
+		/*
+		 * @description : Calculate mse between result_cloud_ and target_cloud_
+		 * @param : {}
+		 * @return : {float}
+		 * */
+		float CloudMSE() const;
 
 		/*
 		 * @description : get converged_, should be called after Align().
@@ -366,11 +365,11 @@ namespace registration {
 		 * */
 		[[nodiscard]] std::vector<common::Patch> GetResultPatches();
 
-        /*
-         * @description : Get result mse stat information.
-         * @param  : {}
-         * @return : {std::vector<float>}
-         * */
+		/*
+		 * @description : Get result mse stat information.
+		 * @param  : {}
+		 * @return : {std::vector<float>}
+		 * */
 		[[nodiscard]] std::vector<float> GetStat() const;
 
 		/*

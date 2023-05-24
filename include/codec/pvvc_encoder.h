@@ -155,6 +155,7 @@ namespace codec {
 		void Task();
 
 	  public:
+		void Test();
 		void Deformation();
 	};
 
@@ -178,8 +179,8 @@ namespace codec {
 		void SetParams(common::PVVCParam_t::Ptr _param);
 
 	  private:
-		std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>>           patches_;
-		std::vector<std::vector<common::Slice>> results_;
+		std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> patches_;
+		std::vector<std::vector<common::Slice>>                     results_;
 
 	  public:
 		void SetGoPs(std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> _patches);
@@ -201,9 +202,50 @@ namespace codec {
 
 	  public:
 		void Compression();
+		void Test();
 	};
 
-    extern void BuildFrames(common::PVVCParam_t::Ptr _param);
+	class PVVCDecompression {
+	  private:
+		common::PVVCParam_t::Ptr params_;
+		common::PVVCTime_t       clock_;
+
+	  public:
+		/* Constructor and deconstructor */
+		PVVCDecompression();
+
+		~PVVCDecompression() = default;
+
+		/*
+		 * @description : Set parameters.
+		 * @param  : {common::PVVCParam_t::Ptr _param}
+		 * @return : {}
+		 * */
+		void SetParams(common::PVVCParam_t::Ptr _param);
+
+	  private:
+		std::vector<std::vector<common::Slice>>             slices_;
+		std::vector<std::vector<common::Patch>>             patches_;
+		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_;
+
+	  public:
+		void LoadSlices();
+
+		void SaveClouds();
+
+	  private:
+		std::vector<octree::InvertRAHTOctree> handler_;
+		std::vector<std::thread>              threads_;
+		std::queue<int>                       task_queue_;
+		std::mutex                            task_queue_mutex_;
+
+		void Task(int k);
+
+	  public:
+		void Decompression();
+	};
+
+	extern void BuildFrames(common::PVVCParam_t::Ptr _param);
 }  // namespace codec
 }  // namespace vvc
 #endif

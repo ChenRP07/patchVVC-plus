@@ -116,8 +116,8 @@ namespace client {
 		Manager::PATCH_SIZE      = _patch_size;
 		Manager::frame_name_prev = _name_prev;
 
-        size_t size{512 * 1024 * 1024};
-        cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
+		size_t size{512 * 1024 * 1024};
+		cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
 		printf("Client start, frame from %s, max patch number %d.\n", Manager::frame_name_prev.c_str(), Manager::PATCH_SIZE);
 
 		printf("Launch thread to load frame ......\n");
@@ -252,6 +252,7 @@ namespace client {
 				for (int idx = 0; idx < frame_ptr->slice_cnt; ++idx) {
 					frame_point_cnt += frame_ptr->size[idx];
 				}
+				timeval t0, t1;
 				printf("Successfuly get frame #%d from stream buffer, frame point count %d.\n", Manager::DECODED_FRAME_CNT, frame_point_cnt);
 				printf("Transmit frame to GPU ......\n");
 				/* Transmit frame to GPU memory */
@@ -261,10 +262,13 @@ namespace client {
 				VBOMemZone mem = this->AllocVBOMem(frame_point_cnt);
 				printf("Malloc VBO memory for decoding, type %d [%d , %d]\n", mem.type, mem.start, mem.start + mem.size);
 				printf("Decoding frame ......\n");
+				gettimeofday(&t0, nullptr);
 				Renderer.CUDADecode(mem.start, frame_ptr->timestamp, frame_ptr->slice_cnt);
 				printf("Decoding frame successfully.\n");
 				this->AddVBOMem(mem);
 				printf("Add VBO memory into frames queue, type %d [%d , %d]\n", mem.type, mem.start, mem.start + mem.size);
+				gettimeofday(&t1, nullptr);
+				printf("decoder#%d_time = %.2f\n",Manager::DECODED_FRAME_CNT , (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f);
 				Manager::DECODED_FRAME_CNT++;
 			}
 		}
@@ -291,8 +295,8 @@ namespace client {
 	}
 
 	VBOMemZone Manager::GetVBOMem() {
-		VBOMemZone mem{};
 		while (true) {
+			VBOMemZone mem{};
 			this->frames_queue_mutex_.lock();
 			if (!this->frames_.empty()) {
 				mem = this->frames_.front();

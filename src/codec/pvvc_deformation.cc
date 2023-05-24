@@ -308,7 +308,7 @@ namespace codec {
 				sub_dirs_fmt % dirs % seq_name % i;
 				std::string sub_dirs = sub_dirs_fmt.str();
 				int         patch_cnt;
-				infile.open(sub_dirs + "/.confg");
+				infile.open(sub_dirs + "/.config");
 				infile >> patch_cnt;
 				infile.close();
 				this->patches_->at(i).resize(patch_cnt);
@@ -319,6 +319,7 @@ namespace codec {
 					io::LoadPatch(this->patches_->at(i)[j], name);
 				}
 			}
+            printf("\033[%dmLoad patches finished.\033[0m\n", common::AZURE);
 		}
 		catch (const common::Exception& e) {
 			e.Log();

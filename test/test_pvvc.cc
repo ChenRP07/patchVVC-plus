@@ -6,8 +6,8 @@ int main() {
 	auto param = p_loader.GetPVVCParam();
 
 	char t;
-	std::cout << "Select module \n\ts(segmentation)\n\td(deformation)\n\tc(compression)\n\tf(build-frame)\n\tother(exit)\nPlease input your selection: ";
-    t = getchar();
+	std::cout << "Select module \n\ts(segmentation)\n\td(deformation)\n\tc(compression)\n\tf(build-frame)\n\tr(decompression)\n\tother(exit)\nPlease input your selection: ";
+	t = getchar();
 	if (t == 's' || t == 'S') {
 		vvc::codec::PVVCSegmentation seg;
 		seg.SetParams(param);
@@ -26,11 +26,19 @@ int main() {
 		vvc::codec::PVVCCompression com;
 		com.SetParams(param);
 		com.LoadGoPs();
+		com.Test();
+		return 0;
 		com.Compression();
 		com.SaveSlices();
 	}
 	else if (t == 'f' || t == 'F') {
 		vvc::codec::BuildFrames(param);
+	}
+	else if (t == 'r' || t == 'R') {
+		vvc::codec::PVVCDecompression dec;
+		dec.SetParams(param);
+		dec.LoadSlices();
+		dec.Decompression();
 	}
 	else {
 		std::cout << "Unknown type, patchVVC exit.\n";

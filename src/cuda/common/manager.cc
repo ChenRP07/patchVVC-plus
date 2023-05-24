@@ -116,8 +116,8 @@ namespace client {
 		Manager::PATCH_SIZE      = _patch_size;
 		Manager::frame_name_prev = _name_prev;
 
-		size_t size{512 * 1024 * 1024};
-		cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
+        size_t size{1024 * 1024 * 1024};
+        cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
 		printf("Client start, frame from %s, max patch number %d.\n", Manager::frame_name_prev.c_str(), Manager::PATCH_SIZE);
 
 		printf("Launch thread to load frame ......\n");

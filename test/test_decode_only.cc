@@ -1,15 +1,44 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-22 20:21:44
- * @LastEditTime: 2023-05-23 16:43:40
+ * @LastEditTime: 2023-05-24 18:47:25
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
 #include "cuda/manager.h"
 using namespace vvc::client;
+
+class GPUTimer {
+public:
+    cudaEvent_t start, stop;
+
+    GPUTimer() {
+        cudaEventCreate(&start);
+        cudaEventCreate(&stop);
+    }
+    virtual ~GPUTimer() { }
+
+    template <typename Func>
+    float timing(Func func) {
+        float perf;
+
+        cudaEventRecord(start);
+
+        func();
+
+        cudaEventRecord(stop);
+        cudaEventSynchronize(stop);
+        cudaDeviceSynchronize();
+
+        cudaEventElapsedTime(&perf, start, stop);
+
+        return perf;
+    }
+};
+
 int main()
 {
-    size_t size{512 * 1024 * 1024};
+    size_t size{1024 * 1024 * 1024};
     cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
 
     int patch_size = 383;
@@ -23,7 +52,9 @@ int main()
     gpuErrchk(cudaMalloc((void**)&(tmpDecoders), sizeof(octree::InvertRAHTOctree) *patch_size));
     gpuErrchk(cudaMemcpy(tmpDecoders, temp_Decoders, sizeof(octree::InvertRAHTOctree) *patch_size, cudaMemcpyHostToDevice));
     delete[] temp_Decoders;
-    for (int ttt = 0; ttt < 30; ++ttt) {
+
+    double sum_time = 0.0;
+    for (int ttt = 0; ttt < 1; ++ttt) {
         
         common::Points* tmpCudaData;
         
@@ -61,8 +92,7 @@ int main()
             frame_point_cnt += frame_p.size[idx];
         }
 
-
-        auto &_frame = frame_p;
+        common::Frame_t &_frame = frame_p;
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.index_gpu, _frame.index, sizeof(int) * _frame.slice_cnt, cudaMemcpyHostToDevice));
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.type_gpu, _frame.type, sizeof(uint8_t) * _frame.slice_cnt, cudaMemcpyHostToDevice));
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.size_gpu, _frame.size, sizeof(uint32_t) * _frame.slice_cnt, cudaMemcpyHostToDevice));
@@ -90,14 +120,13 @@ int main()
 
         // 将一维数组进行拷贝
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.inner_offset_gpu, inner_offset_cpu, sizeof(int) * _frame.slice_cnt, cudaMemcpyHostToDevice));
-        free(inner_offset_cpu);
-        
-
-
-        int numElements =patch_size;
-        int blockSize   = 32;
+         
+        int numElements = patch_size;
+        int blockSize   = 1;
         int numBlocks   = (numElements + blockSize - 1) / blockSize;
 
+        GPUTimer gpuTimer;
+        // float gpuPerf = gpuTimer.timing( [&](){
         vvc::client::render::launch_cudaProcess(numBlocks, blockSize, tmpCudaData, 0, 
                             tmpCUDAFrame.inner_offset_gpu,
                             tmpCUDAFrame.index_gpu,
@@ -111,17 +140,21 @@ int main()
                             tmpCUDAFrame.color_size_gpu, 
                             tmpDecoders, 
                             patch_size);
-
+        // });
+        // printf("第 %d 帧**************************************************** %.2f\n", ttt, gpuPerf);
         gpuErrchk(cudaDeviceSynchronize());
+
+        // sum_time += gpuPerf;
 
         // 将数据拷贝到 CPU
         common::Points* tmpCudaData_cpu = (common::Points *)malloc(sizeof(common::Points) * 1000000);
         gpuErrchk(cudaMemcpy(tmpCudaData_cpu, tmpCudaData, sizeof(common::Points)* point_num, cudaMemcpyDeviceToHost));
 
-        printf("frame = %d num = %d\n",ttt, point_num);
         for(int i=0; i<point_num; i++){
-            printf("%.2f %.2f %.2f %.0f %.0f %.0f\n",tmpCudaData_cpu[i].x, tmpCudaData_cpu[i].y, tmpCudaData_cpu[i].z ,tmpCudaData_cpu[i].r*255, tmpCudaData_cpu[i].g*255, tmpCudaData_cpu[i].b*255);
+            printf("%.3f %.3f %.3f %.0f %.0f %.0f\n",tmpCudaData_cpu[i].x, tmpCudaData_cpu[i].y, tmpCudaData_cpu[i].z ,tmpCudaData_cpu[i].r*255, tmpCudaData_cpu[i].g*255, tmpCudaData_cpu[i].b*255);
         }
+        free(inner_offset_cpu); 
     }
+    
     return 0;
 }

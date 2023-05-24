@@ -34,16 +34,16 @@ namespace segment {
 
 		if (max_x - min_x > max_y - min_y) {
 			max_range = max_x - min_x;
-			div_dim   = 'x';
+			div_dim = 'x';
 		}
 		else {
 			max_range = max_y - min_y;
-			div_dim   = 'y';
+			div_dim = 'y';
 		}
 
 		if (max_z - min_z > max_range) {
 			max_range = max_z - min_z;
-			div_dim   = 'z';
+			div_dim = 'z';
 		}
 
 		if (div_dim == 'x') {
@@ -80,13 +80,86 @@ namespace segment {
 			}
 		}
 	}
-    
-    void DenseSegment::SizeAdjust() {
-        int cnt = 0;
-        for (auto i : this->results_) {
-        if (i->size() > this->params_->segment.num){}
-    }
-}
+	void DenseSegment::TwoMeans(std::vector<int>& _old_block, std::vector<int>& _new_block_a, std::vector<int>& _new_block_b) {
+		/* Centroid */
+		int   c0{}, c1{};
+		float MaxD{};
+		auto  Dis = [](const pcl::PointXYZRGB& _x, const pcl::PointXYZRGB& _y) -> float { return std::pow(_x.x - _y.x, 2) + std::pow(_x.y - _y.y, 2) + std::pow(_x.z - _y.z, 2); };
+		for (int i = 0; i < _old_block.size(); ++i) {
+			float d = Dis(this->source_cloud_->at(c0), this->source_cloud_->at(_old_block[i]));
+			if (d > MaxD) {
+				c1 = i;
+				MaxD = d;
+			}
+		}
+		float            error{};
+		pcl::PointXYZRGB cp0{this->source_cloud_->at(c0)};
+		pcl::PointXYZRGB cp1{this->source_cloud_->at(c1)};
+
+		for (int iter = 0; iter < this->params_->patch.max_iter; iter++) {
+			pcl::PointXYZRGB cpn0{}, cpn1{};
+			int              cnt0{}, cnt1{};
+
+			for (auto i : _old_block) {
+				float d0 = Dis(cp0, this->source_cloud_->at(i));
+				float d1 = Dis(cp1, this->source_cloud_->at(i));
+				if (d0 > d1) {
+					cpn0.x += this->source_cloud_->at(i).x;
+					cpn0.y += this->source_cloud_->at(i).y;
+					cpn0.z += this->source_cloud_->at(i).z;
+					cnt0++;
+				}
+				else {
+					cpn1.x += this->source_cloud_->at(i).x;
+					cpn1.y += this->source_cloud_->at(i).y;
+					cpn1.z += this->source_cloud_->at(i).z;
+					cnt1++;
+				}
+			}
+
+			cpn0.x /= cnt0;
+			cpn0.y /= cnt0;
+			cpn0.z /= cnt0;
+
+			cpn1.x /= cnt1;
+			cpn1.y /= cnt1;
+			cpn1.z /= cnt1;
+
+			error = (Dis(cpn0, cp0) + Dis(cpn1, cp1)) / 2.0f;
+			cp0 = cpn0, cp1 = cpn1;
+			if (error < this->params_->patch.clustering_err_ths) {
+				break;
+			}
+		}
+
+		for (auto i : _old_block) {
+			float d0 = Dis(cp0, this->source_cloud_->at(i));
+			float d1 = Dis(cp1, this->source_cloud_->at(i));
+			if (d0 < d1) {
+				_new_block_a.emplace_back(i);
+			}
+			else if (d1 < d0) {
+				_new_block_b.emplace_back(i);
+			}
+			else {
+				if (_new_block_a.size() <= _new_block_b.size()) {
+					_new_block_a.emplace_back(i);
+				}
+				else {
+					_new_block_b.emplace_back(i);
+				}
+			}
+		}
+	}
+
+	void DenseSegment::SizeAdjust() {
+		int cnt = 0;
+		for (auto i : this->results_) {
+			std::cout << i->size() << std::endl;
+			cnt++;
+		}
+		std::cout << "total : " << cnt << std::endl;
+	}
 
 	void DenseSegment::Segment() {
 		try {
@@ -104,10 +177,11 @@ namespace segment {
 
 			/* patch number and point per patch */
 			const int kPointPerPatch = this->params_->segment.num;
-			const int kClusterNum    = std::ceil(static_cast<float>(this->source_cloud_->size()) / static_cast<float>(kPointPerPatch));
+			const int kClusterNum = std::ceil(static_cast<float>(this->source_cloud_->size()) / static_cast<float>(kPointPerPatch));
+			using VIntPtr = std::shared_ptr<std::vector<int>>;
 
 			/* heap compare lambda function */
-			auto heap_cmp = [](const std::vector<int>& _a, const std::vector<int>& _b) -> bool { return _a.size() < _b.size(); };
+			auto heap_cmp = [](const VIntPtr& _a, const VIntPtr& _b) -> bool { return _a->size() < _b->size(); };
 
 			float max_x = FLT_TRUE_MIN, max_y = FLT_TRUE_MIN, max_z = FLT_TRUE_MIN;
 			float min_x = FLT_MAX, min_y = FLT_MAX, min_z = FLT_MAX;
@@ -118,10 +192,13 @@ namespace segment {
 			}
 
 			const int kBlockNum = static_cast<int>(this->params_->segment.block_num);
-			float     box_tick  = std::max(std::max(max_x - min_x, max_y - min_y), max_z - min_z) / this->params_->segment.block_num;
+			float     box_tick = std::max(std::max(max_x - min_x, max_y - min_y), max_z - min_z) / this->params_->segment.block_num;
 
 			/* Cut point cloud into kBlockNum * kBlockNum * kBlockNum blocks */
-			std::vector<std::vector<int>> blocks(kBlockNum * kBlockNum * kBlockNum);
+			std::vector<VIntPtr> blocks(kBlockNum * kBlockNum * kBlockNum);
+			for (auto& i : blocks) {
+				i = std::make_shared<std::vector<int>>();
+			}
 
 #define At(idx, src) this->source_cloud_->at(idx).src
 #define Range(low, tick) (low + (tick)*box_tick)
@@ -131,7 +208,7 @@ namespace segment {
 						for (int z = 0; z < kBlockNum; ++z) {
 							if (At(i, x) >= Range(min_x, x) && (x == (kBlockNum - 1) || At(i, x) < Range(min_x, x + 1)) && At(i, y) >= Range(min_y, y) &&
 							    (y == (kBlockNum - 1) || At(i, y) < Range(min_y, y + 1)) && At(i, z) >= Range(min_z, z) && (z == (kBlockNum - 1) || At(i, z) < Range(min_z, z + 1))) {
-								blocks[x + y * kBlockNum + z * kBlockNum * kBlockNum].emplace_back(i);
+								blocks[x + y * kBlockNum + z * kBlockNum * kBlockNum]->emplace_back(i);
 							}
 						}
 					}
@@ -144,8 +221,8 @@ namespace segment {
 			std::vector<int>                 centroid_num(blocks.size());
 			std::vector<std::pair<int, int>> remains(blocks.size());
 			for (int i = 0; i < blocks.size(); ++i) {
-				centroid_num[i] = blocks[i].size() / kPointPerPatch;
-				remains[i]      = std::make_pair(i, blocks[i].size() % kPointPerPatch);
+				centroid_num[i] = blocks[i]->size() / kPointPerPatch;
+				remains[i] = std::make_pair(i, blocks[i]->size() % kPointPerPatch);
 			}
 
 			int missing = kClusterNum - std::accumulate(centroid_num.begin(), centroid_num.end(), 0);
@@ -166,32 +243,33 @@ namespace segment {
 				}
 				/* init, push the whole point cloud into queue */
 				/* a max-heap, the vector which has the largest size will be the top element */
-				std::priority_queue<std::vector<int>, std::vector<std::vector<int>>, decltype(heap_cmp)> block_queue(heap_cmp);
+				std::priority_queue<VIntPtr, std::vector<VIntPtr>, decltype(heap_cmp)> block_queue(heap_cmp);
 				block_queue.push(blocks[i]);
 
 				/* do segment until the size of largest block is less than the point per patch */
-				while (block_queue.top().size() > kPointPerPatch) {
-					std::vector<int> temp_block = block_queue.top();
+				while (block_queue.top()->size() > kPointPerPatch) {
+					auto temp_block = block_queue.top();
 					block_queue.pop();
-					std::vector<int> new_block_a, new_block_b;
-					this->BlockSegment(temp_block, new_block_a, new_block_b);
+					VIntPtr new_block_a = std::make_shared<std::vector<int>>();
+					VIntPtr new_block_b = std::make_shared<std::vector<int>>();
+					this->BlockSegment(*temp_block, *new_block_a, *new_block_b);
 					block_queue.push(new_block_a);
 					block_queue.push(new_block_b);
 				}
 
 				for (int j = 0; j < centroid_num[i]; ++j) {
 					pcl::PointXYZRGB center;
-					std::vector<int> temp_block = block_queue.top();
+					auto             temp_block = block_queue.top();
 					block_queue.pop();
 					center.x = center.y = center.z = 0.0f;
-					for (auto i : temp_block) {
+					for (auto i : *temp_block) {
 						center.x += this->source_cloud_->at(i).x;
 						center.y += this->source_cloud_->at(i).y;
 						center.z += this->source_cloud_->at(i).z;
 					}
-					center.x /= temp_block.size();
-					center.y /= temp_block.size();
-					center.z /= temp_block.size();
+					center.x /= temp_block->size();
+					center.y /= temp_block->size();
+					center.z /= temp_block->size();
 
 					centroids->emplace_back(center);
 				}
@@ -201,48 +279,68 @@ namespace segment {
 			pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
 			kdtree.setInputCloud(centroids);
 
-			std::vector<std::vector<int>> temp_result(kClusterNum, std::vector<int>());
+			std::vector<VIntPtr> temp_result(kClusterNum);
+			for (auto& i : temp_result) {
+				i = std::make_shared<std::vector<int>>();
+			}
 
 			for (int i = 0; i < this->source_cloud_->size(); ++i) {
 				std::vector<int>   index(1);
 				std::vector<float> distance(1);
 				kdtree.nearestKSearch(this->source_cloud_->at(i), 1, index, distance);
-				temp_result[index[0]].emplace_back(i);
+				temp_result[index[0]]->emplace_back(i);
 			}
 
-			/* XXX: Points in patches whose size is less than 1/10 kPP will be move to another patch */
-			std::vector<int>                       changed_point;
-			std::vector<std::vector<int>>          result_index;
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_centroids(new pcl::PointCloud<pcl::PointXYZRGB>());
 
+			std::vector<VIntPtr> final_result;
+
+			VIntPtr mid_result = std::make_shared<std::vector<int>>();
 			for (int i = 0; i < temp_result.size(); ++i) {
-				if (temp_result[i].size() < kPointPerPatch / 10) {
-					changed_point.insert(changed_point.end(), temp_result[i].begin(), temp_result[i].end());
+				if (temp_result[i]->size() < kPointPerPatch * (1.0f - 1.0f / 3.0f)) {
+					mid_result->insert(mid_result->end(), temp_result[i]->begin(), temp_result[i]->end());
 				}
 				else {
-					result_index.emplace_back(temp_result[i]);
+					final_result.emplace_back(temp_result[i]);
 					final_centroids->emplace_back(centroids->at(i));
 				}
 			}
 
 			kdtree.setInputCloud(final_centroids);
-			for (auto i : changed_point) {
+			for (auto i : *mid_result) {
 				std::vector<int>   index(1);
 				std::vector<float> distance(1);
 				kdtree.nearestKSearch(this->source_cloud_->at(i), 1, index, distance);
-				result_index[index[0]].emplace_back(i);
+				final_result[index[0]]->emplace_back(i);
+			}
+			std::priority_queue<VIntPtr, std::vector<VIntPtr>, decltype(heap_cmp)> segment_queue(heap_cmp);
+			for (auto& i : final_result) {
+				segment_queue.push(i);
+			}
+
+			/* Split cluster whose size is larger than kPP * 1+1/3 */
+			while (segment_queue.top()->size() > kPointPerPatch * (1.0f + 1.0f / 3.0f)) {
+				auto temp_seg = segment_queue.top();
+				segment_queue.pop();
+				VIntPtr new_seg_a = std::make_shared<std::vector<int>>();
+				VIntPtr new_seg_b = std::make_shared<std::vector<int>>();
+				// this->BlockSegment(*temp_seg, *new_seg_a, *new_seg_b);
+				this->TwoMeans(*temp_seg, *new_seg_a, *new_seg_b);
+				segment_queue.push(new_seg_a);
+				segment_queue.push(new_seg_b);
 			}
 
 			/* segmentation */
-			for (int i = 0; i < result_index.size(); ++i) {
-				if (result_index[i].empty()) {
-					continue;
-				}
+			while (!segment_queue.empty()) {
+				auto ptr = segment_queue.top();
+				segment_queue.pop();
 				this->results_.emplace_back(new pcl::PointCloud<pcl::PointXYZRGB>());
-				for (auto p : result_index[i]) {
+				for (auto p : *ptr) {
 					this->results_.back()->emplace_back(this->source_cloud_->at(p));
 				}
 			}
+
+			this->SizeAdjust();
 		}
 		catch (const common::Exception& e) {
 			e.Log();

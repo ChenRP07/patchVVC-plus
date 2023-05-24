@@ -106,6 +106,8 @@ namespace segment {
 
         void SizeAdjust();
 
+        void TwoMeans(std::vector<int>& _old_block, std::vector<int>& _new_block_a, std::vector<int>& _new_block_b);
+
 	  public:
 		/* default constructor */
 		DenseSegment() = default;

@@ -128,7 +128,7 @@ namespace common {
 		 * @description : Reset decoder
 		 * */
 		__device__ inline void Reset(int _size) {
-			this->result_ = (FIX_DATA_INT *) malloc (sizeof(FIX_DATA_INT) * _size);
+			this->result_ = new FIX_DATA_INT[_size];
 			this->cnt_    = 0;
 			this->buffer_ = 0;
 			this->result_index_ = 0;
@@ -140,7 +140,9 @@ namespace common {
 		 * */
 		__device__ RLGRDecoder() : buffer_{}, cnt_{}, result_{}, now_{}, end_{}, result_index_{} {}
 
-		__device__ ~RLGRDecoder() {}
+		__device__ ~RLGRDecoder() {
+			delete []result_;
+		}
 
 		/*
 		 * @description : Decode data, should generate _size decoding result

@@ -115,8 +115,8 @@ namespace client {
 			int           length;
 
 			OctreeLayer_t() = default;
-			~OctreeLayer_t() {
-				free(nodes);
+			__device__ ~OctreeLayer_t() {
+				delete [](this->nodes);
 			}
 		};
 

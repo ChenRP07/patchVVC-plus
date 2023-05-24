@@ -101,29 +101,25 @@ namespace octree {
         common::RLGRDecoder rlgr_dec;
         rlgr_dec.Decode(temp_color, this->slice_.color_size, 3 * this->slice_.size);
         auto rlgr_res       = rlgr_dec.GetResult();
-        free(this->coefficients_);
-        this->coefficients_ = (common::ColorYUV*)malloc(sizeof(common::ColorYUV) * this->slice_.size);
+        delete [](this->coefficients_);
+        this->coefficients_ = new common::ColorYUV[this->slice_.size];
         /* Reconstruct coefficients */
         for (int i = 0; i < this->slice_.size; ++i) {
             this->coefficients_[i].y = static_cast<float>(rlgr_res[i] * this->slice_.qp);
             this->coefficients_[i].u = static_cast<float>(rlgr_res[i + this->slice_.size] * this->slice_.qp);
             this->coefficients_[i].v = static_cast<float>(rlgr_res[i + 2 * this->slice_.size] * this->slice_.qp);
         }
-        free(rlgr_res);
         /* If intra slice, clear tree and related container */
         if (!common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_PREDICT)) {
-            for (int height = 0; height < this->tree_height_; ++height) {
-                delete []this->tree_[height].nodes;
-            }
-            free(this->tree_);
-            free(this->source_cloud_);
+            delete [](this->tree_);
+            delete [](this->source_cloud_);
             this->source_cloud_index_ = 0;
-            free(this->reference_colors_);
-            free(this->source_colors_);
+            delete [](this->reference_colors_);
+            delete [](this->source_colors_);
 
-            this->source_cloud_ = (common::PointXYZ*)malloc(sizeof(common::PointXYZ) * this->slice_.size);
-            this->reference_colors_ = (common::ColorYUV*)malloc(sizeof(common::ColorYUV) * this->slice_.size);
-            this->source_colors_ = (common::ColorYUV*)malloc(sizeof(common::ColorYUV) * this->slice_.size);
+            this->source_cloud_ = new common::PointXYZ[this->slice_.size];
+            this->reference_colors_ = new common::ColorYUV[this->slice_.size];
+            this->source_colors_ = new common::ColorYUV[this->slice_.size];
             this->MakeTree();
         }
         this->InvertRAHT();
@@ -157,8 +153,8 @@ namespace octree {
         }
 
         LoadTreeCore(this->tree_center_, this->tree_range_, this->tree_height_, tree_attr);
-        
-        this->tree_ = (OctreeLayer_t *)malloc(sizeof(OctreeLayer_t) * this->tree_height_);
+
+        this->tree_ = new OctreeLayer_t[this->tree_height_];
         int curr_layer_node_count = 1;
         common::ColorYUV zero{};
         /* Assign value for each branch node */
@@ -187,7 +183,7 @@ namespace octree {
         }
 
         /* Malloc space for last layer */
-        this->tree_[this->tree_height_ - 1].nodes = (OctreeNode_t *)malloc(sizeof(OctreeNode_t) * curr_layer_node_count);
+        this->tree_[this->tree_height_ - 1].nodes = new OctreeNode_t[curr_layer_node_count];
         this->tree_[this->tree_height_ - 1].length = curr_layer_node_count;
         
         /* Update center and range for each node */

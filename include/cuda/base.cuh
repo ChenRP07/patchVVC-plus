@@ -241,41 +241,41 @@ namespace client {
 
 			Frame_t() : timestamp{}, slice_cnt{}, index{}, type{}, mv{}, size{}, qp{}, geometry_size{}, geometry{}, color_size{}, color{} {}
 			~Frame_t() {
-				free(this->index);
-				free(this->type);
+				delete [](this->index);
+				delete [](this->type);
 				for (int i = 0; i < this->slice_cnt; ++i) {
-					free(this->mv[i]);
+					delete [](this->mv[i]);
 					if (this->geometry_size[i] != 0) {
-						free(this->geometry[i]);
+						delete [](this->geometry[i]);
 					}
 					if (this->color_size[i] != 0) {
-						free(this->color[i]);
+						delete [](this->color[i]);
 					}
 				}
-				free(this->size);
-				free(this->qp);
-				free(this->geometry_size);
-				free(this->color_size);
-				free(this->mv);
-				free(this->geometry);
-				free(this->color);
+				delete [](this->size);
+				delete [](this->qp);
+				delete [](this->geometry_size);
+				delete [](this->color_size);
+				delete [](this->mv);
+				delete [](this->geometry);
+				delete [](this->color);
 			}
 			void Reset() {
 				this->timestamp = -1;
-				free(this->index);
-				free(this->type);
+				delete [](this->index);
+				delete [](this->type);
 				for (int i = 0; i < this->slice_cnt; ++i) {
-					free(this->mv[i]);
-					free(this->geometry[i]);
-					free(this->color[i]);
+					delete [](this->mv[i]);
+					delete [](this->geometry[i]);
+					delete [](this->color[i]);
 				}
-				free(this->mv);
-				free(this->size);
-				free(this->qp);
-				free(this->geometry_size);
-				free(this->geometry);
-				free(this->color_size);
-				free(this->color);
+				delete [](this->mv);
+				delete [](this->size);
+				delete [](this->qp);
+				delete [](this->geometry_size);
+				delete [](this->geometry);
+				delete [](this->color_size);
+				delete [](this->color);
 				this->slice_cnt = 0;
 			}
 		};

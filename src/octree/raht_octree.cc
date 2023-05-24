@@ -85,9 +85,12 @@ namespace octree {
 			this->tree_center_.y = max_y / 2.0f + min_y / 2.0f;
 			this->tree_center_.z = max_z / 2.0f + min_z / 2.0f;
 
-			float max_range  = std::max(max_x - min_x, std::max(max_y - min_y, max_z - min_z));
-			int   max_height = static_cast<int>(std::ceil(std::log2(max_range)));
-			int   ths_height = static_cast<int>(std::ceil(std::log2(this->params_->octree.resolution)));
+			float max_range = std::max(max_x - min_x, std::max(max_y - min_y, max_z - min_z));
+			if (max_range <= 0.0f) {
+				max_range = 1.0f;
+			}
+			int max_height = static_cast<int>(std::ceil(std::log2(max_range)));
+			int ths_height = static_cast<int>(std::ceil(std::log2(this->params_->octree.resolution)));
 			/* For example, 8->4->2 : 3 - 1 + 1 = 3 */
 			this->tree_height_ = max_height - ths_height + 1;
 

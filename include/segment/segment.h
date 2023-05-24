@@ -104,6 +104,8 @@ namespace segment {
 		 * */
 		void BlockSegment(std::vector<int>& _old_block, std::vector<int>& _new_block_a, std::vector<int>& _new_block_b);
 
+        void SizeAdjust();
+
 	  public:
 		/* default constructor */
 		DenseSegment() = default;

@@ -80,6 +80,13 @@ namespace segment {
 			}
 		}
 	}
+    
+    void DenseSegment::SizeAdjust() {
+        int cnt = 0;
+        for (auto i : this->results_) {
+        if (i->size() > this->params_->segment.num){}
+    }
+}
 
 	void DenseSegment::Segment() {
 		try {

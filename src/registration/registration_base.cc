@@ -118,7 +118,7 @@ float vvc::registration::ICPBase::CloudMSE() const {
 			throw __EXCEPT__(EMPTY_POINT_CLOUD);
 		}
 
-		float MSE;
+		float MSE{};
 
 		/* nearest neighbor search */
 		pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
@@ -133,7 +133,23 @@ float vvc::registration::ICPBase::CloudMSE() const {
 		}
 
 		MSE /= this->result_cloud_->size();
-		return MSE;
+		
+        float MSE1{};
+
+		/* nearest neighbor search */
+		kdtree.setInputCloud(this->result_cloud_);
+
+		/* calculate mse */
+		for (auto i : *(this->target_cloud_)) {
+			std::vector<int>   idx(1);
+			std::vector<float> dis(1);
+			kdtree.nearestKSearch(i, 1, idx, dis);
+			MSE1 += dis.front();
+		}
+
+		MSE1 /= this->target_cloud_->size();
+
+		return std::max(MSE, MSE1);
 	}
 	catch (const common::Exception& e) {
 		e.Log();
@@ -207,17 +223,17 @@ void vvc::common::MSE::Compute() {
 }
 
 std::pair<float, float> vvc::common::MSE::GetGeoMSEs() const {
-    return this->geo_mses_;
+	return this->geo_mses_;
 }
 
 std::pair<float, float> vvc::common::MSE::GetYMSEs() const {
-    return this->y_mses_;
+	return this->y_mses_;
 }
 
 std::pair<float, float> vvc::common::MSE::GetUMSEs() const {
-    return this->u_mses_;
+	return this->u_mses_;
 }
 
 std::pair<float, float> vvc::common::MSE::GetVMSEs() const {
-    return this->v_mses_;
+	return this->v_mses_;
 }

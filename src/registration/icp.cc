@@ -92,8 +92,8 @@ void vvc::registration::ICP::Align() {
 			this->motion_vector_ = this->icp_->getFinalTransformation() * this->motion_vector_;
 			this->result_cloud_->swap(temp_cloud);
 			this->converged_ = true;
+			this->mse_       = this->icp_->getFitnessScore();
 		}
-		this->mse_ = this->CloudMSE();
 	}
 	catch (const common::Exception& e) {
 		e.Log();

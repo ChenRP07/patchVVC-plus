@@ -61,14 +61,14 @@ namespace patch {
 
 			/* This patch can be added into GOP, change point cloud to transformed cloud, record motion vector */
 			if (icp->Converged()) {
-				if (icp->GetMSE() <= this->params_->patch.fitting_ths) {
+				if (icp->CloudMSE() <= this->params_->patch.fitting_ths) {
 					_patch.cloud = icp->GetResultCloud();
 					_patch.mv    = icp->GetMotionVector() * _patch.mv;
 					this->source_patches_.emplace_back(_patch);
 					this->fitting_cloud_->clear();
 					/* Compute fitting patch */
 					this->Compute();
-					this->stat_.score.emplace_back(icp->GetMSE());
+					this->stat_.score.emplace_back(icp->CloudMSE());
 					int   ans = std::accumulate(this->stat_.iters.begin(), this->stat_.iters.end(), 0);
 					float avg = static_cast<float>(ans) / static_cast<float>(this->stat_.iters.size());
 					this->stat_.avg_iters.emplace_back(avg);

@@ -116,7 +116,7 @@ namespace client {
 		Manager::PATCH_SIZE      = _patch_size;
 		Manager::frame_name_prev = _name_prev;
 
-        size_t size{512 * 1024 * 1024};
+        size_t size{1024 * 1024 * 1024};
         cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
 		printf("Client start, frame from %s, max patch number %d.\n", Manager::frame_name_prev.c_str(), Manager::PATCH_SIZE);
 
@@ -290,9 +290,9 @@ namespace client {
 		this->unused_memory_mutex.unlock();
 	}
 
-	VBOMemZone Manager::GetVBOMem() {
-		VBOMemZone mem{};
+	VBOMemZone Manager::GetVBOMem() {	
 		while (true) {
+			VBOMemZone mem{};
 			this->frames_queue_mutex_.lock();
 			if (!this->frames_.empty()) {
 				mem = this->frames_.front();

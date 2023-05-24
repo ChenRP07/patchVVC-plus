@@ -18,8 +18,8 @@
 namespace vvc {
 namespace client{
 namespace octree {
-    extern __device__ void InvertHaarTransform(int _w0, int _w1, const common::ColorYUV& _g0, const common::ColorYUV& _g1, common::ColorYUV& _res0, common::ColorYUV& _res1) {
-		common::ColorYUV G, H;
+    __device__ void InvertHaarTransform(int _w0, int _w1, const common::ColorYUV& _g0, const common::ColorYUV& _g1, common::ColorYUV& _res0, common::ColorYUV& _res1) {
+		common::ColorYUV G{}, H{};
 		if (_w0 == 0 && _w1 == 0) {
             _res0 = G;
             _res1 = H;
@@ -113,7 +113,7 @@ namespace octree {
         /* If intra slice, clear tree and related container */
         if (!common::CheckSliceType(this->slice_.type, common::PVVC_SLICE_TYPE_PREDICT)) {
             for (int height = 0; height < this->tree_height_; ++height) {
-                free(this->tree_[height].nodes);
+                delete []this->tree_[height].nodes;
             }
             free(this->tree_);
             free(this->source_cloud_);
@@ -160,13 +160,13 @@ namespace octree {
         
         this->tree_ = (OctreeLayer_t *)malloc(sizeof(OctreeLayer_t) * this->tree_height_);
         int curr_layer_node_count = 1;
-
+        common::ColorYUV zero{};
         /* Assign value for each branch node */
         for (int idx = 0; idx < this->tree_height_ - 1; ++idx) {
             /* Count how many nodes next layer has */
             int next_layer_node_count = 0;
             /* Assign nodes in current layer */
-            this->tree_[idx].nodes = (OctreeNode_t *)malloc(sizeof(OctreeNode_t) * curr_layer_node_count);
+            this->tree_[idx].nodes = new OctreeNode_t[curr_layer_node_count];
             this->tree_[idx].length = curr_layer_node_count;
             for (int cnt = 0; cnt < curr_layer_node_count; ++cnt) {
                 /* Set value */

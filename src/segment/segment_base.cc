@@ -48,8 +48,9 @@ namespace segment {
 				if (!i->empty()) {
 					result.emplace_back();
 					result.back().timestamp = this->timestamp_;
-					result.back().cloud     = i;
-					result.back().index     = cnt;
+					result.back().cloud = i;
+					result.back().index = cnt;
+					result.back().type = common::PATCH_TYPE::FORCE_KEY_PATCH;
 					cnt++;
 				}
 			}

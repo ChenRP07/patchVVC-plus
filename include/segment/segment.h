@@ -19,6 +19,7 @@
 #include "common/exception.h"
 #include "common/parameter.h"
 #include "common/statistic.h"
+#include "io/ply_io.h"
 #include <float.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -28,6 +29,7 @@
 
 namespace vvc {
 namespace segment {
+	constexpr float NUM_THS = 1.0f / 4.0f;
 	/* Base class of point cloud segment */
 	class SegmentBase {
 	  protected:
@@ -59,14 +61,14 @@ namespace segment {
 		[[nodiscard]] std::vector<common::Patch> GetResultPatches();
 
 		/*
-		 * @description ：set parameters
+		 * @description :set parameters
 		 * @param : {std::shared_ptr<common::vvc_param_t> _ptr}
 		 * @return : {}
 		 * */
 		void SetParams(common::PVVCParam_t::Ptr _ptr);
 
 		/*
-		 * @description ：set timestamp
+		 * @description :set timestamp
 		 * @param : {int _time}
 		 * @return : {}
 		 * */
@@ -95,6 +97,7 @@ namespace segment {
 	 * */
 	class DenseSegment : public SegmentBase {
 	  private:
+		using VIntPtr = std::shared_ptr<std::vector<int>>;
 		/*
 		 * @description : segment a block into two subblocks along the largest span dimension, use point index of source_cloud_ to represent a point
 		 * @param : {std::vector<size_t>& _old_block} block to be segmented
@@ -104,9 +107,7 @@ namespace segment {
 		 * */
 		void BlockSegment(std::vector<int>& _old_block, std::vector<int>& _new_block_a, std::vector<int>& _new_block_b);
 
-        void SizeAdjust();
-
-        void TwoMeans(std::vector<int>& _old_block, std::vector<int>& _new_block_a, std::vector<int>& _new_block_b);
+		void TwoMeans(std::vector<int>& _old_block, std::vector<int>& _new_block_a, std::vector<int>& _new_block_b);
 
 	  public:
 		/* default constructor */

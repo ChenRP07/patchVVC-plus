@@ -48,7 +48,7 @@ namespace common {
 
 	static uint8_t PVVC_SLICE_TYPE_MASK[8] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80};
 
-	static uint8_t PVVC_SLICE_TYPE_DEFAULT_INTRA   = 0b00000001;
+	static uint8_t PVVC_SLICE_TYPE_DEFAULT_INTRA = 0b00000001;
 	static uint8_t PVVC_SLICE_TYPE_DEFAULT_PREDICT = 0b00000011;
 
 	inline bool CheckSliceType(uint8_t _type, PVVC_SLICE_TYPE _MASK) {
@@ -158,25 +158,33 @@ namespace common {
 		}
 	};
 
+	/* Patch types */
+	enum PATCH_TYPE : uint8_t {
+		FORCE_KEY_PATCH, /* This patch must start a new GoP */
+		SIMPLE_PATCH,    /* This patch can be used to consist a GoP or start a GoP */
+	};
+
 	/* Source patch */
 	struct Patch {
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;     /* Source point cloud patch */
 		int                                    timestamp; /* Patch time stamp */
 		int                                    index;     /* Patch index in point cloud frame */
 		Eigen::Matrix4f                        mv;        /* Motion vector */
+		PATCH_TYPE                             type;
 
 		/* Default constructor */
-		Patch() : cloud{nullptr}, timestamp{-1}, index{-1}, mv{Eigen::Matrix4f::Identity()} {}
+		Patch() : cloud{nullptr}, timestamp{-1}, index{-1}, mv{Eigen::Matrix4f::Identity()}, type{PATCH_TYPE::SIMPLE_PATCH} {}
 
 		/* Copy constructor */
-		Patch(const Patch& _p) : cloud{_p.cloud}, timestamp{_p.timestamp}, index{_p.index}, mv{_p.mv} {}
+		Patch(const Patch& _p) : cloud{_p.cloud}, timestamp{_p.timestamp}, index{_p.index}, mv{_p.mv}, type{_p.type} {}
 
 		/* Assign constructor */
 		Patch& operator=(const Patch& _p) {
-			this->cloud     = _p.cloud;
+			this->cloud = _p.cloud;
 			this->timestamp = _p.timestamp;
-			this->index     = _p.index;
-			this->mv        = _p.mv;
+			this->index = _p.index;
+			this->mv = _p.mv;
+			this->type = _p.type;
 			return *this;
 		}
 
@@ -284,22 +292,22 @@ namespace common {
 
 		Slice& operator=(const Slice& _x) {
 			this->timestamp = _x.timestamp;
-			this->index     = _x.index;
-			this->type      = _x.type;
-			this->geometry  = _x.geometry;
-			this->color     = _x.color;
-			this->size      = _x.size;
-			this->qp        = _x.qp;
-			this->mv        = _x.mv;
+			this->index = _x.index;
+			this->type = _x.type;
+			this->geometry = _x.geometry;
+			this->color = _x.color;
+			this->size = _x.size;
+			this->qp = _x.qp;
+			this->mv = _x.mv;
 			return *this;
 		}
 
 		void clear() {
 			this->timestamp = this->index = -1;
-			this->type                    = 0;
-			this->mv                      = Eigen::Matrix4f::Identity();
-			this->size                    = 0;
-			this->qp                      = 1;
+			this->type = 0;
+			this->mv = Eigen::Matrix4f::Identity();
+			this->size = 0;
+			this->qp = 1;
 			this->geometry.reset();
 			this->color.reset();
 		}
@@ -353,12 +361,12 @@ namespace common {
 
 	struct Frame {
 		int                                                timestamp;
-		uint32_t                                             slice_cnt;
+		uint32_t                                           slice_cnt;
 		std::vector<int>                                   index;
 		std::vector<uint8_t>                               type;
-		std::vector<uint32_t>                                size;
-		std::vector<uint32_t>                                geometry_size;
-		std::vector<uint32_t>                                color_size;
+		std::vector<uint32_t>                              size;
+		std::vector<uint32_t>                              geometry_size;
+		std::vector<uint32_t>                              color_size;
 		std::vector<uint8_t>                               qp;
 		std::vector<Eigen::Matrix4f>                       mv;
 		std::vector<std::shared_ptr<std::vector<uint8_t>>> geometry;

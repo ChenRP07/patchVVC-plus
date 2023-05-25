@@ -80,6 +80,7 @@ namespace segment {
 			}
 		}
 	}
+
 	void DenseSegment::TwoMeans(std::vector<int>& _old_block, std::vector<int>& _new_block_a, std::vector<int>& _new_block_b) {
 		/* Centroid */
 		int   c0{}, c1{};
@@ -150,15 +151,6 @@ namespace segment {
 				}
 			}
 		}
-	}
-
-	void DenseSegment::SizeAdjust() {
-		int cnt = 0;
-		for (auto i : this->results_) {
-			std::cout << i->size() << std::endl;
-			cnt++;
-		}
-		std::cout << "total : " << cnt << std::endl;
 	}
 
 	void DenseSegment::Segment() {
@@ -232,7 +224,6 @@ namespace segment {
 			for (int i = 0; i < missing; ++i) {
 				centroid_num[remains[i].first]++;
 			}
-
 			/* All cluster centroids */
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr centroids(new pcl::PointCloud<pcl::PointXYZRGB>());
 
@@ -297,7 +288,7 @@ namespace segment {
 
 			VIntPtr mid_result = std::make_shared<std::vector<int>>();
 			for (int i = 0; i < temp_result.size(); ++i) {
-				if (temp_result[i]->size() < kPointPerPatch * (1.0f - 1.0f / 3.0f)) {
+				if (temp_result[i]->size() < kPointPerPatch * (1.0f - NUM_THS)) {
 					mid_result->insert(mid_result->end(), temp_result[i]->begin(), temp_result[i]->end());
 				}
 				else {
@@ -319,13 +310,13 @@ namespace segment {
 			}
 
 			/* Split cluster whose size is larger than kPP * 1+1/3 */
-			while (segment_queue.top()->size() > kPointPerPatch * (1.0f + 1.0f / 3.0f)) {
+			while (segment_queue.top()->size() > kPointPerPatch * (1.0f + NUM_THS)) {
 				auto temp_seg = segment_queue.top();
 				segment_queue.pop();
 				VIntPtr new_seg_a = std::make_shared<std::vector<int>>();
 				VIntPtr new_seg_b = std::make_shared<std::vector<int>>();
-				// this->BlockSegment(*temp_seg, *new_seg_a, *new_seg_b);
-				this->TwoMeans(*temp_seg, *new_seg_a, *new_seg_b);
+				this->BlockSegment(*temp_seg, *new_seg_a, *new_seg_b);
+				// this->TwoMeans(*temp_seg, *new_seg_a, *new_seg_b);
 				segment_queue.push(new_seg_a);
 				segment_queue.push(new_seg_b);
 			}
@@ -340,7 +331,11 @@ namespace segment {
 				}
 			}
 
-			this->SizeAdjust();
+			for (int i = 0; i < this->results_.size(); ++i) {
+				unsigned int color{static_cast<unsigned int>(rand() % 0x00ffffff)};
+				vvc::io::SaveUniqueColorPlyFile("./data/ply/res" + std::to_string(i) + ".ply", this->results_[i], color);
+			}
+            /* Try to merge cloud here, min dis < 1 and size + size < 2048 */
 		}
 		catch (const common::Exception& e) {
 			e.Log();

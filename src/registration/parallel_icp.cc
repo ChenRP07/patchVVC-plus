@@ -40,9 +40,12 @@ namespace registration {
 			for (int i = 0; i < this->reference_patches_.size(); ++i) {
 				pcl::PointCloud<pcl::PointXYZRGB>::Ptr p(new pcl::PointCloud<pcl::PointXYZRGB>());
 				*p += *(this->reference_patches_[i].cloud);
-				this->result_patches_[i].cloud     = p;
-				this->result_patches_[i].index     = this->reference_patches_[i].index;
-				this->result_patches_[i].timestamp = this->reference_patches_[i].timestamp + 1;
+				this->result_patches_[i].cloud = p;
+				/* Copy index, increment timestamp */
+				this->result_patches_[i].index = this->reference_patches_[i].index;
+				this->result_patches_[i].timestamp = this->reference_patches_[i].timestamp + this->params_->time_interval;
+				/* Initialize type, simple patch */
+				this->result_patches_[i].type = common::PATCH_TYPE::SIMPLE_PATCH;
 			}
 
 			/* init */
@@ -69,8 +72,9 @@ namespace registration {
 				if (!i.empty()) {
 					result.emplace_back();
 					result.back().timestamp = i.timestamp;
-					result.back().index     = i.index;
-					result.back().cloud     = i.cloud;
+					result.back().index = i.index;
+					result.back().cloud = i.cloud;
+					result.back().type = i.type;
 				}
 			}
 			return result;
@@ -123,12 +127,12 @@ namespace registration {
 		while (true) {
 			/* loop until task_queue_ is empty */
 			size_t task_idx = 0;
-			bool   is_end   = true;
+			bool   is_end = true;
 			/* get task index from task_queue_ */
 			this->task_mutex_.lock();
 			if (!this->task_queue_.empty()) {
 				task_idx = this->task_queue_.front();
-				is_end   = false;
+				is_end = false;
 				this->task_queue_.pop();
 			}
 			this->task_mutex_.unlock();
@@ -171,7 +175,7 @@ namespace registration {
 				pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp = icp->GetResultCloud();
 				this->result_patches_[task_idx].cloud->swap(*temp);
 				this->converged_[task_idx] = 1;
-				this->mse_[task_idx]       = icp->GetMSE();
+				this->mse_[task_idx] = icp->GetMSE();
 			}
 			else {
 				this->converged_[task_idx] = 0;
@@ -257,18 +261,24 @@ namespace registration {
 			pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
 			kdtree.setInputCloud(search_cloud);
 
+			using VIntPtr = std::shared_ptr<std::vector<int>>;
+
+			std::vector<VIntPtr> temp_result(this->result_patches_.size());
+			for (auto& i : temp_result) {
+				i = std::make_shared<std::vector<int>>();
+			}
+
 			std::vector<pcl::PointCloud<pcl::PointXYZRGB>> temp_clouds(this->result_patches_.size(), pcl::PointCloud<pcl::PointXYZRGB>());
-			for (auto i : *(this->target_cloud_)) {
+			for (int i = 0; i < this->target_cloud_->size(); ++i) {
 				std::vector<int>   idx(1);
 				std::vector<float> dis(1);
-				kdtree.nearestKSearch(i, 1, idx, dis);
-				temp_clouds[source_index[idx[0]]].emplace_back(i);
+				kdtree.nearestKSearch(this->target_cloud_->at(i), 1, idx, dis);
+				temp_result[source_index[idx[0]]]->emplace_back(i);
 			}
 
 			for (int i = 0; i < this->result_patches_.size(); ++i) {
 				this->result_patches_[i].cloud->swap(temp_clouds[i]);
 			}
-
 		}
 		catch (const common::Exception& e) {
 			e.Log();

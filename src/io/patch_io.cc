@@ -43,6 +43,10 @@ namespace io {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
 
+			if (fwrite(&_patch.type, sizeof _patch.type, 1, fp) != 1) {
+				throw __EXCEPT__(FILE_WRITE_ERROR);
+			}
+
 			if (fwrite(&_patch.mv, sizeof(Eigen::Matrix4f), 1, fp) != 1) {
 				throw __EXCEPT__(FILE_WRITE_ERROR);
 			}
@@ -97,6 +101,10 @@ namespace io {
 			}
 
 			if (fread(&_patch.index, sizeof(int), 1, fp) != 1) {
+				throw __EXCEPT__(FILE_READ_ERROR);
+			}
+
+			if (fread(&_patch.type, sizeof _patch.type, 1, fp) != 1) {
 				throw __EXCEPT__(FILE_READ_ERROR);
 			}
 

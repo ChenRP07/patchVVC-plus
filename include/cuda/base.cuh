@@ -17,15 +17,15 @@
 
 #include <cuda_runtime.h>
 #include <regex>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string>
 #include <zstd.h>
-#include <stdio.h>
 
-typedef unsigned char      uint8_t;
+typedef unsigned char uint8_t;
 typedef unsigned short int uint16_t;
-typedef unsigned int       uint32_t;
-typedef unsigned long      uint64_t;
+typedef unsigned int uint32_t;
+typedef unsigned long uint64_t;
 
 // typedef char int8_t;
 // typedef short int16_t;
@@ -175,16 +175,16 @@ namespace client {
 
 		/* Slice in CUDA */
 		struct Slice_t {
-			int          timestamp;     /* Time stamp */
-			int          index;         /* Index in a frame */
-			uint8_t      type;          /* Slice type */
-			MotionVector mv;            /* Motion vector */
-			uint32_t     size;          /* Point number */
-			uint8_t      qp;            /* QP */
-			uint8_t*     geometry;      /* Geometry info */
-			uint32_t     geometry_size; /* Size of geometry info */
-			uint8_t*     color;         /* Color info */
-			uint32_t     color_size;    /* Size of color info*/
+			int timestamp;          /* Time stamp */
+			int index;              /* Index in a frame */
+			uint8_t type;           /* Slice type */
+			MotionVector mv;        /* Motion vector */
+			uint32_t size;          /* Point number */
+			uint8_t qp;             /* QP */
+			uint8_t* geometry;      /* Geometry info */
+			uint32_t geometry_size; /* Size of geometry info */
+			uint8_t* color;         /* Color info */
+			uint32_t color_size;    /* Size of color info*/
 
 			/* Constructor */
 			__host__ __device__ Slice_t() : timestamp{}, index{}, type{}, mv{}, size{}, qp{}, geometry{}, geometry_size{}, color{}, color_size{} {}
@@ -197,43 +197,43 @@ namespace client {
 			}
 
 			__device__ Slice_t(const Slice_t& _x) {
-				this->timestamp     = _x.timestamp;
-				this->index         = _x.index;
-				this->type          = _x.type;
-				this->mv            = _x.mv;
-				this->size          = _x.size;
-				this->qp            = _x.qp;
+				this->timestamp = _x.timestamp;
+				this->index = _x.index;
+				this->type = _x.type;
+				this->mv = _x.mv;
+				this->size = _x.size;
+				this->qp = _x.qp;
 				this->geometry_size = _x.geometry_size;
-				this->color_size    = _x.color_size;
+				this->color_size = _x.color_size;
 
-				this->geometry   = _x.geometry;
+				this->geometry = _x.geometry;
 				this->color_size = _x.color_size;
 			}
 
 			__device__ Slice_t& operator=(const Slice_t& _x) {
-				this->timestamp     = _x.timestamp;
-				this->index         = _x.index;
-				this->type          = _x.type;
-				this->mv            = _x.mv;
-				this->size          = _x.size;
-				this->qp            = _x.qp;
+				this->timestamp = _x.timestamp;
+				this->index = _x.index;
+				this->type = _x.type;
+				this->mv = _x.mv;
+				this->size = _x.size;
+				this->qp = _x.qp;
 				this->geometry_size = _x.geometry_size;
-				this->color_size    = _x.color_size;
+				this->color_size = _x.color_size;
 
 				this->geometry = _x.geometry;
-				this->color    = _x.color;
+				this->color = _x.color;
 				return *this;
 			}
 		};
 
 		struct Frame_t {
-			int       timestamp;
-			uint32_t  slice_cnt;
-			int*      index;
-			uint8_t*  type;
-			float**   mv;
+			int timestamp;
+			uint32_t slice_cnt;
+			int* index;
+			uint8_t* type;
+			float** mv;
 			uint32_t* size;
-			uint8_t*  qp;
+			uint8_t* qp;
 			uint32_t* geometry_size;
 			uint8_t** geometry;
 			uint32_t* color_size;
@@ -241,54 +241,54 @@ namespace client {
 
 			Frame_t() : timestamp{}, slice_cnt{}, index{}, type{}, mv{}, size{}, qp{}, geometry_size{}, geometry{}, color_size{}, color{} {}
 			~Frame_t() {
-				delete [](this->index);
-				delete [](this->type);
+				delete[] (this->index);
+				delete[] (this->type);
 				for (int i = 0; i < this->slice_cnt; ++i) {
-					delete [](this->mv[i]);
+					delete[] (this->mv[i]);
 					if (this->geometry_size[i] != 0) {
-						delete [](this->geometry[i]);
+						delete[] (this->geometry[i]);
 					}
 					if (this->color_size[i] != 0) {
-						delete [](this->color[i]);
+						delete[] (this->color[i]);
 					}
 				}
-				delete [](this->size);
-				delete [](this->qp);
-				delete [](this->geometry_size);
-				delete [](this->color_size);
-				delete [](this->mv);
-				delete [](this->geometry);
-				delete [](this->color);
+				delete[] (this->size);
+				delete[] (this->qp);
+				delete[] (this->geometry_size);
+				delete[] (this->color_size);
+				delete[] (this->mv);
+				delete[] (this->geometry);
+				delete[] (this->color);
 			}
 			void Reset() {
 				this->timestamp = -1;
-				delete [](this->index);
-				delete [](this->type);
+				delete[] (this->index);
+				delete[] (this->type);
 				for (int i = 0; i < this->slice_cnt; ++i) {
-					delete [](this->mv[i]);
-					delete [](this->geometry[i]);
-					delete [](this->color[i]);
+					delete[] (this->mv[i]);
+					delete[] (this->geometry[i]);
+					delete[] (this->color[i]);
 				}
-				delete [](this->mv);
-				delete [](this->size);
-				delete [](this->qp);
-				delete [](this->geometry_size);
-				delete [](this->geometry);
-				delete [](this->color_size);
-				delete [](this->color);
+				delete[] (this->mv);
+				delete[] (this->size);
+				delete[] (this->qp);
+				delete[] (this->geometry_size);
+				delete[] (this->geometry);
+				delete[] (this->color_size);
+				delete[] (this->color);
 				this->slice_cnt = 0;
 			}
 		};
 	}  // namespace common
 
 	namespace io {
-		extern int               LoadSlice(common::Slice_t& _slice, const std::string& _name);
+		extern int LoadSlice(common::Slice_t& _slice, const std::string& _name);
 		[[nodiscard]] extern int LoadFrame(common::Frame_t& _frame, const std::string& _name);
 	}  // namespace io
 
 	constexpr int FRAME_POINT_CNT{1'000'000};
 	constexpr int POINT_BYTE{sizeof(common::Points)};
-	constexpr int TOTAL_FRAME_CNT{300};
+	constexpr int TOTAL_FRAME_CNT{30};
 	constexpr int MAX_LOAD_FRAME_CNT{30};
 	constexpr int MAX_VBO_FRAME_CNT{30};
 	constexpr int RAW_POINT_SIZE{15};
@@ -296,15 +296,15 @@ namespace client {
 	constexpr int MAX_SLICE_SIZE{RAW_POINT_SIZE * MAX_SLICE_POINT};
 
 	struct CudaFrame_t {
-		int*      inner_offset_gpu;
-		int*      index_gpu;
-		uint8_t*  type_gpu;
+		int* inner_offset_gpu;
+		int* index_gpu;
+		uint8_t* type_gpu;
 		uint32_t* size_gpu;
-		uint8_t*  qp_gpu;
+		uint8_t* qp_gpu;
 		uint32_t* geometry_size_gpu;
 		uint32_t* color_size_gpu;
 
-		float**   mv_gpu;
+		float** mv_gpu;
 		uint8_t** geometry_gpu;
 		uint8_t** color_gpu;
 		CudaFrame_t() : index_gpu{}, inner_offset_gpu{}, type_gpu{}, size_gpu{}, qp_gpu{}, geometry_size_gpu{}, color_size_gpu{}, mv_gpu{}, geometry_gpu{}, color_gpu{} {}

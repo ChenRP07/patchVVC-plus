@@ -248,6 +248,7 @@ namespace codec {
 					current_frame_idx_++;
 				}
 				else {
+                /* TODO: avg mse change computing method, check avg mse or something else to decide this frame can be ref segment */
 					boost::format fmt_0{"\033[%1%m-------------------------------------------------------------------\n"
 					                    "Start reference segmentation for frame \033[0m#%2% ......\n"};
 					fmt_0 % common::AZURE % current_frame_idx_;

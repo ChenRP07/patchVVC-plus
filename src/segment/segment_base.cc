@@ -40,7 +40,7 @@ namespace segment {
 			}
 
 			std::vector<common::Patch> result;
-			int                        cnt = 0;
+			int cnt = 0;
 			for (auto i : this->results_) {
 				if (!i) {
 					throw __EXCEPT__(EMPTY_POINT_CLOUD);
@@ -92,5 +92,65 @@ namespace segment {
 		}
 	}
 
+	void SegmentBase::KMeans(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _centroids) {
+		auto center = _centroids;
+		pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
+		std::vector<int> idx(1);
+		std::vector<float> dis(1);
+		for (int iter = 0; iter < this->params_->patch.max_iter; ++iter) {
+			/* New centers */
+			pcl::PointCloud<pcl::PointXYZRGB>::Ptr n_center(new pcl::PointCloud<pcl::PointXYZRGB>());
+			n_center->resize(center->size());
+			for (auto& c : *n_center) {
+				c.x = c.y = c.z = 0.0f;
+			}
+			/* Cluster point num */
+			std::vector<int> center_cnt(center->size(), 0);
+			kdtree.setInputCloud(center);
+
+			/* Add to cluster */
+			for (auto& p : *this->source_cloud_) {
+				kdtree.nearestKSearch(p, 1, idx, dis);
+				n_center->at(idx[0]).x += p.x;
+				n_center->at(idx[0]).y += p.y;
+				n_center->at(idx[0]).z += p.z;
+				center_cnt[idx[0]]++;
+			}
+
+			/* Compute new centroids */
+			for (int i = 0; i < n_center->size(); ++i) {
+				if (center_cnt[i] == 0) {
+					center_cnt[i] = 1;
+				}
+				n_center->at(i).x /= center_cnt[i];
+				n_center->at(i).y /= center_cnt[i];
+				n_center->at(i).z /= center_cnt[i];
+			}
+			/* Compute error */
+			float error{};
+
+			for (int i = 0; i < n_center->size(); ++i) {
+				error += std::pow(n_center->at(i).x - center->at(i).x, 2) + std::pow(n_center->at(i).y - center->at(i).y, 2) + std::pow(n_center->at(i).z - center->at(i).z, 2);
+			}
+			error /= n_center->size();
+			/* New centroids */
+			center.swap(n_center);
+			if (error < this->params_->patch.clustering_err_ths) {
+				break;
+			}
+		}
+		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> result;
+		result.resize(center->size());
+		for (auto& i : result) {
+			i.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
+		}
+
+		kdtree.setInputCloud(center);
+		for (auto& p : *this->source_cloud_) {
+			kdtree.nearestKSearch(p, 1, idx, dis);
+			result[idx[0]]->emplace_back(p);
+		}
+		this->results_.swap(result);
+	}
 }  // namespace segment
 }  // namespace vvc

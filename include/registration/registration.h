@@ -47,8 +47,8 @@ namespace common {
 	 * */
 	class MSE {
 	  private:
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr p_, q_;                               /* point clouds */
-		std::pair<float, float>                geo_mses_, y_mses_, u_mses_, v_mses_; /* mses */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr p_, q_;                /* point clouds */
+		std::pair<float, float> geo_mses_, y_mses_, u_mses_, v_mses_; /* mses */
 
 	  public:
 		/* default constructor and deconstructor */
@@ -106,8 +106,8 @@ namespace registration {
 	class RegistrationBase {
 	  protected:
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr target_cloud_; /* target point cloud which is the registration reference */
-		common::PVVCParam_t::Ptr               params_;       /* parameters */
-		common::PVVCTime_t                     clock_;        /* Clock */
+		common::PVVCParam_t::Ptr params_;                     /* parameters */
+		common::PVVCTime_t clock_;                            /* Clock */
 
 	  public:
 		/* default constructor and deconstructor */
@@ -145,11 +145,11 @@ namespace registration {
 	/* Base class of single-single icp, an abstract class */
 	class ICPBase : public RegistrationBase {
 	  protected:
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud_;  /* Point cloud which will be transformed */
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud_;  /* Transformed point cloud */
-		Eigen::Matrix4f                        motion_vector_; /* Transformation matrix */
-		float                                  mse_;           /* Mean squared error */
-		bool                                   converged_;     /* Algorithm converged ? */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud_; /* Point cloud which will be transformed */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud_; /* Transformed point cloud */
+		Eigen::Matrix4f motion_vector_;                       /* Transformation matrix */
+		float mse_;                                           /* Mean squared error */
+		bool converged_;                                      /* Algorithm converged ? */
 	  public:
 		/* Default constructor and deconstructor*/
 		ICPBase();
@@ -321,13 +321,13 @@ namespace registration {
 	  protected:
 		std::vector<common::Patch> reference_patches_; /* source point cloud patches which will be transformed */
 		std::vector<common::Patch> result_patches_;    /* transformed point cloud patches result */
-		std::vector<float>         mse_;
-		std::vector<bool>          converged_;
+		std::vector<float> mse_;
+		std::vector<bool> converged_;
 
 		// [[deprecated]] std::vector<pcl::PointCloud<pcl::Normal>::Ptr> source_normals_; /* point cloud normals */
 		// [[deprecated]] pcl::PointCloud<pcl::Normal>::Ptr              target_normal_;
 
-		std::mutex         task_mutex_; /* mutex for atomic procession */
+		std::mutex task_mutex_;         /* mutex for atomic procession */
 		std::queue<size_t> task_queue_; /* task queue */
 
 		/*
@@ -376,6 +376,35 @@ namespace registration {
 		 * @description : do iterative closest point.
 		 * */
 		virtual void Align();
+	};
+
+	class PatchesRegistration {
+	  private:
+		std::vector<common::Patch> source_patches_;
+		std::vector<common::Patch> target_patches_;
+		common::PVVCParam_t::Ptr params_;
+		std::vector<float> mses_;
+
+		std::queue<int> task_queue_;
+		std::vector<std::thread> threads_;
+		std::mutex task_queue_mutex_;
+
+		void Task();
+
+	  public:
+		PatchesRegistration() : source_patches_{}, target_patches_{}, params_{}, mses_{} {}
+
+		~PatchesRegistration() = default;
+
+		void SetParams(common::PVVCParam_t::Ptr _params);
+
+		void SetSourcePatches(std::vector<common::Patch> _patches);
+
+		void SetTargetPatches(std::vector<common::Patch> _patches);
+
+		std::vector<float> GetMSEs();
+
+		void Align();
 	};
 }  // namespace registration
 }  // namespace vvc

@@ -29,14 +29,16 @@
 
 namespace vvc {
 namespace segment {
-	constexpr float NUM_THS = 1.0f / 4.0f;
+	constexpr float NUM_THS = 1.0f / 5.0f;
 	/* Base class of point cloud segment */
 	class SegmentBase {
 	  protected:
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr              source_cloud_; /* source point cloud to be segmented */
-		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_;      /* segmentation result */
-		common::PVVCParam_t::Ptr                            params_;       /* vvc parameters */
-		int                                                 timestamp_;    /* point cloud timestamp */
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr source_cloud_;         /* source point cloud to be segmented */
+		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_; /* segmentation result */
+		common::PVVCParam_t::Ptr params_;                             /* vvc parameters */
+		int timestamp_;                                               /* point cloud timestamp */
+
+		void KMeans(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _centroids);
 
 	  public:
 		/* default constructor */
@@ -120,6 +122,19 @@ namespace segment {
 		 * @description : use [1] to segment source_cloud_ to _k patches.
 		 * @return : {}
 		 * */
+		void Segment();
+	};
+
+	class RefSegment : public SegmentBase {
+	  private:
+		std::vector<common::Patch> reference_patches_;
+
+	  public:
+		RefSegment() = default;
+		~RefSegment() = default;
+
+        void SetRefPatches(std::vector<common::Patch> _patches);
+
 		void Segment();
 	};
 }  // namespace segment

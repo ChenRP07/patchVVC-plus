@@ -49,12 +49,34 @@ namespace codec {
 		RawFrame() : cloud{}, timestamp{-1}, type{RAWFRAMETYPE::EMPTY_FRAME} {}
 	};
 
+	/* Group of Pictures */
 	struct GoP {
+		/* Fitting cloud, common geometry */
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
-		std::vector<common::Patch>             patches;
-		int                                    start, end;
+		/* Patches of this GoP */
+		std::vector<common::Patch> patches;
+		/* Start timestamp, end timestamp */
+		int start, end;
+
+		/* Constructors */
 		GoP() : cloud{}, patches{}, start{-1}, end{-1} {}
+
+		GoP(const GoP& _x) : cloud{_x.cloud}, patches{_x.patches}, start{_x.start}, end{_x.end} {}
+
+		GoP& operator=(const GoP& _x) {
+			this->cloud = _x.cloud;
+			this->patches = _x.patches;
+			this->start = _x.start;
+			this->end = _x.end;
+			return *this;
+		}
 	};
+
+#ifndef _PVVC_SEGMENT_VERSION_
+#	define _PVVC_SEGMENT_VERSION_
+// #define _PVVC_230525_
+#	define _PVVC_SEGMENT_230525_
+#endif
 
 	/*
 	 * Segmentation.
@@ -69,7 +91,7 @@ namespace codec {
 		/* Common module */
 	  private:
 		common::PVVCParam_t::Ptr params_;
-		common::PVVCTime_t       clock_;
+		common::PVVCTime_t clock_;
 
 	  public:
 		/* Constructor and deconstructor */
@@ -111,7 +133,7 @@ namespace codec {
 		/* Common module */
 	  private:
 		common::PVVCParam_t::Ptr params_;
-		common::PVVCTime_t       clock_;
+		common::PVVCTime_t clock_;
 
 	  public:
 		/* Constructor and deconstructor */
@@ -128,29 +150,30 @@ namespace codec {
 
 		/* Data module */
 	  private:
-		std::shared_ptr<std::vector<std::vector<common::Patch>>>    patches_;
-		std::shared_ptr<std::vector<std::vector<GoP>>>              gops_;
-		std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> results_;
+		/* 1st dim--Frames/Timestamp, 2nd dim--Patches/Index */
+		std::shared_ptr<std::vector<std::vector<common::Patch>>> patches_;
+		/* 1st dim--Patches/Index 2nd dim--Frames/Timestamp */
+		std::vector<std::vector<GoP>> gops_;
 
 	  public:
 		void SetPatches(std::shared_ptr<std::vector<std::vector<common::Patch>>> _patches);
 
-		/* TODO: Load patches if check_point enable */
+		/* Load patches if check_point enable */
 		void LoadPatches();
 
-		/* TODO: Save deform patches if check_point enable */
+		/* Save deform patches if check_point enable */
 		void SaveDeformPatches();
 
-		std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> GetResults();
+		std::vector<std::vector<GoP>> GetResults();
 
 	  private:
 		std::vector<patch::PatchFitting> handler_;
-		std::vector<std::thread>         threads_;
-		std::vector<bool>                handler_data_;
-		std::queue<int>                  task_queue_;
-		std::mutex                       task_queue_mutex_;
-		std::mutex                       log_mutex_;
-		int                              current_frame_idx_;
+		std::vector<std::thread> threads_;
+		std::vector<bool> handler_data_;
+		std::queue<int> task_queue_;
+		std::mutex task_queue_mutex_;
+		std::mutex log_mutex_;
+		int current_frame_idx_;
 
 		void Task();
 
@@ -163,7 +186,7 @@ namespace codec {
 		/* Common module */
 	  private:
 		common::PVVCParam_t::Ptr params_;
-		common::PVVCTime_t       clock_;
+		common::PVVCTime_t clock_;
 
 	  public:
 		/* Constructor and deconstructor */
@@ -179,11 +202,11 @@ namespace codec {
 		void SetParams(common::PVVCParam_t::Ptr _param);
 
 	  private:
-		std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> patches_;
-		std::vector<std::vector<common::Slice>>                     results_;
+		std::vector<std::vector<GoP>> gops_;
+		std::vector<std::vector<common::Slice>> results_;
 
 	  public:
-		void SetGoPs(std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> _patches);
+		void SetGoPs(std::vector<std::vector<GoP>> _gops);
 
 		void LoadGoPs();
 
@@ -192,13 +215,15 @@ namespace codec {
 		std::vector<std::vector<common::Slice>> GetResults();
 
 	  private:
-		std::vector<patch::GoPEncoding> handler_;
-		std::vector<std::thread>        threads_;
-		std::queue<int>                 task_queue_;
-		std::mutex                      task_queue_mutex_;
-		std::mutex                      log_mutex_;
+		std::vector<std::thread> threads_;
+		std::queue<int> task_queue_;
+		std::mutex task_queue_mutex_;
+		std::mutex log_mutex_;
 
-		void Task(int k);
+		void Task();
+
+        void SplitCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _old, decltype(_old) _new_0, decltype(_old) _new_1);
+		void SplitGoP(GoP& _g, std::vector<GoP>& _res);
 
 	  public:
 		void Compression();
@@ -208,7 +233,7 @@ namespace codec {
 	class PVVCDecompression {
 	  private:
 		common::PVVCParam_t::Ptr params_;
-		common::PVVCTime_t       clock_;
+		common::PVVCTime_t clock_;
 
 	  public:
 		/* Constructor and deconstructor */
@@ -224,8 +249,8 @@ namespace codec {
 		void SetParams(common::PVVCParam_t::Ptr _param);
 
 	  private:
-		std::vector<std::vector<common::Slice>>             slices_;
-		std::vector<std::vector<common::Patch>>             patches_;
+		std::vector<std::vector<common::Slice>> slices_;
+		std::vector<std::vector<common::Patch>> patches_;
 		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_;
 
 	  public:
@@ -235,9 +260,9 @@ namespace codec {
 
 	  private:
 		std::vector<octree::InvertRAHTOctree> handler_;
-		std::vector<std::thread>              threads_;
-		std::queue<int>                       task_queue_;
-		std::mutex                            task_queue_mutex_;
+		std::vector<std::thread> threads_;
+		std::queue<int> task_queue_;
+		std::mutex task_queue_mutex_;
 
 		void Task(int k);
 

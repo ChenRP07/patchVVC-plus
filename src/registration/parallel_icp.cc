@@ -89,7 +89,7 @@ namespace registration {
 		/* global centroid alignment*/
 		/* calculate centroids */
 		pcl::PointXYZ source_global_centroid(0.0f, 0.0f, 0.0f), target_global_centroid(0.0f, 0.0f, 0.0f);
-		size_t        source_size = 0;
+		size_t source_size = 0;
 		for (auto& i : this->result_patches_) {
 			for (auto j : *i) {
 				source_global_centroid.x += j.x;
@@ -127,7 +127,7 @@ namespace registration {
 		while (true) {
 			/* loop until task_queue_ is empty */
 			size_t task_idx = 0;
-			bool   is_end = true;
+			bool is_end = true;
 			/* get task index from task_queue_ */
 			this->task_mutex_.lock();
 			if (!this->task_queue_.empty()) {
@@ -146,7 +146,7 @@ namespace registration {
 
 			pcl::PointXYZ local(0.0f, 0.0f, 0.0f);
 			for (auto i : *(this->result_patches_[task_idx])) {
-				std::vector<int>   idx(1);
+				std::vector<int> idx(1);
 				std::vector<float> dis(1);
 				kdtree.nearestKSearch(i, 1, idx, dis);
 				local.x += this->target_cloud_->at(idx[0]).x - i.x;
@@ -249,31 +249,31 @@ namespace registration {
 
 			/* Segment target_cloud_ according to the result_clouds_ */
 			pcl::PointCloud<pcl::PointXYZRGB>::Ptr search_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
-			std::vector<int>                       source_index;
+			std::vector<std::pair<int, float>> source_index;
 
 			for (int i = 0; i < this->result_patches_.size(); ++i) {
 				for (auto j : *(this->result_patches_[i])) {
 					search_cloud->emplace_back(j);
-					source_index.emplace_back(i);
+					source_index.emplace_back(std::make_pair(i, this->mse_[i]));
 				}
 			}
 
 			pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
 			kdtree.setInputCloud(search_cloud);
 
-			using VIntPtr = std::shared_ptr<std::vector<int>>;
-
-			std::vector<VIntPtr> temp_result(this->result_patches_.size());
-			for (auto& i : temp_result) {
-				i = std::make_shared<std::vector<int>>();
-			}
-
 			std::vector<pcl::PointCloud<pcl::PointXYZRGB>> temp_clouds(this->result_patches_.size(), pcl::PointCloud<pcl::PointXYZRGB>());
 			for (int i = 0; i < this->target_cloud_->size(); ++i) {
-				std::vector<int>   idx(1);
-				std::vector<float> dis(1);
-				kdtree.nearestKSearch(this->target_cloud_->at(i), 1, idx, dis);
-				temp_result[source_index[idx[0]]]->emplace_back(i);
+				std::vector<int> idx(5);
+				std::vector<float> dis(5);
+				kdtree.nearestKSearch(this->target_cloud_->at(i), 5, idx, dis);
+				int t_idx{};
+				for (int t = 0; t < 5; ++t) {
+					if (dis[t] < source_index[idx[t]].second * 2) {
+						t_idx = t;
+						break;
+					}
+				}
+				temp_clouds[source_index[idx[t_idx]].first].emplace_back(this->target_cloud_->at(i));
 			}
 
 			for (int i = 0; i < this->result_patches_.size(); ++i) {

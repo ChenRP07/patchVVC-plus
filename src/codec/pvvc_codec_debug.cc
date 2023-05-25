@@ -2,7 +2,7 @@
 
 namespace vvc {
 namespace codec {
-
+#ifdef _PVVC_TEST_DEBUG_
 	void PVVCDeformation::Test() {
 		for (int i = this->params_->start_timestamp; i < this->params_->start_timestamp + this->params_->frames * this->params_->time_interval; i += this->params_->time_interval) {
 			int idx = (i - this->params_->start_timestamp) / this->params_->time_interval;
@@ -86,5 +86,6 @@ namespace codec {
 
         std::cout << "Average GOP size : " << float(cnt) / float(num) << "\n";
 	}
+#endif
 }  // namespace codec
 }  // namespace vvc

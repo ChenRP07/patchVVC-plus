@@ -50,6 +50,10 @@ namespace patch {
 				return true;
 			}
 
+			/* Patch size too big or too small */
+			if (_patch.size() > 2 * this->fitting_cloud_->size() || _patch.size() < 0.5 * this->fitting_cloud_->size()) {
+				return false;
+			}
 			/* Otherwise, use ICP to calcualte MSE between new patch and fitting patch, if MSE is less than a threshold, add this patch into GOP and regenerate fitting patch */
 			registration::ICPBase::Ptr icp;
 			icp.reset(new registration::ICP());
@@ -63,13 +67,13 @@ namespace patch {
 			if (icp->Converged()) {
 				if (icp->CloudMSE() <= this->params_->patch.fitting_ths) {
 					_patch.cloud = icp->GetResultCloud();
-					_patch.mv    = icp->GetMotionVector() * _patch.mv;
+					_patch.mv = icp->GetMotionVector() * _patch.mv;
 					this->source_patches_.emplace_back(_patch);
 					this->fitting_cloud_->clear();
 					/* Compute fitting patch */
 					this->Compute();
 					this->stat_.score.emplace_back(icp->CloudMSE());
-					int   ans = std::accumulate(this->stat_.iters.begin(), this->stat_.iters.end(), 0);
+					int ans = std::accumulate(this->stat_.iters.begin(), this->stat_.iters.end(), 0);
 					float avg = static_cast<float>(ans) / static_cast<float>(this->stat_.iters.size());
 					this->stat_.avg_iters.emplace_back(avg);
 					return true;
@@ -115,8 +119,8 @@ namespace patch {
 			range.y = max_y - min_y;
 			range.z = max_z - min_z;
 
-			int range_height  = static_cast<int>(std::ceil(std::log2(std::max(range.x, std::max(range.y, range.z)))));
-			int ths_height    = static_cast<int>(std::ceil(std::log2(this->params_->patch.clustering_ths)));
+			int range_height = static_cast<int>(std::ceil(std::log2(std::max(range.x, std::max(range.y, range.z)))));
+			int ths_height = static_cast<int>(std::ceil(std::log2(this->params_->patch.clustering_ths)));
 			this->max_height_ = range_height - ths_height;
 
 			/* Init point idx */
@@ -165,8 +169,8 @@ namespace patch {
 
 			/* KNN searching method */
 			pcl::search::KdTree<pcl::PointXYZRGB> kdtree;
-			std::vector<int>                      idx(1);
-			std::vector<float>                    dis(1);
+			std::vector<int> idx(1);
+			std::vector<float> dis(1);
 
 			/* K-Means */
 			int iter = 1;
@@ -289,10 +293,10 @@ namespace patch {
 					/* Try to split, return the most proper result */
 					int split_type = this->PlanarBisection(_points, _center, planar_bisection_result);
 					if (split_type != -1) {
-						do_clustering                    = false;
-						pcl::PointXYZ subspace_range     = _range;
+						do_clustering = false;
+						pcl::PointXYZ subspace_range = _range;
 						pcl::PointXYZ subspace_center[2] = {_center, _center};
-						float         mid;
+						float mid;
 						if (split_type == 0) {
 							subspace_range.x /= 2.0f;
 							subspace_center[0].x += subspace_range.x / 2.0f;
@@ -326,7 +330,7 @@ namespace patch {
 				else if (this->params_->patch.split_method == common::PARTIAL_CLUSTERING) {
 					do_clustering = false;
 					std::vector<std::vector<int>> clustering_points(_points.size());
-					pcl::PointXYZ                 subspace_range(_range.x / 2.0f, _range.y / 2.0f, _range.z / 2.0f);
+					pcl::PointXYZ subspace_range(_range.x / 2.0f, _range.y / 2.0f, _range.z / 2.0f);
 					for (int i = 0; i < 8; ++i) {
 						if (octree::CheckSubSpace(subspaces[i])) {
 							pcl::PointXYZ subspace_center = octree::SubSpaceCenter(_center, subspace_range, i);
@@ -381,7 +385,7 @@ namespace patch {
 			/* Split score */
 			float score[3] = {FLT_MAX, FLT_MAX, FLT_MAX};
 			/* Middle coordinate */
-			float                                                   Mid[3] = {_center.x, _center.y, _center.z};
+			float Mid[3] = {_center.x, _center.y, _center.z};
 			std::vector<std::vector<std::vector<std::vector<int>>>> sub(3, std::vector<std::vector<std::vector<int>>>(2, std::vector<std::vector<int>>(_points.size())));
 
 			/* For x/y/z */
@@ -413,11 +417,11 @@ namespace patch {
 				score[i] = std::max(common::Deviation(size_0), common::Deviation(size_1));
 			}
 
-			float Min  = FLT_MAX;
-			int   type = -1;
+			float Min = FLT_MAX;
+			int type = -1;
 			for (int i = 0; i < 3; ++i) {
 				if (score[i] != FLT_MAX && score[i] < Min) {
-					Min  = score[i];
+					Min = score[i];
 					type = i;
 				}
 			}
@@ -447,6 +451,9 @@ namespace patch {
 	}
 
 	std::pair<float, float> PatchFitting::GetStat() const {
+		if (this->stat_.score.size() == 0) {
+			return std::make_pair(0.0f, 0.0f);
+		}
 		float avg_mse{};
 		for (auto i : this->stat_.score) {
 			avg_mse += i;

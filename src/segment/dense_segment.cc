@@ -236,6 +236,19 @@ namespace segment {
 				}
 			}
 
+			pcl::PointCloud<pcl::PointXYZRGB>::Ptr final_centroids(new pcl::PointCloud<pcl::PointXYZRGB>());
+			for (auto i : this->results_) {
+				pcl::PointXYZRGB c{};
+				for (auto& p : *i) {
+					c.x += p.x, c.y += p.y, c.z += p.z;
+				}
+				int size = i->size();
+				size = size == 0 ? 1 : size;
+				c.x /= size, c.y /= size, c.z /= size;
+				final_centroids->emplace_back(c);
+			}
+			this->KMeans(final_centroids);
+
 			bool size_ths = false;
 			int cur_idx = this->results_.size() - 1;
 			double r_ths = std::sqrt(this->params_->icp.radius_search_ths);
@@ -246,12 +259,11 @@ namespace segment {
 			for (int i = 0; i < trees.size(); ++i) {
 				trees[i].setInputCloud(this->results_[i]);
 			}
-			std::cout << "Total : " << this->results_.size() << std::endl;
 
 			while (true) {
 				int merge_idx = -1;
 				for (int k = cur_idx - 1; k >= 0; --k) {
-					if (this->results_[cur_idx]->size() + this->results_[k]->size() > this->params_->segment.num * 1.2) {
+					if (this->results_[cur_idx]->size() + this->results_[k]->size() > this->params_->segment.num * (1.0f + NUM_THS)) {
 						continue;
 					}
 					size_ths = true;
@@ -297,5 +309,7 @@ namespace segment {
 			throw __EXCEPT__(ERROR_OCCURED);
 		}
 	}
+
+	
 }  // namespace segment
 }  // namespace vvc

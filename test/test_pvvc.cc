@@ -26,8 +26,6 @@ int main() {
 		vvc::codec::PVVCCompression com;
 		com.SetParams(param);
 		com.LoadGoPs();
-		com.Test();
-		return 0;
 		com.Compression();
 		com.SaveSlices();
 	}

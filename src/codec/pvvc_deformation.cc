@@ -52,12 +52,13 @@ namespace codec {
 		}
 	}
 
-	std::vector<std::shared_ptr<std::vector<std::vector<GoP>>>> PVVCDeformation::GetResults() {
-		return this->results_;
+	std::vector<std::vector<GoP>> PVVCDeformation::GetResults() {
+		return this->gops_;
 	}
 
 	void PVVCDeformation::Task() {
 		while (true) {
+			/* Fetch data index from task queue */
 			int data_idx{-1};
 			this->task_queue_mutex_.lock();
 			if (!this->task_queue_.empty()) {
@@ -65,39 +66,72 @@ namespace codec {
 				this->task_queue_.pop();
 			}
 			this->task_queue_mutex_.unlock();
+			/* Invalid index, all tasks have been done, exit */
 			if (data_idx == -1) {
 				break;
 			}
-			auto& patch     = this->patches_->at(this->current_frame_idx_)[data_idx];
-			int   patch_idx = patch.index;
-			bool  flag      = this->handler_[patch_idx].AddPatch(patch);
-			/* Cannot expand GoP */
-			if (!flag) {
-				int start_now = this->gops_->at(patch_idx).empty() ? 0 : this->gops_->at(patch_idx).back().end + 1;
-				/* Add a GoP */
-				this->gops_->at(patch_idx).emplace_back();
-				/* Set data */
-				this->gops_->at(patch_idx).back().cloud   = this->handler_[patch_idx].GetFittingCloud();
-				this->gops_->at(patch_idx).back().patches = this->handler_[patch_idx].GetSourcePatches();
 
-				auto stat = this->handler_[patch_idx].GetStat();
+			int patch_loc{-1};
 
-				int end_now                             = start_now + this->gops_->at(patch_idx).back().patches.size() - 1;
-				this->gops_->at(patch_idx).back().start = start_now;
-				this->gops_->at(patch_idx).back().end   = end_now;
+			/* Find which patch is the target, i.e., index is equal to data_idx */
+			for (int i = 0; i < this->patches_->at(this->current_frame_idx_).size(); ++i) {
+				if (this->patches_->at(this->current_frame_idx_)[i].index == data_idx) {
+					patch_loc = i;
+				}
+			}
 
-				boost::format fmt{"\033[%1%m-------------------------------------------------------------------\n"
-				                  "Generate GoP \033[0m#%3% \033[%1%mfrom \033[0m%4% \033[%1%mto \033[0m%5%\n"
-				                  "\t\033[%2%mAverage mse  : \033[0m%6$.2f\n"
-				                  "\t\033[%2%mAverage iter : \033[0m%7$.2f\n"
-				                  "\033[%1%m-------------------------------------------------------------------\033[0m\n"};
-				fmt % common::AZURE % common::BLUE % patch_idx % start_now % end_now % stat.first % stat.second;
-				this->log_mutex_.lock();
-				std::cout << fmt;
-				this->log_mutex_.unlock();
+			/* Cannot find this patch, something should be wrong */
+			if (patch_loc == -1) {
+				printf("\033[%dmUnknown error in PVVCDeformation::Task::83.\033[0m\n", common::RED);
+				break;
+			}
+
+			/* Find this patch */
+			auto& patch = this->patches_->at(this->current_frame_idx_)[patch_loc];
+			int patch_idx = patch.index;
+
+			/* Can this patch be able to be added into GoP */
+			bool expand_gop_or_not = false;
+			/* This patch should be simple_patch and AddPatch should return true */
+			if (patch.type == common::PATCH_TYPE::SIMPLE_PATCH) {
+				expand_gop_or_not = this->handler_[patch_idx].AddPatch(patch);
+			}
+
+			/* Can not expand GoP, should get fitted GoP */
+			if (!expand_gop_or_not) {
+				/* This handler has data */
+				if (this->handler_data_[patch_idx]) {
+					/* Get data from handler and add GoP into gops_ */
+					GoP gop;
+					gop.cloud = this->handler_[patch_idx].GetFittingCloud();
+					gop.patches = this->handler_[patch_idx].GetSourcePatches();
+					auto stat = this->handler_[patch_idx].GetStat();
+					gop.start = gop.patches.front().timestamp;
+					gop.end = gop.patches.back().timestamp;
+					this->gops_[patch_idx].emplace_back(gop);
+
+					/* Output information */
+					size_t max_size{}, min_size{INT_MAX};
+					for (auto& i : gop.patches) {
+						max_size = std::max(max_size, i.size());
+						min_size = std::min(min_size, i.size());
+					}
+
+					boost::format fmt{"\033[%1%m-------------------------------------------------------------------\n"
+					                  "Generate GoP \033[0m#%3% \033[%1%mfrom \033[0m%4% \033[%1%mto \033[0m%5%\n"
+					                  "\t\033[%2%mAverage mse    : \033[0m%6$.2f\n"
+					                  "\t\033[%2%mAverage iter   : \033[0m%7$.2f\n"
+					                  "\t\033[%2%mGoP cloud size : \033[0m%8% / %9% / %10%\n"
+					                  "\033[%1%m-------------------------------------------------------------------\033[0m\n"};
+					fmt % common::AZURE % common::BLUE % patch_idx % gop.start % gop.end % stat.first % stat.second % gop.cloud->size() % max_size % min_size;
+					this->log_mutex_.lock();
+					std::cout << fmt;
+					this->log_mutex_.unlock();
+				}
 				/* Clear old data */
 				this->handler_[patch_idx].Clear();
 				this->handler_data_[patch_idx] = false;
+				/* Set a new GoP start */
 				this->handler_[patch_idx].AddPatch(patch);
 				this->handler_data_[patch_idx] = true;
 			}
@@ -106,6 +140,7 @@ namespace codec {
 			}
 		}
 	}
+
 	void PVVCDeformation::Deformation() {
 		try {
 			/* Check preset */
@@ -115,79 +150,83 @@ namespace codec {
 			if (!this->patches_) {
 				throw __EXCEPT__(EMPTY_RESULT);
 			}
+			this->clock_.SetTimeBegin();
+			/* For each frame */
 			for (; this->current_frame_idx_ < this->patches_->size();) {
-				this->clock_.SetTimeBegin();
+				/* Max patch index of current frame */
 				int max_idx{};
 				for (auto& i : this->patches_->at(this->current_frame_idx_)) {
 					max_idx = std::max(i.index, max_idx);
 				}
-				this->handler_.clear();
-				this->handler_data_.clear();
-				/* Create and initialize handlers */
-				this->handler_.resize(max_idx + 1);
-				this->handler_data_.resize(max_idx + 1, false);
-				for (auto& i : this->handler_) {
-					i.SetParams(this->params_);
+				max_idx++;
+				/* Now patch index is lower, add new patch */
+				while (this->gops_.size() < max_idx) {
+					this->gops_.emplace_back();
+				}
+				while (this->handler_.size() < max_idx) {
+					this->handler_.emplace_back();
+					this->handler_.back().SetParams(this->params_);
+					this->handler_data_.emplace_back(false);
 				}
 
+				/* Threads pool */
 				this->threads_.resize(this->params_->thread_num);
 
-				/* Malloc space for result */
-				this->gops_ = std::make_shared<std::vector<std::vector<GoP>>>(max_idx + 1);
-
-				while (current_frame_idx_ < this->patches_->size()) {
-					for (int i = 0; i < this->patches_->at(current_frame_idx_).size(); ++i) {
-						this->task_queue_.push(i);
-					}
-					for (auto& t : this->threads_) {
-						t = std::thread(&PVVCDeformation::Task, this);
-					}
-					for (auto& i : this->threads_) {
-						i.join();
-					}
-					current_frame_idx_++;
-					if (current_frame_idx_ % this->params_->max_keyframe == 0) {
-						break;
-					}
+				/* Initialize task queue */
+				while (!this->task_queue_.empty()) {
+					this->task_queue_.pop();
+				}
+				for (auto& i : this->patches_->at(this->current_frame_idx_)) {
+					this->task_queue_.push(i.index);
 				}
 
-				for (int i = 0; i < this->handler_.size(); ++i) {
-					if (this->handler_data_[i] == false) {
-						continue;
-					}
-					int start_now = this->gops_->at(i).empty() ? 0 : this->gops_->at(i).back().end + 1;
-					/* Add a GoP */
-					this->gops_->at(i).emplace_back();
-					/* Set data */
-					this->gops_->at(i).back().cloud   = this->handler_[i].GetFittingCloud();
-					this->gops_->at(i).back().patches = this->handler_[i].GetSourcePatches();
+				/* Launch threads to deform */
+				for (auto& t : this->threads_) {
+					t = std::thread(&PVVCDeformation::Task, this);
+				}
+				for (auto& i : this->threads_) {
+					i.join();
+				}
+				current_frame_idx_++;
+			}
 
+			for (int i = 0; i < this->handler_.size(); ++i) {
+				if (this->handler_data_[i]) {
+					GoP gop;
+					gop.cloud = this->handler_[i].GetFittingCloud();
+					gop.patches = this->handler_[i].GetSourcePatches();
 					auto stat = this->handler_[i].GetStat();
+					gop.start = gop.patches.front().timestamp;
+					gop.end = gop.patches.back().timestamp;
+					this->gops_[i].emplace_back(gop);
 
-					int end_now = start_now + this->gops_->at(i).back().patches.size() - 1;
-
-					this->gops_->at(i).back().start = start_now;
-					this->gops_->at(i).back().end   = end_now;
+					/* Output information */
+					size_t max_size{}, min_size{INT_MAX};
+					for (auto& j : gop.patches) {
+						max_size = std::max(max_size, j.size());
+						min_size = std::min(min_size, j.size());
+					}
 
 					boost::format fmt{"\033[%1%m-------------------------------------------------------------------\n"
 					                  "Generate GoP \033[0m#%3% \033[%1%mfrom \033[0m%4% \033[%1%mto \033[0m%5%\n"
-					                  "\t\033[%2%mAverage mse  : \033[0m%6$.2f\n"
-					                  "\t\033[%2%mAverage iter : \033[0m%7$.2f\n"
+					                  "\t\033[%2%mAverage mse    : \033[0m%6$.2f\n"
+					                  "\t\033[%2%mAverage iter   : \033[0m%7$.2f\n"
+					                  "\t\033[%2%mGoP cloud size : \033[0m%8% / %9% / %10%\n"
 					                  "\033[%1%m-------------------------------------------------------------------\033[0m\n"};
-					fmt % common::AZURE % common::BLUE % i % start_now % end_now % stat.first % stat.second;
+					fmt % common::AZURE % common::BLUE % i % gop.start % gop.end % stat.first % stat.second % gop.cloud->size() % max_size % min_size;
 					std::cout << fmt;
-					this->handler_[i].Clear();
-					this->handler_data_[i] = false;
 				}
-				this->clock_.SetTimeEnd();
-				boost::format fmt_end{"\033[%1%m-------------------------------------------------------------------\n"
-				                      "\033[%2%mPatch deformation finished."
-				                      "\t\033[%2%mCost \033[0m%3$.2fs\n"
-				                      "\033[%1%m-------------------------------------------------------------------\n\033[0m"};
-				fmt_end % common::AZURE % common::BLUE % this->clock_.GetTimeS();
-				std::cout << fmt_end;
-				this->results_.emplace_back(this->gops_);
+				/* Clear old data */
+				this->handler_[i].Clear();
+				this->handler_data_[i] = false;
 			}
+			this->clock_.SetTimeEnd();
+			boost::format fmt_end{"\033[%1%m-------------------------------------------------------------------\n"
+			                      "\033[%2%mPatch deformation finished."
+			                      "\t\033[%2%mCost \033[0m%3$.2fs\n"
+			                      "\033[%1%m-------------------------------------------------------------------\n\033[0m"};
+			fmt_end % common::AZURE % common::BLUE % this->clock_.GetTimeS();
+			std::cout << fmt_end;
 		}
 		catch (const common::Exception& e) {
 			e.Log();
@@ -200,69 +239,82 @@ namespace codec {
 			if (!this->params_) {
 				throw __EXCEPT__(EMPTY_PARAMS);
 			}
-			if (!this->gops_) {
-				throw __EXCEPT__(EMPTY_RESULT);
-			}
+			/* Log start */
 			boost::format fmt_0{"\033[%1%mSave GoPs ......\033[0m\n"};
 			fmt_0 % common::AZURE;
 			std::cout << fmt_0;
+
+			/* Root dir */
 			std::string dirs = this->params_->io.deform_file;
 			if (dirs.back() != '/') {
 				dirs += '/';
 			}
 			dirs += "gops";
+
+			/* Check status */
 			std::ofstream outfile;
-			struct stat   info;
-			int           a;
+			struct stat info;
+			int a;
+			/* Root dir already exists, delete it */
 			if (stat(dirs.c_str(), &info) == 0) {
 				std::string s0 = "rm -rf " + dirs;
-				a              = system(s0.c_str());
+				a = system(s0.c_str());
 				boost::format fmt_1{"\t%1% \033[%2%mexists, delete it.\n\033[0m"};
 				fmt_1 % dirs % common::YELLOW;
 				std::cout << fmt_1;
 			}
+
+			/* Create root dir */
 			std::string s1 = "mkdir " + dirs;
-			a              = system(s1.c_str());
+			a = system(s1.c_str());
 			boost::format fmt_2{"\t\033[%1%mCreate directory \033[0m%2%\n"};
 			fmt_2 % common::BLUE % dirs;
 			std::cout << fmt_2;
+
+			/* Write sequence name and patch num to file */
 			outfile.open(dirs + "/.config");
-			outfile << this->params_->io.sequence_name << '\n' << this->results_.size();
+			outfile << this->params_->io.sequence_name << '\n' << this->gops_.size() << '\n';
 			outfile.close();
-			for (int k = 0; k < this->results_.size(); ++k) {
-				boost::format key_dirs_fmt{"%s/%s_%04d"};
-				key_dirs_fmt % dirs % this->params_->io.sequence_name % k;
-				std::string key_dirs = key_dirs_fmt.str();
-				std::string ss       = "mkdir " + key_dirs;
-				a                    = system(ss.c_str());
-				outfile.open(key_dirs + "/.config");
-				outfile << this->results_[k]->size();
+
+			/* For each patch */
+			for (int k = 0; k < this->gops_.size(); ++k) {
+				/* Patch dir Root/seq_%04d */
+				boost::format patch_dirs_fmt{"%s/%s_patch_%04d"};
+				patch_dirs_fmt % dirs % this->params_->io.sequence_name % k;
+				std::string patch_dirs = patch_dirs_fmt.str();
+
+				/* Create this dir */
+				std::string ss = "mkdir " + patch_dirs;
+				a = system(ss.c_str());
+
+				/* Write how many GoP this patch have */
+				outfile.open(patch_dirs + "/.config");
+				outfile << this->gops_[k].size() << '\n';
 				outfile.close();
-				for (int i = 0; i < this->results_[k]->size(); ++i) {
-					boost::format sub_dirs_fmt{"%s/%s_patch_%04d"};
-					sub_dirs_fmt % key_dirs % this->params_->io.sequence_name % i;
-					std::string sub_dirs = sub_dirs_fmt.str();
-					std::string s2       = "mkdir " + sub_dirs;
-					a                    = system(s2.c_str());
-					outfile.open(sub_dirs + "/.config");
-					outfile << this->results_[k]->at(i).size();
+
+				for (int i = 0; i < this->gops_[k].size(); ++i) {
+					/* GoP dir Root/seq_%04d/seq_patch_%04d_gop_%04d */
+					boost::format gop_dirs_fmt{"%s/%s_patch_%04d_gop_%04d"};
+					gop_dirs_fmt % patch_dirs % this->params_->io.sequence_name % k % i;
+					std::string gop_dirs = gop_dirs_fmt.str();
+
+					/* Create this dir */
+					std::string s2 = "mkdir " + gop_dirs;
+					a = system(s2.c_str());
+
+					/* Write start timestamp and end timestamp to file */
+					outfile.open(gop_dirs + "/.config");
+					outfile << this->gops_[k][i].start << '\n' << this->gops_[k][i].end << '\n';
 					outfile.close();
-					for (int j = 0; j < this->results_[k]->at(i).size(); ++j) {
-						boost::format gop_dirs_fmt{"%s/%s_patch_%04d_gop_%04d"};
-						gop_dirs_fmt % sub_dirs % this->params_->io.sequence_name % i % j;
-						std::string gop_dirs = gop_dirs_fmt.str();
-						std::string s3       = "mkdir " + gop_dirs;
-						a                    = system(s3.c_str());
-						io::SaveColorPlyFile(gop_dirs + "/fitting_cloud.ply", this->results_[k]->at(i)[j].cloud);
-						outfile.open(gop_dirs + "/.config");
-						outfile << this->results_[k]->at(i)[j].start << '\n' << this->results_[k]->at(i)[j].end;
-						outfile.close();
-						for (int idx = 0; idx < this->results_[k]->at(i)[j].patches.size(); idx++) {
-							boost::format patch_fmt{"%s/%s_patch_%04d_gop_%04d_time_%04d.patch"};
-							patch_fmt % gop_dirs % this->params_->io.sequence_name % i % j % (this->results_[k]->at(i)[j].start + idx);
-							std::string patch_name = patch_fmt.str();
-							io::SavePatch(this->results_[k]->at(i)[j].patches[idx], patch_name);
-						}
+
+					/* Save fitting cloud */
+					io::SaveColorPlyFile(gop_dirs + "/fitting_cloud.ply", this->gops_[k][i].cloud);
+
+					for (int j = 0; j < this->gops_[k][i].patches.size(); ++j) {
+						boost::format patch_fmt{"%s/%s_patch_%04d_gop_%04d_time_%04d.patch"};
+						patch_fmt % gop_dirs % this->params_->io.sequence_name % k % i % this->gops_[k][i].patches[j].timestamp;
+						std::string patch_name = patch_fmt.str();
+						io::SavePatch(this->gops_[k][i].patches[j], patch_name);
 					}
 				}
 			}
@@ -279,39 +331,53 @@ namespace codec {
 				throw __EXCEPT__(EMPTY_PARAMS);
 			}
 
+			/* Log start */
 			boost::format fmt_begin{"\033[%1%mLoad patches ......\033[0m\n"};
 			fmt_begin % common::AZURE;
 			std::cout << fmt_begin;
 
+			/* Root dir */
 			std::string dirs = this->params_->io.segment_file;
 			if (dirs.back() != '/') {
 				dirs += '/';
 			}
 
-            dirs += "segment";
-			std::ifstream infile;
-			struct stat   info;
+			dirs += "segment";
 
+			/* Check status */
+			std::ifstream infile;
+			struct stat info;
+
+			/* Root dir not exist */
 			if (stat(dirs.c_str(), &info) != 0) {
 				throw __EXCEPT__(EMPTY_RESULT);
 			}
 
+			/* Read sequence name and total frames number from file */
 			infile.open(dirs + "/.config");
 			std::string seq_name;
-			int         frame_cnt;
+			int frame_cnt;
 			infile >> seq_name >> frame_cnt;
 			infile.close();
+
+			/* Init container */
 			this->patches_ = std::make_shared<std::vector<std::vector<common::Patch>>>(frame_cnt);
 
+			/* Load frames */
 			for (int i = 0; i < frame_cnt; ++i) {
+				/* Frame dir */
 				boost::format sub_dirs_fmt{"%s/%s_%04d"};
 				sub_dirs_fmt % dirs % seq_name % i;
 				std::string sub_dirs = sub_dirs_fmt.str();
-				int         patch_cnt;
+				int patch_cnt;
+
+				/* Read patch number from file */
 				infile.open(sub_dirs + "/.config");
 				infile >> patch_cnt;
 				infile.close();
+				/* Init container */
 				this->patches_->at(i).resize(patch_cnt);
+				/* Load each patches */
 				for (int j = 0; j < patch_cnt; j++) {
 					boost::format name_fmt{"%s/%s_time_%04d_patch_%04d.patch"};
 					name_fmt % sub_dirs % seq_name % i % j;
@@ -319,7 +385,7 @@ namespace codec {
 					io::LoadPatch(this->patches_->at(i)[j], name);
 				}
 			}
-            printf("\033[%dmLoad patches finished.\033[0m\n", common::AZURE);
+			printf("\033[%dmLoad patches finished.\033[0m\n", common::AZURE);
 		}
 		catch (const common::Exception& e) {
 			e.Log();

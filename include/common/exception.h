@@ -65,7 +65,7 @@
 namespace vvc {
 namespace common {
 	/* Mutex to output message to terminal, should be called in multi cout or printf, thread safe in single printf and cout */
-	static std::mutex    PVVCLog_Mutex;
+	static std::mutex PVVCLog_Mutex;
 	static boost::format color_cmd("\033[%dm%s\033[0m");
 	enum BASHCOLOR {
 		BLACK = 30,
@@ -87,10 +87,10 @@ namespace common {
 	};
 	class Exception {
 	  private:
-		unsigned int line_;    /* line index where error occured  */
-		std::string  file_;    /* file name where error occured */
-		std::string  func_;    /* function name where error occured */
-		std::string  message_; /* error message */
+		unsigned int line_;   /* line index where error occured  */
+		std::string file_;    /* file name where error occured */
+		std::string func_;    /* function name where error occured */
+		std::string message_; /* error message */
 
 	  public:
 		/*
@@ -133,6 +133,7 @@ namespace common {
 		BAD_SLICE,             /* error occured when the type of one slice is invalid */
 		EMPTY_REFERENCE,       /* error occured when try to decode a predictive slice without intra slice */
 		INVALID_DIR,           /* error occured when try to access a invalid directory or directory path actually is a file */
+		UNMATCHED_PATCH_SIZE,  /* error occured when adjcent frames have difference patch num */
 	};
 
 	static std::string ErrorMessage[100] = {
@@ -160,6 +161,7 @@ namespace common {
 	    "invalid slice type",
 	    "no reference for predictive slice",
 	    "invalid directory, path maybe not exist or actually a file",
+        "unmatched patch number",
 	};
 
 }  // namespace common

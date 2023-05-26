@@ -61,7 +61,7 @@ namespace io {
 			}
 
 			for (auto i : *_patch.cloud) {
-				float   xyz[3] = {i.x, i.y, i.z};
+				float xyz[3] = {i.x, i.y, i.z};
 				uint8_t rgb[3] = {i.r, i.g, i.b};
 				if (fwrite(xyz, sizeof(float), 3, fp) != 3) {
 					throw __EXCEPT__(FILE_WRITE_ERROR);
@@ -89,6 +89,7 @@ namespace io {
 			FILE* fp = fopen(_name.c_str(), "rb");
 
 			if (fp == nullptr) {
+				printf("%s\n", _name.c_str());
 				switch (errno) {
 					case ENOENT: throw __EXCEPT__(FILE_NOT_EXIST); break;
 					case EACCES: throw __EXCEPT__(PERMISSION_DENIED); break;
@@ -121,7 +122,7 @@ namespace io {
 			}
 			_patch.cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
 			for (int i = 0; i < p_size; ++i) {
-				float   xyz[3];
+				float xyz[3];
 				uint8_t rgb[3];
 				if (fread(xyz, sizeof(float), 3, fp) != 3) {
 					throw __EXCEPT__(FILE_READ_ERROR);

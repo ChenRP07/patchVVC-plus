@@ -9,6 +9,6 @@
 int main()
 {
     auto &instance  = vvc::client::Manager::Init();
-    instance.Start(600, "/mnt/data/pvvc_data/loot/frame/loot_");
+    instance.Start(1000, "/mnt/data/pvvc_data/loot/frame/loot_");
     return 0;
 }

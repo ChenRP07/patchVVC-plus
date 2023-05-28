@@ -87,17 +87,17 @@ namespace codec {
 			int start_back = this->gops_.size() - 1;
 
 			for (int i = 0; i <= start_back; ++i) {
+				int now_back = this->gops_.size();
 				for (int j = 0; j < this->gops_[i].size(); ++j) {
-					bool add = false;
 					if (this->gops_[i][j].cloud->size() > this->params_->segment.num * (1.0f + segment::NUM_THS)) {
 						std::vector<GoP> temp;
 						this->SplitGoP(this->gops_[i][j], temp);
 						this->gops_[i][j] = temp[0];
+
+						while (this->gops_.size() < now_back + temp.size() - 1) {
+							this->gops_.emplace_back();
+						}
 						for (int t = 1; t < temp.size(); t++) {
-							if (!add) {
-								this->gops_.emplace_back();
-								add = true;
-							}
 							for (auto& p : temp[t].patches) {
 								p.index = this->gops_.size() - 1;
 							}
@@ -203,7 +203,7 @@ namespace codec {
 
 		heap.push(_g.cloud);
 
-		while (heap.top()->size() < this->params_->segment.num * (1.0f + segment::NUM_THS)) {
+		while (heap.top()->size() >= this->params_->segment.num * (1.0f + segment::NUM_THS)) {
 			auto ptr = heap.top();
 			heap.pop();
 			decltype(_g.cloud) ptr_a, ptr_b;
@@ -289,13 +289,11 @@ namespace codec {
 
 				/* Write patch indexes to file */
 				outfile.open(sub_dirs + "/.config");
-				outfile << '\n';
-				outfile.close();
 
 				int frame_cnt{};
 				for (int j = 0; j < this->results_[i].size(); ++j) {
 					if (!common::CheckSliceType(this->results_[i][j].type, common::PVVC_SLICE_TYPE_VALID)) {
-						std::cout << "frame : " << i << " patch : " << j << '\n';
+						continue;
 					}
 					else {
 						/* Each patch */
@@ -307,6 +305,8 @@ namespace codec {
 						outfile << this->results_[i][j].index << ' ';
 					}
 				}
+				outfile << '\n';
+				outfile.close();
 				boost::format fmt_frame{"\t\033[%1%mSave slices of frame #\033[0m%2$04d, \033[%1%msize \033[0m%3$.2fKB\n"};
 				fmt_frame % common::BLUE % i % (frame_cnt / 1024.0f);
 				std::cout << fmt_frame;

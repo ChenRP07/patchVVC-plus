@@ -140,6 +140,7 @@ namespace client {
 					mem.size  = Manager::MAX_VBO_SIZE - mem.start;
 					mem.type  = -1;
 					// printf("Add VBO memory garbage type %d [%d , %d]\n", mem.type, mem.start, mem.start + mem.size);
+					// printf("Add VBO memory garbage type %d [%d , %d]\n", mem.type, mem.start, mem.start + mem.size);
 					this->AddVBOMem(mem);
 					this->unused_start_ = 0;
 					this->unused_size_ -= mem.size;
@@ -155,6 +156,7 @@ namespace client {
 			}
 			this->unused_memory_mutex.unlock();
 			if (mem.type == 1 && mem.size == _size) {
+				// printf("Alloc VBO memory for decoding [%d , %d]\n", mem.start, mem.start + mem.size);
 				// printf("Alloc VBO memory for decoding [%d , %d]\n", mem.start, mem.start + mem.size);
 				return mem;
 			}
@@ -201,6 +203,7 @@ namespace client {
 				printf("Unknown error, get a VBO memory type %d [%d , %d]\n", mem.type, mem.start, mem.start + mem.size);
 				exit(1);
 			}
+			// printf("OpenGL will render frame #%d in VBO [%d , %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
 			// printf("OpenGL will render frame #%d in VBO [%d , %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
 			Renderer.Rendering(mem.start, mem.size);
 			// printf("OpenGL successfully render frame #%d in VBO [%d, %d].\n", Manager::RENDERED_FRAME_CNT, mem.start, mem.start + mem.size);
@@ -250,6 +253,7 @@ namespace client {
 				gettimeofday(&tt0, nullptr);
 				auto        frame_ptr = std::make_shared<common::Frame_t>();
 				std::string name      = Manager::frame_name_prev + std::to_string(Manager::LOADED_FRAME_CNT) + ".frame";
+				// printf("Try to load frame #%d from %s.\n", Manager::LOADED_FRAME_CNT, name.c_str());
 				// printf("Try to load frame #%d from %s.\n", Manager::LOADED_FRAME_CNT, name.c_str());
 				if (io::LoadFrame(*frame_ptr, name)) {
 					// printf("Load frame %s failed, program exit.\n", name.c_str());
@@ -356,10 +360,10 @@ namespace client {
 		}
 		this->unused_memory_mutex.lock();
 		if (_mem.type == -1) {
-			printf("Garbage collection [%d , %d]\n", _mem.start, _mem.size + _mem.start);
+			// printf("Garbage collection [%d , %d]\n", _mem.start, _mem.size + _mem.start);
 		}
 		else if (_mem.type == 1) {
-			printf("Release render memory in VBO [%d , %d]\n", _mem.start, _mem.size + _mem.start);
+			// printf("Release render memory in VBO [%d , %d]\n", _mem.start, _mem.size + _mem.start);
 		}
 		else {
 			printf("Unknown error, try to release VBO memory type %d [%d , %d].\n", _mem.type, _mem.start, _mem.start + _mem.size);
@@ -381,7 +385,7 @@ namespace client {
 				this->ReleaseRender(mem);
 			}
 			else if (mem.type == 1) {
-				printf("OpenGL will render data in VBO [%d , %d]\n", mem.start, mem.start + mem.size);
+				// printf("OpenGL will render data in VBO [%d , %d]\n", mem.start, mem.start + mem.size);
 				return mem;
 			}
 			else if (mem.type == 0) {

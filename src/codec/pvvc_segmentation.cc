@@ -248,7 +248,7 @@ namespace codec {
 					current_frame_idx_++;
 				}
 				else {
-                /* TODO: avg mse change computing method, check avg mse or something else to decide this frame can be ref segment */
+					/* TODO: avg mse change computing method, check avg mse or something else to decide this frame can be ref segment */
 					boost::format fmt_0{"\033[%1%m-------------------------------------------------------------------\n"
 					                    "Start reference segmentation for frame \033[0m#%2% ......\n"};
 					fmt_0 % common::AZURE % current_frame_idx_;
@@ -264,7 +264,9 @@ namespace codec {
 
 					std::vector<int> patch_size;
 					for (auto& i : this->patches_->at(current_frame_idx_)) {
-						patch_size.emplace_back(i.size());
+						if (i.size() > 1) {
+							patch_size.emplace_back(i.size());
+						}
 					}
 					this->clock_.SetTimeEnd();
 
@@ -281,6 +283,12 @@ namespace codec {
 					    (*std::min_element(patch_size.begin(), patch_size.end())) % this->clock_.GetTimeS();
 					std::cout << fmt_1;
 
+					if (*std::max_element(patch_size.begin(), patch_size.end()) > this->params_->segment.num * 2) {
+						printf("\t\033[%dmPatch is too large, resegment this frame as key frame!\033[0m\n", common::B_PURPLE);
+						this->patches_->at(current_frame_idx_).clear();
+						this->frames_[current_frame_idx_].type = RAWFRAMETYPE::FORCE_KEY_FRAME;
+						continue;
+					}
 					this->clock_.SetTimeBegin();
 					registration::PatchesRegistration check;
 					check.SetParams(this->params_);
@@ -290,11 +298,13 @@ namespace codec {
 					auto result = check.GetMSEs();
 
 					int conv_cnt{};
-					float avg_mse{}, max_mse{}, min_mse{FLT_MIN};
+					int total_point{};
+					float avg_mse{}, max_mse{}, min_mse{FLT_MAX};
 					for (int i = 0; i < result.size(); ++i) {
 						if (result[i] >= 0.0f) {
 							conv_cnt++;
-							avg_mse += result[i];
+							avg_mse += result[i] * this->patches_->at(current_frame_idx_)[i].size();
+							total_point += this->patches_->at(current_frame_idx_)[i].size();
 							max_mse = std::max(max_mse, result[i]);
 							min_mse = std::min(min_mse, result[i]);
 							this->patches_->at(current_frame_idx_)[i].type = common::PATCH_TYPE::SIMPLE_PATCH;
@@ -303,7 +313,7 @@ namespace codec {
 							this->patches_->at(current_frame_idx_)[i].type = common::PATCH_TYPE::FORCE_KEY_PATCH;
 						}
 					}
-					avg_mse /= conv_cnt;
+					avg_mse /= total_point;
 
 					this->clock_.SetTimeEnd();
 					boost::format fmt_2{"\033[%1%mCheck with reference patches\n"
@@ -313,7 +323,16 @@ namespace codec {
 					                    "\t\033[%2%mCheck time cost   : \033[0m%8$.2fs\n"};
 					fmt_2 % common::AZURE % common::BLUE % conv_cnt % result.size() % avg_mse % max_mse % min_mse % this->clock_.GetTimeS();
 					std::cout << fmt_2;
-					current_frame_idx_++;
+
+					if (avg_mse > 10.0f) {
+						printf("\t\033[%dmMse is too large, resegment this frame as key frame!\033[0m\n", common::B_PURPLE);
+						this->patches_->at(current_frame_idx_).clear();
+						this->frames_[current_frame_idx_].type = RAWFRAMETYPE::FORCE_KEY_FRAME;
+						continue;
+					}
+					else {
+						current_frame_idx_++;
+					}
 				}
 			}
 		}

@@ -42,6 +42,11 @@ namespace segment {
 				final_centroids->emplace_back(c);
 			}
 			this->KMeans(final_centroids);
+			for (int i = 0; i < this->results_.size(); ++i) {
+				if (this->results_[i]->empty()) {
+					this->results_[i]->emplace_back(this->reference_patches_[i][0]);
+				}
+			}
 			// bool size_ths = false;
 			// int cur_idx = this->results_.size() - 1;
 			// double r_ths = std::sqrt(this->params_->icp.radius_search_ths);

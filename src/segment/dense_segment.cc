@@ -249,6 +249,15 @@ namespace segment {
 			}
 			this->KMeans(final_centroids);
 
+			for (auto it = this->results_.begin(); it != this->results_.end();) {
+				if ((*it)->empty()) {
+					it = this->results_.erase(it);
+				}
+				else {
+					++it;
+				}
+			}
+
 			bool size_ths = false;
 			int cur_idx = this->results_.size() - 1;
 			double r_ths = std::sqrt(this->params_->icp.radius_search_ths);
@@ -310,6 +319,5 @@ namespace segment {
 		}
 	}
 
-	
 }  // namespace segment
 }  // namespace vvc

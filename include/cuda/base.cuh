@@ -286,7 +286,7 @@ namespace client {
 		[[nodiscard]] extern int LoadFrame(common::Frame_t& _frame, const std::string& _name);
 	}  // namespace io
 
-	constexpr int FRAME_POINT_CNT{1'000'000};
+	constexpr int FRAME_POINT_CNT{1'500'000};
 	constexpr int POINT_BYTE{sizeof(common::Points)};
 	constexpr int TOTAL_FRAME_CNT{300};
 	constexpr int MAX_LOAD_FRAME_CNT{60};

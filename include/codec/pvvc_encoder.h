@@ -222,7 +222,7 @@ namespace codec {
 
 		void Task();
 
-        void SplitCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _old, decltype(_old) _new_0, decltype(_old) _new_1);
+		void SplitCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr _old, decltype(_old) _new_0, decltype(_old) _new_1);
 		void SplitGoP(GoP& _g, std::vector<GoP>& _res);
 
 	  public:
@@ -252,6 +252,9 @@ namespace codec {
 		std::vector<std::vector<common::Slice>> slices_;
 		std::vector<std::vector<common::Patch>> patches_;
 		std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> results_;
+
+		float avg_geo, avg_y;
+		int psnr_cnt;
 
 	  public:
 		void LoadSlices();

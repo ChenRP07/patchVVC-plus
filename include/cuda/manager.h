@@ -31,20 +31,21 @@ namespace client {
 		~VBOMemZone() = default;
 	};
 
-	extern float**        temp_mv;
-	extern uint8_t**      temp_geo;
-	extern uint8_t**      temp_color;
+	extern float**        temp_mv[MAX_LOAD_FRAME_CNT];
+	extern uint8_t**      temp_geo[MAX_LOAD_FRAME_CNT];
+	extern uint8_t**      temp_color[MAX_LOAD_FRAME_CNT];
 	extern render::Render Renderer;
 
 	extern void FrameCpu2Gpu(vvc::client::common::Frame_t& _frame);
 
+	extern void MallocGpuBuffer();
 	/*
 	 * How to use?
 	 * auto& p = Manager::Init();
 	 * p.Start(patch_size, frame_name_prev);
 	 * */
 	class Manager {
-	  private:
+	  public:
 		/* Parameters */
 		const static int   MAX_VBO_SIZE{FRAME_POINT_CNT * MAX_VBO_FRAME_CNT};
 		static int         RENDERED_FRAME_CNT;
@@ -78,13 +79,17 @@ namespace client {
 		void StartDecoder();
 
 	  private:
-		std::queue<std::shared_ptr<common::Frame_t>> stream_;
-		std::mutex                                   stream_queue_mutex;
+		// std::queue<std::shared_ptr<common::Frame_t>> stream_;
+		// std::mutex                                   stream_queue_mutex;
+		std::queue<int> unusedGpuBuffer;
+		std::queue<int> filledGpuBuffer;
+		std::mutex	unusedGpuBufferMutex;
+		std::mutex	filledGpuBufferMutex;
 		std::thread                                  frame_loader_;
 		void                                         StartFrameLoader();
 
 	  private:
-		Manager() : unused_size_{FRAME_POINT_CNT * MAX_VBO_FRAME_CNT}, frames_{}, unused_start_{}, stream_{} {}
+		Manager() : unused_size_{FRAME_POINT_CNT * MAX_VBO_FRAME_CNT}, frames_{}, unused_start_{} {}
 		~Manager() {}
 
 	  public:

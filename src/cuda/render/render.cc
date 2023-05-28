@@ -34,6 +34,7 @@ namespace client {
 
 		common::Points* cudaData{};
 		size_t          numBytes{};
+		common::Points* interMem{};
 
 		void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 			fov -= (float)yoffset;
@@ -210,6 +211,9 @@ namespace client {
 
 			// 注册OpenGL缓冲区对象到CUDA
 			gpuErrchk(cudaGraphicsGLRegisterBuffer(&cudaGraphicsResourcePtr, VBO, cudaGraphicsMapFlagsNone));
+
+			// 申请 interMem 的内存
+			gpuErrchk(cudaMalloc((void**)&(interMem), sizeof(common::Points) * FRAME_POINT_CNT));
 		}
 
 		void Render::Rendering(int offset, int frame_size) {
@@ -262,31 +266,37 @@ namespace client {
 			glfwPollEvents();          // 交换颜色缓冲，避免图像闪烁
 		}
 
-		void Render::CUDADecode(int offset, int timestamp, int patch_size) {
+		void Render::CUDADecode(int offset, int timestamp, int patch_size, int index) {
 			int numElements = patch_size;
 			int blockSize   = 1;
 			int numBlocks   = (numElements + blockSize - 1) / blockSize;
-			// 利用 CUDA 更新缓冲区内的数值
-			// 将OpenGL缓冲区对象映射到CUDA
-			gpuErrchk(cudaGraphicsMapResources(1, &cudaGraphicsResourcePtr, 0));
-			gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&(cudaData), &numBytes, cudaGraphicsResourcePtr));
 			// clang-format off
             // 启动kernel
-            launch_cudaProcess(numBlocks, blockSize, cudaData + offset, timestamp, 
-                               CUDAFrame.inner_offset_gpu,
-                               CUDAFrame.index_gpu,
-                               CUDAFrame.type_gpu,
-                               CUDAFrame.mv_gpu,
-                               CUDAFrame.size_gpu,
-                               CUDAFrame.qp_gpu,
-                               CUDAFrame.geometry_gpu,
-                               CUDAFrame.geometry_size_gpu,
-                               CUDAFrame.color_gpu,
-                               CUDAFrame.color_size_gpu, 
+            launch_cudaProcess(numBlocks, blockSize, interMem, timestamp, 
+                               CUDAFrame[index].inner_offset_gpu,
+                               CUDAFrame[index].index_gpu,
+                               CUDAFrame[index].type_gpu,
+                               CUDAFrame[index].mv_gpu,
+                               CUDAFrame[index].size_gpu,
+                               CUDAFrame[index].qp_gpu,
+                               CUDAFrame[index].geometry_gpu,
+                               CUDAFrame[index].geometry_size_gpu,
+                               CUDAFrame[index].color_gpu,
+                               CUDAFrame[index].color_size_gpu, 
                                Decoders, 
                                patch_size);
 			// clang-format on
 			gpuErrchk(cudaDeviceSynchronize());
+
+			// 将OpenGL缓冲区对象映射到CUDA
+			gpuErrchk(cudaGraphicsMapResources(1, &cudaGraphicsResourcePtr, 0));
+			gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&(cudaData), &numBytes, cudaGraphicsResourcePtr));
+			timeval t0, t1;
+			gettimeofday(&t0, nullptr);
+			gpuErrchk(cudaMemcpy(cudaData + offset, interMem, sizeof(common::Points) * CUDAFrame[index].point_number, cudaMemcpyDeviceToDevice));
+			gpuErrchk(cudaDeviceSynchronize());
+			gettimeofday(&t1, nullptr);
+			printf("Memcpy_time = %.2f\n", (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f);
 			// 将结果从CUDA复制回OpenGL缓冲区
 			gpuErrchk(cudaGraphicsUnmapResources(1, &cudaGraphicsResourcePtr, 0));
 		}

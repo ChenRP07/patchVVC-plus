@@ -9,6 +9,9 @@
 int main()
 {
     auto &instance  = vvc::client::Manager::Init();
-    instance.Start(1000, "/mnt/data/pvvc_data/loot/frame/loot_");
+    // instance.Start(1000, "/mnt/data/pvvc_data/loot/frame/loot_");
+    // instance.Start(1000, "/mnt/data/pvvc_data/soldier/frame/soldier_");
+    // instance.Start(1000, "/mnt/data/pvvc_data/longdress/frame/longdress_");
+    instance.Start(1000, "/mnt/data/pvvc_data/redandblack/frame/redandblack_");
     return 0;
 }

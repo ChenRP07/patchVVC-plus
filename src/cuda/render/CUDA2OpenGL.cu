@@ -50,6 +50,12 @@ __global__ void processCUDA(Points* cudaData, int timestamp, int* inner_offset, 
 			cudaData[offset + i].g = ((invertRAHTOctree_gpu[index[idx]].source_colors_[i].y - 0.3441f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].u - 128.0f) - 0.7141f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].v - 128.0f))) / 255;
 			cudaData[offset + i].b = ((invertRAHTOctree_gpu[index[idx]].source_colors_[i].y + 1.7720f * (invertRAHTOctree_gpu[index[idx]].source_colors_[i].u - 128.0f))) / 255;
 		}
+
+        if (size[idx] < 10) {
+            for (int i = 0; i < size[idx]; i++) {
+                cudaData[offset + i].r = cudaData[offset + i].g = cudaData[offset + i].b = 1.0f;
+            }
+        }
 		// if(idx == 1){
 		// 	// 	invertRAHTOctree_gpu[index[1]].GetPatch();
 		// 	for(int i=0; i<size[idx]; i++){

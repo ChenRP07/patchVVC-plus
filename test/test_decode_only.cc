@@ -1,7 +1,7 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-22 20:21:44
- * @LastEditTime: 2023-05-24 18:47:25
+ * @LastEditTime: 2023-05-27 21:01:07
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -38,10 +38,11 @@ public:
 
 int main()
 {
+
     size_t size{1024 * 1024 * 1024};
     cudaDeviceSetLimit(cudaLimitMallocHeapSize, size);
 
-    int patch_size = 383;
+    int patch_size = 1000;
     common::Points* tmpCudaData;
     octree::InvertRAHTOctree* tmpDecoders;
     CudaFrame_t tmpCUDAFrame;
@@ -53,44 +54,44 @@ int main()
     gpuErrchk(cudaMemcpy(tmpDecoders, temp_Decoders, sizeof(octree::InvertRAHTOctree) *patch_size, cudaMemcpyHostToDevice));
     delete[] temp_Decoders;
 
-    double sum_time = 0.0;
-    for (int ttt = 0; ttt < 1; ++ttt) {
-        
-        common::Points* tmpCudaData;
-        
-        CudaFrame_t tmpCUDAFrame;
-        gpuErrchk(cudaMalloc((void**)&(tmpCudaData), sizeof(common::Points) * 1000000));
+    double decode_time = 0.0;
+    double total_time = 0.0;
 
-        /* GPU 申请一维数组空间 */
-        gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.inner_offset_gpu), sizeof(int) *patch_size));
-        gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.index_gpu), sizeof(int) *patch_size));
-        gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.type_gpu), sizeof(uint8_t) *patch_size));
-        gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.size_gpu), sizeof(uint32_t) *patch_size));
-        gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.qp_gpu), sizeof(uint8_t) *patch_size));
-        gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.geometry_size_gpu), sizeof(uint32_t) *patch_size));
-        gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.color_size_gpu), sizeof(uint32_t) *patch_size));
+    /* GPU 申请一维数组空间 */
+    gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.inner_offset_gpu), sizeof(int) *patch_size));
+    gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.index_gpu), sizeof(int) *patch_size));
+    gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.type_gpu), sizeof(uint8_t) *patch_size));
+    gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.size_gpu), sizeof(uint32_t) *patch_size));
+    gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.qp_gpu), sizeof(uint8_t) *patch_size));
+    gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.geometry_size_gpu), sizeof(uint32_t) *patch_size));
+    gpuErrchk(cudaMalloc((void**)&(tmpCUDAFrame.color_size_gpu), sizeof(uint32_t) *patch_size));
 
-        /* GPU 申请二维数组空间 */
-        gpuErrchk(cudaMalloc((void***)&(tmpCUDAFrame.mv_gpu), sizeof(float*) *patch_size));
-        gpuErrchk(cudaMalloc((void***)&(tmpCUDAFrame.geometry_gpu), sizeof(uint8_t*) *patch_size));
-        gpuErrchk(cudaMalloc((void***)&(tmpCUDAFrame.color_gpu), sizeof(uint8_t*) *patch_size));
+    /* GPU 申请二维数组空间 */
+    gpuErrchk(cudaMalloc((void***)&(tmpCUDAFrame.mv_gpu), sizeof(float*) *patch_size));
+    gpuErrchk(cudaMalloc((void***)&(tmpCUDAFrame.geometry_gpu), sizeof(uint8_t*) *patch_size));
+    gpuErrchk(cudaMalloc((void***)&(tmpCUDAFrame.color_gpu), sizeof(uint8_t*) *patch_size));
 
-        float** tmp_mv    = (float**)malloc(sizeof(float*) *patch_size);
-        uint8_t** tmp_geo   = (uint8_t**)malloc(sizeof(uint8_t*) *patch_size);
-        uint8_t** tmp_color = (uint8_t**)malloc(sizeof(uint8_t*) *patch_size);
+    float** tmp_mv    = (float**)malloc(sizeof(float*) *patch_size);
+    uint8_t** tmp_geo   = (uint8_t**)malloc(sizeof(uint8_t*) *patch_size);
+    uint8_t** tmp_color = (uint8_t**)malloc(sizeof(uint8_t*) *patch_size);
 
-        for (int i = 0; i <patch_size; ++i) {
-            gpuErrchk(cudaMalloc((void**)&(tmp_mv[i]), sizeof(float) * 16));
-            gpuErrchk(cudaMalloc((void**)&(tmp_geo[i]), sizeof(uint8_t) * MAX_SLICE_SIZE));
-            gpuErrchk(cudaMalloc((void**)&(tmp_color[i]), sizeof(uint8_t) * MAX_SLICE_SIZE));
-        }
+    for (int i = 0; i <patch_size; ++i) {
+        gpuErrchk(cudaMalloc((void**)&(tmp_mv[i]), sizeof(float) * 16));
+        gpuErrchk(cudaMalloc((void**)&(tmp_geo[i]), sizeof(uint8_t) * MAX_SLICE_SIZE));
+        gpuErrchk(cudaMalloc((void**)&(tmp_color[i]), sizeof(uint8_t) * MAX_SLICE_SIZE));
+    }
+
+    for (int ttt = 0; ttt < 300; ++ttt) {
 
         common::Frame_t frame_p;
-        io::LoadFrame(frame_p, "/mnt/data/pvvc_data/loot/frame/loot_"+std::to_string(ttt)+".frame");
+        io::LoadFrame(frame_p, "/mnt/data/pvvc_data/loot/frame_old/loot_"+std::to_string(0)+".frame");
         int frame_point_cnt{};
         for (int idx = 0; idx < frame_p.slice_cnt; ++idx) {
             frame_point_cnt += frame_p.size[idx];
         }
+
+        timeval t0, t1, t2, t3;
+		gettimeofday(&t0, nullptr);
 
         common::Frame_t &_frame = frame_p;
         gpuErrchk(cudaMemcpy(tmpCUDAFrame.index_gpu, _frame.index, sizeof(int) * _frame.slice_cnt, cudaMemcpyHostToDevice));
@@ -127,6 +128,7 @@ int main()
 
         GPUTimer gpuTimer;
         // float gpuPerf = gpuTimer.timing( [&](){
+        gettimeofday(&t1, nullptr);
         vvc::client::render::launch_cudaProcess(numBlocks, blockSize, tmpCudaData, 0, 
                             tmpCUDAFrame.inner_offset_gpu,
                             tmpCUDAFrame.index_gpu,
@@ -139,22 +141,32 @@ int main()
                             tmpCUDAFrame.color_gpu,
                             tmpCUDAFrame.color_size_gpu, 
                             tmpDecoders, 
-                            patch_size);
+                            frame_p.slice_cnt);
         // });
         // printf("第 %d 帧**************************************************** %.2f\n", ttt, gpuPerf);
         gpuErrchk(cudaDeviceSynchronize());
+        gettimeofday(&t2, nullptr);
+        double gpuPerf = (t2.tv_sec - t1.tv_sec) * 1000.0f + (t2.tv_usec - t1.tv_usec) / 1000.0f;
+        printf("第 %d 帧**************************************************** %.2f\n", ttt, gpuPerf);
 
-        // sum_time += gpuPerf;
+        decode_time += gpuPerf;
+
+        gettimeofday(&t3, nullptr);
+
+        double mem_decode_time = (t3.tv_sec - t0.tv_sec) * 1000.0f + (t3.tv_usec - t0.tv_usec) / 1000.0f;
+        total_time += mem_decode_time;
+		printf("第 %d 帧总用时 = %.2f\n", ttt, mem_decode_time);
 
         // 将数据拷贝到 CPU
-        common::Points* tmpCudaData_cpu = (common::Points *)malloc(sizeof(common::Points) * 1000000);
-        gpuErrchk(cudaMemcpy(tmpCudaData_cpu, tmpCudaData, sizeof(common::Points)* point_num, cudaMemcpyDeviceToHost));
+        // common::Points* tmpCudaData_cpu = (common::Points *)malloc(sizeof(common::Points) * 1000000);
+        // gpuErrchk(cudaMemcpy(tmpCudaData_cpu, tmpCudaData, sizeof(common::Points)* point_num, cudaMemcpyDeviceToHost));
 
-        for(int i=0; i<point_num; i++){
-            printf("%.3f %.3f %.3f %.0f %.0f %.0f\n",tmpCudaData_cpu[i].x, tmpCudaData_cpu[i].y, tmpCudaData_cpu[i].z ,tmpCudaData_cpu[i].r*255, tmpCudaData_cpu[i].g*255, tmpCudaData_cpu[i].b*255);
-        }
-        free(inner_offset_cpu); 
+        // for(int i=0; i<point_num; i++){
+        //     printf("%.3f %.3f %.3f %.0f %.0f %.0f\n",tmpCudaData_cpu[i].x, tmpCudaData_cpu[i].y, tmpCudaData_cpu[i].z ,tmpCudaData_cpu[i].r*255, tmpCudaData_cpu[i].g*255, tmpCudaData_cpu[i].b*255);
+        // }
+        // free(inner_offset_cpu); 
     }
-    
+    printf("解压缩 总耗时 %.2f\n", decode_time);
+    printf("数据传输+解压缩 总耗时 %.2f\n", total_time);
     return 0;
 }

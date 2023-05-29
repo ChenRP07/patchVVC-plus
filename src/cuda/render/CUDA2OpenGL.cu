@@ -1,7 +1,7 @@
 /*
  * @Author: lixin
  * @Date: 2023-05-16 11:47:17
- * @LastEditTime: 2023-05-22 22:09:50
+ * @LastEditTime: 2023-05-28 21:13:39
  * @Description: 
  * Copyright (c) @lixin, All Rights Reserved.
  */
@@ -66,5 +66,9 @@ __global__ void processCUDA(Points* cudaData, int timestamp, int* inner_offset, 
 }
 
 extern "C" void launch_cudaProcess(int grid, int block, Points * cudaData, int timestamp, int* inner_offset, int* index, uint8_t* type, float** mv, uint32_t* size, uint8_t* qp, uint8_t** geometry, uint32_t* geometry_size, uint8_t** color, uint32_t* color_size, vvc::client::octree::InvertRAHTOctree* invertRAHTOctree_gpu, int patch_size){
-	processCUDA <<<grid, block >>> (cudaData, timestamp, inner_offset, index, type, mv, size, qp, geometry, geometry_size, color, color_size, invertRAHTOctree_gpu, patch_size);
+	cudaStream_t stream1;
+	cudaError_t result;
+	result = cudaStreamCreate(&stream1);
+	processCUDA <<<grid, block,0 ,stream1>>> (cudaData, timestamp, inner_offset, index, type, mv, size, qp, geometry, geometry_size, color, color_size, invertRAHTOctree_gpu, patch_size);
+	result = cudaStreamDestroy(stream1);
 }

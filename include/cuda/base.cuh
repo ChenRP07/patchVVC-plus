@@ -289,7 +289,7 @@ namespace client {
 	constexpr int FRAME_POINT_CNT{1'500'000};
 	constexpr int POINT_BYTE{sizeof(common::Points)};
 	constexpr int TOTAL_FRAME_CNT{300};
-	constexpr int MAX_LOAD_FRAME_CNT{30};
+	constexpr int MAX_LOAD_FRAME_CNT{60};
 	constexpr int MAX_VBO_FRAME_CNT{30};
 	constexpr int RAW_POINT_SIZE{15};
 	constexpr int MAX_SLICE_POINT{10'000};
@@ -307,9 +307,13 @@ namespace client {
 		float** mv_gpu;
 		uint8_t** geometry_gpu;
 		uint8_t** color_gpu;
-		CudaFrame_t() : index_gpu{}, inner_offset_gpu{}, type_gpu{}, size_gpu{}, qp_gpu{}, geometry_size_gpu{}, color_size_gpu{}, mv_gpu{}, geometry_gpu{}, color_gpu{} {}
+
+		int slice_number;
+		
+		int point_number;
+		CudaFrame_t() : index_gpu{}, inner_offset_gpu{}, type_gpu{}, size_gpu{}, qp_gpu{}, geometry_size_gpu{}, color_size_gpu{}, mv_gpu{}, geometry_gpu{}, color_gpu{}, point_number{}, slice_number{} {}
 	};
-	extern CudaFrame_t CUDAFrame;
+	extern CudaFrame_t CUDAFrame[MAX_LOAD_FRAME_CNT];
 
 }  // namespace client
 }  // namespace vvc

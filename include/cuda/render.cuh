@@ -157,7 +157,7 @@ namespace client {
 			void Rendering(int offset, int frame_size);
 
 			/* @description: 利用CUDA解码更新缓冲区 */
-			void CUDADecode(int offset, int timestamp, int patch_size);
+			void CUDADecode(int offset, int timestamp, int patch_size, int index);
 
 			inline void MakeContextWindow() {
 				glfwMakeContextCurrent(window);

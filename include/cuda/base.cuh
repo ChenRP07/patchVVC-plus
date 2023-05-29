@@ -46,10 +46,14 @@ namespace vvc {
 namespace client {
 	namespace common {
 
+		/* Point data */
 		struct Points  // 点云数据的结构体
 		{
-			float x, y, z;  // 三维坐标值
-			float r, g, b;  // 颜色信息
+			/* Point coordinates */
+			float x, y, z;
+			/* Color channels */
+			float r, g, b;
+			/* Default constructor */
 			Points() : x{}, y{}, z{}, r{}, g{}, b{} {}
 		};
 
@@ -139,13 +143,6 @@ namespace client {
 				result.y = this->y * _x, result.u = this->u * _x, result.v = this->v * _x;
 				return result;
 			}
-
-			// /* Convert to a RGB format, according to BT.601 */
-			// void ConvertRGB(pcl::PointXYZRGB& _p) {
-			//     _p.r = static_cast<uint8_t>(std::round(this->y + 1.4020f * this->v));
-			//     _p.g = static_cast<uint8_t>(std::round(this->y - 0.3441f * this->u - 0.7141f * this->v));
-			//     _p.b = static_cast<uint8_t>(std::round(this->y + 1.7720f * this->u));
-			// }
 		};
 
 		/* Motion vector, float 4x4 */
@@ -226,19 +223,32 @@ namespace client {
 			}
 		};
 
+		/* Frame data, collection of Slice_t*/
 		struct Frame_t {
+			/* Frame timestamp */
 			int timestamp;
+			/* Slice number of this frame */
 			uint32_t slice_cnt;
+			/* Slice indexes */
 			int* index;
+			/* Slice types */
 			uint8_t* type;
+			/* Slice mvs */
 			float** mv;
+			/* Point number of each Slice */
 			uint32_t* size;
+			/* Slice qps */
 			uint8_t* qp;
+			/* Slice geometry data size */
 			uint32_t* geometry_size;
+			/* Slice geometry data */
 			uint8_t** geometry;
+			/* Slice color data size */
 			uint32_t* color_size;
+			/* Slice color data */
 			uint8_t** color;
 
+			/* Constructor and deconstructor */
 			Frame_t() : timestamp{}, slice_cnt{}, index{}, type{}, mv{}, size{}, qp{}, geometry_size{}, geometry{}, color_size{}, color{} {}
 			~Frame_t() {
 				delete[] (this->index);
@@ -260,6 +270,8 @@ namespace client {
 				delete[] (this->geometry);
 				delete[] (this->color);
 			}
+
+			/* Reset it to an empty frame */
 			void Reset() {
 				this->timestamp = -1;
 				delete[] (this->index);
@@ -282,37 +294,75 @@ namespace client {
 	}  // namespace common
 
 	namespace io {
+		/*
+		 * @description : Load slice from file
+		 * @param  : {common::Slice_t& _slice} Loading target
+		 * @param  : {const std::string& _name} Slice source
+		 * @return : {}
+		 * */
 		extern int LoadSlice(common::Slice_t& _slice, const std::string& _name);
+
+		/*
+		 * @description : Load frame from file
+		 * @param  : {common::Frame_t& _frame} Loading target
+		 * @param  : {const std::string& _name} Frame source
+		 * @return : {int} success 0, otherwise failed.
+		 * */
 		[[nodiscard]] extern int LoadFrame(common::Frame_t& _frame, const std::string& _name);
 	}  // namespace io
 
+	/* Max point number in a frame */
 	constexpr int FRAME_POINT_CNT{1'500'000};
+	/* Size of a point */
 	constexpr int POINT_BYTE{sizeof(common::Points)};
+	/* Frame number */
 	constexpr int TOTAL_FRAME_CNT{300};
+	/* Size of slice group buffer */
 	constexpr int MAX_LOAD_FRAME_CNT{60};
+	/* Size of frame buffer */
 	constexpr int MAX_VBO_FRAME_CNT{30};
+	/* Max compressed size of a point */
 	constexpr int RAW_POINT_SIZE{15};
+	/* Max point number in a slice */
 	constexpr int MAX_SLICE_POINT{10'000};
+	/* Max size of a slice */
 	constexpr int MAX_SLICE_SIZE{RAW_POINT_SIZE * MAX_SLICE_POINT};
 
+	/* Frame in GPU memory */
 	struct CudaFrame_t {
+		/* Offset of each slice */
 		int* inner_offset_gpu;
+		/* Slice indexes */
 		int* index_gpu;
+		/* Slice type */
 		uint8_t* type_gpu;
+		/* Slice point number */
 		uint32_t* size_gpu;
+		/* Slice qp */
 		uint8_t* qp_gpu;
+		/* Slice geo size */
 		uint32_t* geometry_size_gpu;
+		/* Slice color size */
 		uint32_t* color_size_gpu;
 
+		/* Slice mv */
 		float** mv_gpu;
+		/* Slice geo data */
 		uint8_t** geometry_gpu;
+		/* Slice color data */
 		uint8_t** color_gpu;
 
+		/* Slice number of a frame */
 		int slice_number;
-		
+
+		/* Point number of a frame */
 		int point_number;
-		CudaFrame_t() : index_gpu{}, inner_offset_gpu{}, type_gpu{}, size_gpu{}, qp_gpu{}, geometry_size_gpu{}, color_size_gpu{}, mv_gpu{}, geometry_gpu{}, color_gpu{}, point_number{}, slice_number{} {}
+		/* Constructor */
+		CudaFrame_t()
+		    : index_gpu{}, inner_offset_gpu{}, type_gpu{}, size_gpu{}, qp_gpu{}, geometry_size_gpu{}, color_size_gpu{}, mv_gpu{}, geometry_gpu{}, color_gpu{}, point_number{}, slice_number{} {}
 	};
+
+	/* Sliec groups buffer */
 	extern CudaFrame_t CUDAFrame[MAX_LOAD_FRAME_CNT];
 
 }  // namespace client

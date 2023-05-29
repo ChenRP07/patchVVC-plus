@@ -296,7 +296,6 @@ namespace client {
 			gpuErrchk(cudaMemcpy(cudaData + offset, interMem, sizeof(common::Points) * CUDAFrame[index].point_number, cudaMemcpyDeviceToDevice));
 			gpuErrchk(cudaDeviceSynchronize());
 			gettimeofday(&t1, nullptr);
-			printf("Memcpy_time = %.2f\n", (t1.tv_sec - t0.tv_sec) * 1000.0f + (t1.tv_usec - t0.tv_usec) / 1000.0f);
 			// 将结果从CUDA复制回OpenGL缓冲区
 			gpuErrchk(cudaGraphicsUnmapResources(1, &cudaGraphicsResourcePtr, 0));
 		}

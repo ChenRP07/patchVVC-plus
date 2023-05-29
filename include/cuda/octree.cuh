@@ -98,11 +98,6 @@ namespace client {
 				return *this;
 			}
 
-			// /* Do RAHT in this node, need signals in raht[8] to raht[15], generate signal in raht[0] and coefficients in raht[1] to raht[7]
-			// * NOTE: Coefficient of raht[idx] is valid only if both NodeWeight[idx][0] and NodeWeight[idx][1] are not zero.
-			// * */
-			// __device__ void HierarchicalTransform();
-
 			/* Do InvertRAHT in this node, need signal in raht[0] and coefficients in raht[1] to raht[7], genreate signals in raht[8] to raht[15]
 			 * NOTE: Signals of raht[idx] is valid only if value & NodeValue[idx - 8] is not zero, i.e., this child node has weight > 0
 			 * */
@@ -134,7 +129,7 @@ namespace client {
 		 * */
 		class InvertRAHTOctree {
 		  public:
-			common::PointXYZ  tree_center_;
+			common::PointXYZ  tree_center_;  
 			common::PointXYZ  tree_range_;
 			int               tree_height_;
 			OctreeLayer_t*    tree_;               /* Octree */
@@ -145,16 +140,6 @@ namespace client {
 			common::ColorYUV* reference_colors_;   /* Reference ColorYUV */
 			common::ColorYUV* source_colors_;      /* Result ColorYUV, after invert compensation */
 			common::Slice_t   slice_;              /* Slice to be decoded */
-
-			/*
-			 * @description : Back root traversal of octree, compute center and update weight.
-			 * @param  : {const int _height}
-			 * @param  : {const int _index}
-			 * @param  : {const pcl::PointXYZ _center}
-			 * @param  : {const pcl::PointXYZ _range}
-			 * @return : {}
-			 * */
-			// [[discarded]] __device__ void AddPoints(const int _height, const int _index, const common::PointXYZ _center, const common::PointXYZ _range);
 
 		  public:
 			/* Default constructor and deconstructor */

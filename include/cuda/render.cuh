@@ -37,6 +37,8 @@ namespace vvc {
 namespace client {
 	namespace render {
 		// clang-format off
+    
+        /* Cuda Kernel */
 		extern "C" {
 		    void launch_cudaProcess(int grid, int block, 
                                 common::Points* cudaData, 
@@ -60,7 +62,7 @@ namespace client {
 		extern cudaGraphicsResource_t cudaGraphicsResourcePtr;
 
 		/* Window parameters */
-		constexpr unsigned int SCR_WIDTH  = 800;
+		constexpr unsigned int SCR_WIDTH = 800;
 		constexpr unsigned int SCR_HEIGHT = 600;
 
 		/* Camera parameters */
@@ -78,11 +80,11 @@ namespace client {
 		extern float fov;
 		extern float yaw;
 		extern float pitch;
-		extern bool  firstMouse;
+		extern bool firstMouse;
 
 		/* Memory pointer and size */
 		extern common::Points* cudaData;
-		extern size_t          numBytes;
+		extern size_t numBytes;
 
 		/**
 		 * @description: 回调函数_监听鼠标滚轮事件
@@ -127,14 +129,11 @@ namespace client {
 
 		class Render {
 		  private:
-			GLFWwindow*  window;  // 窗口信息
-			GLFWwindow*  shareWindow;
+			GLFWwindow* window;  // 窗口信息
+			GLFWwindow* shareWindow;
 			unsigned int shaderProgram;  // 顶点着色器
 			unsigned int VAO;            // 顶点数组对象
 			unsigned int VBO;            // 顶点缓冲对象
-
-			/* XXX: deprecated */
-			// [[deprecated]]std::vector<int> bufferFrameSize;  // 每帧的大小
 
 			float begin_time;
 			float currentFrame;
@@ -149,20 +148,18 @@ namespace client {
 			/* @description: OpenGL初始化 */
 			void InitOpenGL();
 
-			/*  XXX: deprecated */
-			/* @description: 将渲染的数据放置缓冲区 */
-			// [[deprecated]] void InputData(std::vector<std::vector<vvc::client::common::Points>>& _vertices, int start, int end);
-
 			/* @description: 渲染内容 */
 			void Rendering(int offset, int frame_size);
 
 			/* @description: 利用CUDA解码更新缓冲区 */
 			void CUDADecode(int offset, int timestamp, int patch_size, int index);
 
+            /* Bind context of window to this thread */
 			inline void MakeContextWindow() {
 				glfwMakeContextCurrent(window);
 			}
 
+            /* Bind context of shared window to this thread */
 			inline void MakeContextShareWindow() {
 				glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 				shareWindow = glfwCreateWindow(1, 1, "shareWindow", NULL, window);

@@ -1,4 +1,4 @@
-# patchVVC : A Real - time Compression Framework for Streaming Volumetric Videos
+# A GPU-Enabled Real-Time Framework for Compressing and Rendering Volumetric Videos
 
 ## Install & Build
 

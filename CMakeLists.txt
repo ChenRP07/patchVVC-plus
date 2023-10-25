@@ -23,7 +23,7 @@ find_package(Boost COMPONENTS program_options)
 
 find_package(Threads)
 
-find_package(ZSTD)
+find_package(ZSTD REQUIRED)
 
 find_package(libconfig++)
 
